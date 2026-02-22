@@ -6,7 +6,7 @@
 <title>LittleLegacy — Theme Sampler</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&family=Baloo+2:wght@400;600;700&family=DM+Sans:wght@400;500&family=Source+Serif+4:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&family=Baloo+2:wght@400;600;700&family=DM+Sans:wght@400;500&family=Source+Serif+4:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
 <style>
   /* === RESET & BASE === */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -81,6 +81,16 @@
     --prompt-bg: #F0E8D8; --prompt-text: #5A3A18;
     --font-h: 'Nunito', sans-serif; --font-b: 'DM Sans', sans-serif;
     --fab-sh: 0 4px 20px rgba(196,98,45,0.35);
+  }
+
+  [data-theme="artifact"] {
+    --bg: #FAF8F5; --surface: #F2EFEA; --surface-alt: #E8E4DD;
+    --accent: #7A8B6F; --accent-dark: #556B4A; --accent-text: #fff;
+    --tag-bg: rgba(122,139,111,0.12); --tag-text: #556B4A;
+    --charcoal: #1A1A1A; --muted: #8C8578; --border: #E0DCD5;
+    --prompt-bg: transparent; --prompt-text: #8C8578;
+    --font-h: 'Playfair Display', Georgia, serif; --font-b: 'Lato', -apple-system, sans-serif;
+    --fab-sh: 0 4px 20px rgba(122,139,111,0.3);
   }
 
   /* === PHONE FRAME & CHROME === */
@@ -399,6 +409,69 @@
     height: 1px; background: #D8CCAC;
   }
 
+  /* ============================================================
+     ARTIFACT OVERRIDES — Elevated editorial (inspired by Artifact Uprising)
+     Clean serif headlines, generous whitespace, dusty sage accent,
+     photography-forward layout, understated luxury, thin borders
+     ============================================================ */
+  [data-theme="artifact"] .app-header { flex-direction: column; gap: 6px; text-align: center; padding: 16px 24px 10px; }
+  [data-theme="artifact"] .app-header-info { text-align: center; }
+  [data-theme="artifact"] .app-avatar {
+    width: 44px; height: 44px; font-size: 18px;
+    background: #7A8B6F;
+    font-family: 'Playfair Display', serif; font-weight: 400; font-style: italic;
+  }
+  [data-theme="artifact"] .app-name { font-size: 30px; font-weight: 400; letter-spacing: 0.01em; }
+  [data-theme="artifact"] .app-sub { font-weight: 300; letter-spacing: 0.12em; text-transform: uppercase; font-size: 10px; color: #A09A90; }
+  /* Clean underline tabs */
+  [data-theme="artifact"] .app-tabs { gap: 28px; justify-content: center; border-bottom: 1px solid #E0DCD5; padding-bottom: 0; }
+  [data-theme="artifact"] .app-tab {
+    padding: 6px 0 10px; border-radius: 0; background: none;
+    color: #B0A89C; font-family: 'Lato', sans-serif; font-weight: 400; font-size: 12px;
+    letter-spacing: 0.08em; text-transform: uppercase; border: none;
+  }
+  [data-theme="artifact"] .app-tab.active { background: none; color: var(--charcoal); box-shadow: none; border-bottom: 1.5px solid var(--accent); }
+  /* Minimal left-rule prompt */
+  [data-theme="artifact"] .app-prompt {
+    background: none; border-radius: 0; padding: 0 0 0 14px;
+    margin: 12px 24px 14px; border-left: 2px solid #D4D0C8;
+    font-family: 'Playfair Display', serif; font-size: 14px; font-style: italic; color: #A09A90;
+  }
+  /* Clean card style — thin border, generous padding */
+  [data-theme="artifact"] .app-card {
+    background: #fff; border-radius: 4px; padding: 16px 18px;
+    margin-bottom: 10px; border: 1px solid #E8E4DD;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+  [data-theme="artifact"] .app-card-text { font-size: 14px; line-height: 1.65; font-weight: 300; color: #333; }
+  [data-theme="artifact"] .app-card-date {
+    font-family: 'Lato', sans-serif; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; color: #A09A90;
+  }
+  [data-theme="artifact"] .app-card-tag {
+    background: rgba(122,139,111,0.1); border-radius: 2px; font-family: 'Lato', sans-serif;
+    font-size: 9px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  [data-theme="artifact"] .app-card-bars span { background: #7A8B6F; opacity: 0.3; }
+  [data-theme="artifact"] .app-date-label {
+    text-align: left; letter-spacing: 0.12em; text-transform: uppercase; font-size: 10px;
+    font-family: 'Lato', sans-serif; font-weight: 400; color: #A09A90;
+  }
+  /* Understated FAB */
+  [data-theme="artifact"] .app-fab-btn {
+    width: 58px; height: 58px;
+    background: #7A8B6F;
+    box-shadow: 0 2px 12px rgba(122,139,111,0.25);
+  }
+  [data-theme="artifact"] .app-fab-btn svg { width: 22px; height: 22px; }
+  /* Thin-line nav */
+  [data-theme="artifact"] .app-nav { border-top: 1px solid #E0DCD5; height: 72px; padding: 0 24px; }
+  [data-theme="artifact"] .app-nav-item svg { stroke-width: 1.5; width: 20px; height: 20px; }
+  [data-theme="artifact"] .app-nav-item span {
+    font-family: 'Lato', sans-serif; font-size: 9px; font-weight: 400;
+    letter-spacing: 0.1em; text-transform: uppercase; color: #A09A90;
+  }
+  [data-theme="artifact"] .app-nav-item.active span { color: #556B4A; }
+
   /* === EXPAND MODAL === */
   .expand-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(16px); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
   .expand-modal[data-active="true"] { display: flex; }
@@ -426,7 +499,7 @@
 <header class="sampler-header">
   <h1 class="sampler-title">LittleLegacy</h1>
   <p class="sampler-tagline">You'll never forget the little things.</p>
-  <p class="sampler-subtitle">Theme Sampler &mdash; 5 Distinctive UI Directions</p>
+  <p class="sampler-subtitle">Theme Sampler &mdash; 6 Distinctive UI Directions</p>
 </header>
 
 <div class="sampler-grid" id="samplerGrid"></div>
@@ -448,7 +521,8 @@ const themes = [
   { key:'minimalist', name:'Modern Minimalist', fonts:'Plus Jakarta Sans / Inter' },
   { key:'storybook', name:'Whimsical Storybook', fonts:'Baloo 2 / DM Sans' },
   { key:'heritage', name:'Heritage Keepsake', fonts:'Cormorant Garamond / Source Serif' },
-  { key:'natureschool', name:'Nature School', fonts:'Nunito / DM Sans' }
+  { key:'natureschool', name:'Nature School', fonts:'Nunito / DM Sans' },
+  { key:'artifact', name:'Artifact Uprising', fonts:'Playfair Display / Lato' }
 ];
 
 const svg = {
