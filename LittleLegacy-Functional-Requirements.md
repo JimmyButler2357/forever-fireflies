@@ -150,6 +150,10 @@ Requirements are grouped by feature area. Each links back to a product goal:
 
 These requirements apply to post-MVP features. Included here for completeness — they'll be fully specced when their phase begins.
 
+### In-App Feedback (V1.5)
+- **FR-V1.5-001 [G-1]:** Given an authenticated user in Settings, the system provides a "Contact Us / Send Feedback" option that opens a pre-populated email compose with: recipient (support email), subject line including app version and OS version, and body pre-filled with device model and OS info. User adds their message and sends via native mail client.
+- *Edge cases:* No mail client configured → show support email address with a "copy to clipboard" option. Mail compose cancelled → no action taken.
+
 ### Entry Sharing (V1.5)
 - **FR-V2-001:** User can tap a share button on any entry detail view to generate a unique shareable URL. The URL opens a read-only web page displaying: entry text, child first name, date, topic tags, and audio playback button (if voice entry). No account or app download required to view.
 - **FR-V2-002:** User can view all shared entries and revoke any shared link from Settings. Revoking makes the URL immediately inaccessible.

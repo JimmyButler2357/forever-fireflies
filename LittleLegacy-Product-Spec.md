@@ -220,6 +220,7 @@ Expected output: [{"tag": "humor", "confidence": 0.95}, {"tag": "milestone", "co
 - [ ] Weekly catch-up prompt for inactive users
 - [ ] LLM-powered auto-tagging upgrade (Claude Haiku — see Section 3.3)
 - [ ] Share individual entries — tap share to generate a read-only link with entry text, child name, date, and audio playback; shareable via native share sheet
+- [ ] In-app feedback — "Contact Us" in Settings opens email compose with device info + app version auto-attached
 
 ### V2 (Month 6-12) — Growth & Expansion
 - [ ] Partner sharing (two parents, one account)
@@ -230,6 +231,7 @@ Expected output: [{"tag": "humor", "confidence": 0.95}, {"tag": "milestone", "co
 - [ ] Extended family sharing via invite links
 - [ ] Shared entry management — view all shared entries, revoke links from settings
 - [ ] Shared entry web page includes subtle LittleLegacy branding + "Capture your family's memories" CTA (organic acquisition loop)
+- [ ] Referral program — invite a parent friend, both get a free month; built into Settings
 
 ### V3+ (Year 2) — Platform
 - [ ] "Interview Mode" — guided Q&A to record the child's own answers
@@ -331,6 +333,18 @@ These are the performance, security, and quality targets that apply at MVP. More
 - Supabase direct (vs. custom API layer) eliminates ~80% of backend code — auth, storage, real-time, and RLS are built in
 - The entire stack is TypeScript end-to-end (app, Edge Functions, database types) — one language to think in
 - Supabase + Expo + RevenueCat is the most common indie-dev stack for subscription mobile apps right now
+
+### 10.1 Architectural Decisions (Bake In During Development)
+
+Zero-effort decisions during development that prevent expensive rework at scale. These cost nothing extra to implement now but save significant refactoring later.
+
+1. **Separate dev/prod Supabase projects from day one** — create `littlelegacy-dev` and `littlelegacy-prod`. Never test against production data.
+2. **Use environment variables for all service URLs/keys** — never hardcode Supabase URL, PostHog key, RevenueCat API key, etc. Use Expo's `.env` support.
+3. **Abstract storage calls behind a service layer** — if you ever move from Supabase Storage to raw S3, you change one file, not fifty.
+4. **Add database indexes on frequently queried columns** — `user_id`, `child_id`, `created_at`, full-text search column, and compound index on `(user_id, created_at)` for timeline queries.
+5. **Use Supabase Row Level Security (RLS) from the start** — trivial to set up during table creation, painful to retrofit. Every table should have RLS policies before the first row is inserted.
+6. **Version database schema with migrations** — use Supabase CLI migrations. Don't make schema changes by clicking in the dashboard.
+7. **Log PostHog analytics events as you build each feature** — don't plan an "add analytics" sprint later. Drop the event call in as you write the feature code.
 
 ---
 
