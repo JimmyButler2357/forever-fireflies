@@ -6,7 +6,7 @@
 <title>LittleLegacy — Theme Sampler</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&family=Baloo+2:wght@400;600;700&family=DM+Sans:wght@400;500&family=Source+Serif+4:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&family=Baloo+2:wght@400;600;700&family=DM+Sans:wght@400;500&family=Source+Serif+4:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
 <style>
   /* === RESET & BASE === */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -19,22 +19,48 @@
   }
   body.fonts-ready { opacity: 1; }
 
-  /* === PAGE LAYOUT === */
-  .sampler-header { text-align: center; padding: 16px 24px 6px; }
+  /* === PAGE LAYOUT — CAROUSEL === */
+  .sampler-header { text-align: center; padding: 16px 24px 6px; flex-shrink: 0; }
   .sampler-title { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; font-weight: 400; color: #fff; letter-spacing: 0.02em; margin-bottom: 2px; }
   .sampler-tagline { font-family: 'Cormorant Garamond', serif; font-size: 13px; font-style: italic; color: #777; margin-bottom: 6px; }
   .sampler-subtitle { font-size: 10px; color: #555; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; }
-  .sampler-grid { display: flex; justify-content: center; align-items: flex-start; padding: 8px 16px 0; gap: 14px; flex: 1; min-height: 0; }
-  .theme-card-wrapper { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; }
-  .phone-sizer { overflow: hidden; position: relative; }
-  .phone-sizer .phone-frame { transform-origin: top left; }
-  .theme-label { text-align: center; margin-top: 6px; }
-  .theme-label-name { display: block; font-size: 12px; font-weight: 600; color: #ccc; margin-bottom: 1px; }
-  .theme-label-fonts { display: block; font-size: 9px; color: #666; margin-bottom: 4px; }
-  .expand-btn { padding: 4px 12px; min-height: 28px; border-radius: 14px; border: 1px solid #333; background: transparent; color: #999; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
-  .expand-btn:hover { border-color: #666; color: #fff; background: #222; }
-  .sampler-footer { text-align: center; padding: 4px 24px 10px; }
-  .sampler-footer p { font-size: 10px; color: #444; }
+
+  .carousel { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 0; padding: 0 80px; }
+
+  .carousel-phone { display: flex; align-items: center; justify-content: center; position: relative; }
+  .carousel-phone .phone-frame { transform-origin: center center; transition: opacity 0.3s ease; }
+
+  /* Arrow buttons */
+  .carousel-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 10;
+    width: 52px; height: 52px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06);
+    color: #aaa; font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease; backdrop-filter: blur(8px);
+  }
+  .carousel-arrow:hover { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.25); }
+  .carousel-arrow:active { transform: translateY(-50%) scale(0.95); }
+  .carousel-arrow-left { left: 16px; }
+  .carousel-arrow-right { right: 16px; }
+
+  /* Bottom info area */
+  .carousel-footer { flex-shrink: 0; text-align: center; padding: 12px 24px 16px; }
+  .carousel-theme-name { display: block; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 22px; font-weight: 400; color: #fff; margin-bottom: 2px; transition: opacity 0.3s ease; }
+  .carousel-theme-fonts { display: block; font-size: 12px; color: #777; margin-bottom: 12px; transition: opacity 0.3s ease; }
+  /* Dot indicators */
+  .carousel-dots { display: flex; justify-content: center; gap: 10px; margin-bottom: 6px; }
+  .carousel-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); border: none; cursor: pointer;
+    transition: all 0.3s ease; padding: 0;
+  }
+  .carousel-dot.active { background: rgba(255,255,255,0.7); transform: scale(1.2); }
+  .carousel-dot:hover { background: rgba(255,255,255,0.4); }
+  .carousel-nav-hint { font-size: 10px; color: #444; margin-top: 4px; }
+
+  /* Counter badge */
+  .carousel-counter { font-size: 11px; color: #555; letter-spacing: 0.05em; margin-bottom: 6px; }
 
   /* === THEME TOKENS === */
   [data-theme="nursery"] {
@@ -83,8 +109,18 @@
     --fab-sh: 0 4px 20px rgba(196,98,45,0.35);
   }
 
+  [data-theme="artifact"] {
+    --bg: #FAF8F5; --surface: #F2EFEA; --surface-alt: #E8E4DD;
+    --accent: #7A8B6F; --accent-dark: #556B4A; --accent-text: #fff;
+    --tag-bg: rgba(122,139,111,0.12); --tag-text: #556B4A;
+    --charcoal: #1A1A1A; --muted: #8C8578; --border: #E0DCD5;
+    --prompt-bg: transparent; --prompt-text: #8C8578;
+    --font-h: 'Playfair Display', Georgia, serif; --font-b: 'Lato', -apple-system, sans-serif;
+    --fab-sh: 0 4px 20px rgba(122,139,111,0.3);
+  }
+
   /* === PHONE FRAME & CHROME === */
-  .phone-frame { width: 375px; height: 812px; background: var(--bg); border-radius: 44px; box-shadow: 0 0 0 2px #2a2a2e, 0 20px 60px rgba(0,0,0,0.45); position: relative; overflow: hidden; flex-shrink: 0; cursor: pointer; }
+  .phone-frame { width: 375px; height: 812px; background: var(--bg); border-radius: 44px; box-shadow: 0 0 0 2px #2a2a2e, 0 20px 60px rgba(0,0,0,0.45); position: relative; overflow: hidden; flex-shrink: 0; }
   .status-bar { height: 54px; padding: 14px 28px 0; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 100; background: var(--bg); }
   .status-time { font-family: var(--font-h); font-size: 15px; font-weight: 600; color: var(--charcoal); }
   .status-icons { display: flex; gap: 6px; align-items: center; }
@@ -163,8 +199,6 @@
 
   /* ============================================================
      NURSERY OVERRIDES — Scrapbook warmth
-     Rounded everything, soft shadows, washi tape, floating pill nav,
-     speech-bubble prompt, slight card rotations
      ============================================================ */
   [data-theme="nursery"] .app-avatar {
     background: linear-gradient(135deg, #D4956A, #E8B898);
@@ -173,7 +207,6 @@
   [data-theme="nursery"] .app-card { box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
   [data-theme="nursery"] .app-card:nth-child(2) { transform: rotate(-0.5deg); }
   [data-theme="nursery"] .app-card:nth-child(4) { transform: rotate(0.3deg); }
-  /* Washi tape accents */
   [data-theme="nursery"] .app-card:nth-child(2)::before {
     content: ''; position: absolute; top: -3px; right: 20px;
     width: 32px; height: 14px; background: rgba(181,196,177,0.5); border-radius: 0 0 4px 4px;
@@ -182,14 +215,12 @@
     content: ''; position: absolute; top: -3px; left: 18px;
     width: 28px; height: 12px; background: rgba(212,180,190,0.45); border-radius: 0 0 3px 3px;
   }
-  /* Speech-bubble prompt */
   [data-theme="nursery"] .app-prompt { border-radius: 18px 18px 18px 4px; }
   [data-theme="nursery"] .app-prompt::after {
     content: ''; position: absolute; bottom: -6px; left: 16px;
     width: 12px; height: 12px; background: var(--prompt-bg);
     border-radius: 0 0 0 8px; clip-path: polygon(0 0, 100% 0, 0 100%);
   }
-  /* Floating pill nav */
   [data-theme="nursery"] .app-nav {
     bottom: 12px; left: 20px; right: 20px; height: 60px;
     background: var(--surface); border-radius: 30px;
@@ -206,22 +237,17 @@
 
   /* ============================================================
      MINIMALIST OVERRIDES — Editorial restraint
-     No card backgrounds, hairline separators, huge name,
-     left-border prompt, offset FAB, text-only nav, hidden tags
      ============================================================ */
   [data-theme="minimalist"] .app-name { font-size: 36px; letter-spacing: -0.03em; line-height: 1; }
   [data-theme="minimalist"] .app-avatar { width: 36px; height: 36px; font-size: 16px; background: #E0E0E0; color: #888; }
   [data-theme="minimalist"] .app-sub { letter-spacing: 0.06em; text-transform: uppercase; }
-  /* Underline tabs */
   [data-theme="minimalist"] .app-tabs { gap: 24px; border-bottom: 1px solid #E0E0E0; padding-bottom: 0; }
   [data-theme="minimalist"] .app-tab { padding: 0 0 10px; border-radius: 0; background: none; color: #BBB; border: none; }
   [data-theme="minimalist"] .app-tab.active { background: none; color: #111; box-shadow: none; border-bottom: 2px solid var(--accent); }
-  /* Left-border prompt */
   [data-theme="minimalist"] .app-prompt {
     background: none; border-radius: 0; padding: 0 0 0 12px;
     margin: 14px 24px 12px; border-left: 2px solid #DDD;
   }
-  /* No-card entries — text rows with hairline separators */
   [data-theme="minimalist"] .app-card {
     background: none; border-radius: 0; padding: 16px 0; margin-bottom: 0;
     border-bottom: 1px solid #EDEDED;
@@ -229,11 +255,9 @@
   [data-theme="minimalist"] .app-card-tag { display: none; }
   [data-theme="minimalist"] .app-card-date { letter-spacing: 0.1em; text-transform: uppercase; }
   [data-theme="minimalist"] .app-date-label { text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
-  /* Small offset FAB */
   [data-theme="minimalist"] .app-fab { bottom: 76px; left: auto; right: 24px; transform: none; }
   [data-theme="minimalist"] .app-fab-btn { width: 52px; height: 52px; }
   [data-theme="minimalist"] .app-fab-btn svg { width: 22px; height: 22px; }
-  /* Text-only nav */
   [data-theme="minimalist"] .app-nav { height: 68px; border-top: 1px solid #EDEDED; padding: 0 28px; }
   [data-theme="minimalist"] .app-nav-item svg { display: none; }
   [data-theme="minimalist"] .app-nav-item span { font-size: 11px; font-weight: 500; letter-spacing: 0.02em; }
@@ -241,22 +265,18 @@
 
   /* ============================================================
      STORYBOOK OVERRIDES — Whimsical magic
-     Star accents, sparkle name, banner prompt, icons-in-circles nav,
-     dashed spinning FAB ring, scalloped card borders
      ============================================================ */
   [data-theme="storybook"] .app-avatar {
     background: linear-gradient(135deg, #B88ADF, #8B60C4);
     box-shadow: 0 3px 12px rgba(155,109,196,0.3);
   }
   [data-theme="storybook"] .app-name::after { content: ' \2728'; font-size: 14px; }
-  /* Star accents on cards */
   [data-theme="storybook"] .app-card { border: 1.5px solid var(--border); }
   [data-theme="storybook"] .app-card::after {
     content: '\2728'; position: absolute; top: 6px; right: 14px;
     font-size: 10px; opacity: 0.5; pointer-events: none;
   }
   [data-theme="storybook"] .app-card:nth-child(3)::after { content: '\2B50'; right: 22px; }
-  /* Banner/ribbon prompt */
   [data-theme="storybook"] .app-prompt { text-align: center; border-radius: 4px; }
   [data-theme="storybook"] .app-prompt::before,
   [data-theme="storybook"] .app-prompt::after {
@@ -266,7 +286,6 @@
   [data-theme="storybook"] .app-prompt::before { left: -6px; clip-path: polygon(100% 0, 100% 100%, 0 50%); }
   [data-theme="storybook"] .app-prompt::after { right: -6px; clip-path: polygon(0 0, 0 100%, 100% 50%); }
   [data-theme="storybook"] .app-date-label::before { content: '\2728 '; }
-  /* Dashed FAB ring */
   [data-theme="storybook"] .app-fab-btn {
     background: linear-gradient(135deg, #B88ADF, #8B60C4); position: relative;
   }
@@ -276,7 +295,6 @@
     animation: sto-spin 12s linear infinite; pointer-events: none;
   }
   @keyframes sto-spin { to { transform: rotate(360deg); } }
-  /* Icons-in-circles nav */
   [data-theme="storybook"] .app-nav { height: 80px; align-items: flex-start; padding-top: 10px; }
   [data-theme="storybook"] .app-nav-item svg {
     width: 20px; height: 20px; padding: 10px; box-sizing: content-box;
@@ -287,8 +305,6 @@
 
   /* ============================================================
      HERITAGE OVERRIDES — Elegant literary
-     Centered header, ornamental dividers instead of card bg,
-     decorative quote prompt, serif nav, wax-seal FAB, drop cap hint
      ============================================================ */
   [data-theme="heritage"] .app-header { flex-direction: column; gap: 4px; text-align: center; }
   [data-theme="heritage"] .app-header-info { text-align: center; }
@@ -299,21 +315,18 @@
   }
   [data-theme="heritage"] .app-name { font-size: 32px; }
   [data-theme="heritage"] .app-sub { font-style: italic; }
-  /* Centered underline tabs */
   [data-theme="heritage"] .app-tabs { gap: 20px; justify-content: center; }
   [data-theme="heritage"] .app-tab {
     padding: 4px 2px 8px; border-radius: 0; background: none;
     color: var(--muted); font-size: 12px; border: none;
   }
   [data-theme="heritage"] .app-tab.active { background: none; color: var(--charcoal); box-shadow: none; border-bottom: 1.5px solid var(--accent); }
-  /* Decorative quote prompt */
   [data-theme="heritage"] .app-prompt {
     text-align: center; background: none; font-family: var(--font-h);
     font-size: 16px; padding: 10px 32px;
   }
   [data-theme="heritage"] .app-prompt::before { content: '\201C\00a0'; font-size: 28px; color: #D4C5A8; line-height: 0; vertical-align: -8px; }
   [data-theme="heritage"] .app-prompt::after { content: '\00a0\201D'; font-size: 28px; color: #D4C5A8; line-height: 0; vertical-align: -8px; }
-  /* Transparent cards with ornamental dividers */
   [data-theme="heritage"] .app-card {
     background: transparent; border-radius: 0; padding: 14px 0; margin-bottom: 0;
   }
@@ -327,7 +340,6 @@
   [data-theme="heritage"] .app-date-label {
     text-align: center; letter-spacing: 0.15em; text-transform: uppercase; font-size: 10px;
   }
-  /* Wax-seal FAB */
   [data-theme="heritage"] .app-fab-btn {
     width: 60px; height: 60px; position: relative;
     background: radial-gradient(circle at 40% 35%, #D4922A, #8F5518);
@@ -336,7 +348,6 @@
     content: ''; position: absolute; inset: 6px; border-radius: 50%;
     border: 1.5px solid rgba(255,255,255,0.2); pointer-events: none;
   }
-  /* Serif nav */
   [data-theme="heritage"] .app-nav { border-top: 1px solid #E8DCC8; height: 76px; }
   [data-theme="heritage"] .app-nav-item svg { stroke-width: 1.5; stroke: #B8A888; }
   [data-theme="heritage"] .app-nav-item span {
@@ -345,8 +356,6 @@
 
   /* ============================================================
      NATURE OVERRIDES — Field journal
-     Timeline dots, left-border cards, stamp-style dates,
-     leaf-prefix tags, torn-edge prompt, organic FAB
      ============================================================ */
   [data-theme="natureschool"] .app-avatar {
     background: linear-gradient(135deg, #C4622D, #E08040);
@@ -356,13 +365,11 @@
     content: '\1F33F'; position: absolute; bottom: -2px; right: -4px; font-size: 14px;
   }
   [data-theme="natureschool"] .app-tab { border-radius: 16px; font-size: 12px; padding: 6px 14px; }
-  /* Left-border torn-edge prompt */
   [data-theme="natureschool"] .app-prompt {
     border-radius: 0 10px 10px 0; border-left: 3px solid var(--accent);
     clip-path: polygon(0 0, 100% 2%, 98% 100%, 0 98%);
   }
   [data-theme="natureschool"] .app-prompt::before { content: '\1F33F  '; font-style: normal; }
-  /* Stamp-style date labels */
   [data-theme="natureschool"] .app-date-label {
     font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent);
   }
@@ -370,7 +377,6 @@
     content: ''; display: inline-block; width: 6px; height: 6px;
     background: var(--accent); border-radius: 50%; margin-right: 6px; vertical-align: 1px;
   }
-  /* Timeline dots on cards */
   [data-theme="natureschool"] .app-list { padding-left: 38px; }
   [data-theme="natureschool"] .app-card { border-radius: 14px; }
   [data-theme="natureschool"] .app-card::before {
@@ -387,30 +393,71 @@
     font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em;
   }
   [data-theme="natureschool"] .app-card-tag::before { content: '\1F33F  '; font-size: 8px; }
-  /* Organic FAB */
   [data-theme="natureschool"] .app-fab-btn {
     background: linear-gradient(135deg, #C4622D, #A04E1E);
     border: 3px solid rgba(255,255,255,0.2);
   }
-  /* Top-accent nav */
   [data-theme="natureschool"] .app-nav { position: relative; }
   [data-theme="natureschool"] .app-nav::before {
     content: ''; position: absolute; top: -1px; left: 20px; right: 20px;
     height: 1px; background: #D8CCAC;
   }
 
-  /* === EXPAND MODAL === */
-  .expand-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(16px); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
-  .expand-modal[data-active="true"] { display: flex; }
-  .modal-top-bar { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
-  .modal-close-btn { padding: 8px 18px; min-height: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08); color: #fff; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s ease; }
-  .modal-close-btn:hover { background: rgba(255,255,255,0.15); }
-  .modal-phone-container { flex-shrink: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
-  .modal-phone-container .phone-frame { cursor: default; pointer-events: none; transform-origin: center center; }
-  .modal-label { text-align: center; flex-shrink: 0; }
-  .modal-theme-name { display: block; font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 2px; }
-  .modal-theme-fonts { display: block; font-size: 12px; color: #777; }
-  .modal-nav-hint { font-size: 11px; color: #444; flex-shrink: 0; }
+  /* ============================================================
+     ARTIFACT OVERRIDES — Elevated editorial (inspired by Artifact Uprising)
+     ============================================================ */
+  [data-theme="artifact"] .app-header { flex-direction: column; gap: 6px; text-align: center; padding: 16px 24px 10px; }
+  [data-theme="artifact"] .app-header-info { text-align: center; }
+  [data-theme="artifact"] .app-avatar {
+    width: 44px; height: 44px; font-size: 18px;
+    background: #7A8B6F;
+    font-family: 'Playfair Display', serif; font-weight: 400; font-style: italic;
+  }
+  [data-theme="artifact"] .app-name { font-size: 30px; font-weight: 400; letter-spacing: 0.01em; }
+  [data-theme="artifact"] .app-sub { font-weight: 300; letter-spacing: 0.12em; text-transform: uppercase; font-size: 10px; color: #A09A90; }
+  [data-theme="artifact"] .app-tabs { gap: 28px; justify-content: center; border-bottom: 1px solid #E0DCD5; padding-bottom: 0; }
+  [data-theme="artifact"] .app-tab {
+    padding: 6px 0 10px; border-radius: 0; background: none;
+    color: #B0A89C; font-family: 'Lato', sans-serif; font-weight: 400; font-size: 12px;
+    letter-spacing: 0.08em; text-transform: uppercase; border: none;
+  }
+  [data-theme="artifact"] .app-tab.active { background: none; color: var(--charcoal); box-shadow: none; border-bottom: 1.5px solid var(--accent); }
+  [data-theme="artifact"] .app-prompt {
+    background: none; border-radius: 0; padding: 0 0 0 14px;
+    margin: 12px 24px 14px; border-left: 2px solid #D4D0C8;
+    font-family: 'Playfair Display', serif; font-size: 14px; font-style: italic; color: #A09A90;
+  }
+  [data-theme="artifact"] .app-card {
+    background: #fff; border-radius: 4px; padding: 16px 18px;
+    margin-bottom: 10px; border: 1px solid #E8E4DD;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+  [data-theme="artifact"] .app-card-text { font-size: 14px; line-height: 1.65; font-weight: 300; color: #333; }
+  [data-theme="artifact"] .app-card-date {
+    font-family: 'Lato', sans-serif; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; color: #A09A90;
+  }
+  [data-theme="artifact"] .app-card-tag {
+    background: rgba(122,139,111,0.1); border-radius: 2px; font-family: 'Lato', sans-serif;
+    font-size: 9px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  [data-theme="artifact"] .app-card-bars span { background: #7A8B6F; opacity: 0.3; }
+  [data-theme="artifact"] .app-date-label {
+    text-align: left; letter-spacing: 0.12em; text-transform: uppercase; font-size: 10px;
+    font-family: 'Lato', sans-serif; font-weight: 400; color: #A09A90;
+  }
+  [data-theme="artifact"] .app-fab-btn {
+    width: 58px; height: 58px;
+    background: #7A8B6F;
+    box-shadow: 0 2px 12px rgba(122,139,111,0.25);
+  }
+  [data-theme="artifact"] .app-fab-btn svg { width: 22px; height: 22px; }
+  [data-theme="artifact"] .app-nav { border-top: 1px solid #E0DCD5; height: 72px; padding: 0 24px; }
+  [data-theme="artifact"] .app-nav-item svg { stroke-width: 1.5; width: 20px; height: 20px; }
+  [data-theme="artifact"] .app-nav-item span {
+    font-family: 'Lato', sans-serif; font-size: 9px; font-weight: 400;
+    letter-spacing: 0.1em; text-transform: uppercase; color: #A09A90;
+  }
+  [data-theme="artifact"] .app-nav-item.active span { color: #556B4A; }
 
   /* === ACCESSIBILITY === */
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; } }
@@ -426,20 +473,21 @@
 <header class="sampler-header">
   <h1 class="sampler-title">LittleLegacy</h1>
   <p class="sampler-tagline">You'll never forget the little things.</p>
-  <p class="sampler-subtitle">Theme Sampler &mdash; 5 Distinctive UI Directions</p>
+  <p class="sampler-subtitle">Theme Sampler &mdash; 6 Distinctive UI Directions</p>
 </header>
 
-<div class="sampler-grid" id="samplerGrid"></div>
+<div class="carousel" id="carousel">
+  <button class="carousel-arrow carousel-arrow-left" id="arrowLeft">&#8592;</button>
+  <div class="carousel-phone" id="carouselPhone"></div>
+  <button class="carousel-arrow carousel-arrow-right" id="arrowRight">&#8594;</button>
+</div>
 
-<footer class="sampler-footer">
-  <p>Click to expand &middot; &larr; &rarr; to browse &middot; Esc to close</p>
-</footer>
-
-<div class="expand-modal" id="expandModal" role="dialog" aria-modal="true">
-  <div class="modal-top-bar"><button class="modal-close-btn" id="modalClose">&#10005; Close</button></div>
-  <div class="modal-phone-container" id="modalPhoneContainer"></div>
-  <div class="modal-label"><span class="modal-theme-name" id="modalThemeName"></span><span class="modal-theme-fonts" id="modalThemeFonts"></span></div>
-  <div class="modal-nav-hint">&larr; &rarr; browse &middot; Esc close</div>
+<div class="carousel-footer">
+  <span class="carousel-counter" id="carouselCounter"></span>
+  <span class="carousel-theme-name" id="carouselName"></span>
+  <span class="carousel-theme-fonts" id="carouselFonts"></span>
+  <div class="carousel-dots" id="carouselDots"></div>
+  <div class="carousel-nav-hint">&larr; &rarr; arrow keys to browse</div>
 </div>
 
 <script>
@@ -448,7 +496,8 @@ const themes = [
   { key:'minimalist', name:'Modern Minimalist', fonts:'Plus Jakarta Sans / Inter' },
   { key:'storybook', name:'Whimsical Storybook', fonts:'Baloo 2 / DM Sans' },
   { key:'heritage', name:'Heritage Keepsake', fonts:'Cormorant Garamond / Source Serif' },
-  { key:'natureschool', name:'Nature School', fonts:'Nunito / DM Sans' }
+  { key:'natureschool', name:'Nature School', fonts:'Nunito / DM Sans' },
+  { key:'artifact', name:'Artifact Uprising', fonts:'Playfair Display / Lato' }
 ];
 
 const svg = {
@@ -478,7 +527,6 @@ function phoneChrome(themeKey) {
 }
 const phoneEnd = `</div></div><div class="home-indicator"></div></div>`;
 
-/* ===== SINGLE SHARED BUILDER ===== */
 function buildPhone(themeKey) {
   const cards = entries.map(e => `
     <div class="app-card">
@@ -517,62 +565,90 @@ function buildPhone(themeKey) {
     </div>` + phoneEnd;
 }
 
-function renderGrid() {
-  document.getElementById('samplerGrid').innerHTML = themes.map(t => `
-    <div class="theme-card-wrapper" id="theme-${t.key}">
-      <div class="phone-sizer">${buildPhone(t.key)}</div>
-      <div class="theme-label">
-        <span class="theme-label-name">${t.name}</span>
-        <span class="theme-label-fonts">${t.fonts}</span>
-        <button class="expand-btn" data-theme="${t.key}">Expand &#x2197;</button>
-      </div>
-    </div>`).join('');
+/* === CAROUSEL === */
+let currentIdx = 0;
+
+function renderDots() {
+  document.getElementById('carouselDots').innerHTML = themes.map((t, i) =>
+    `<button class="carousel-dot${i === currentIdx ? ' active' : ''}" data-idx="${i}" aria-label="${t.name}"></button>`
+  ).join('');
 }
 
-/* === MODAL === */
-let currentIdx = -1;
-function openModal(key) {
-  const i = themes.findIndex(t=>t.key===key); if(i===-1) return;
-  currentIdx = i;
-  const m = document.getElementById('expandModal');
-  document.getElementById('modalPhoneContainer').innerHTML = buildPhone(key);
-  document.getElementById('modalThemeName').textContent = themes[i].name;
-  document.getElementById('modalThemeFonts').textContent = themes[i].fonts;
-  m.setAttribute('data-active','true');
-  document.body.style.overflow = 'hidden';
-  scaleModalPhone();
-  setTimeout(()=>document.getElementById('modalClose').focus(),50);
-}
-function closeModal() { document.getElementById('expandModal').removeAttribute('data-active'); document.body.style.overflow=''; currentIdx=-1; }
-function navModal(d) { if(currentIdx===-1) return; let n=currentIdx+d; if(n<0) n=themes.length-1; if(n>=themes.length) n=0; openModal(themes[n].key); }
-function scaleModalPhone() {
-  const p=document.querySelector('#modalPhoneContainer .phone-frame'); if(!p) return;
-  const s=Math.min((window.innerHeight-150)/812,1);
-  p.style.transform=`scale(${s})`; p.style.marginTop=`-${812*(1-s)/2}px`; p.style.marginBottom=`-${812*(1-s)/2}px`;
+function showTheme(idx) {
+  currentIdx = idx;
+  const t = themes[idx];
+  const container = document.getElementById('carouselPhone');
+  const phone = container.querySelector('.phone-frame');
+
+  // Fade out then swap
+  if (phone) {
+    phone.style.opacity = '0';
+    setTimeout(() => {
+      container.innerHTML = buildPhone(t.key);
+      scalePhone();
+      const newPhone = container.querySelector('.phone-frame');
+      if (newPhone) { newPhone.style.opacity = '0'; requestAnimationFrame(() => { newPhone.style.opacity = '1'; }); }
+    }, 150);
+  } else {
+    container.innerHTML = buildPhone(t.key);
+    scalePhone();
+  }
+
+  document.getElementById('carouselName').textContent = t.name;
+  document.getElementById('carouselFonts').textContent = t.fonts;
+  document.getElementById('carouselCounter').textContent = `${idx + 1} / ${themes.length}`;
+  renderDots();
 }
 
-document.getElementById('modalClose').addEventListener('click',closeModal);
-document.getElementById('expandModal').addEventListener('click',function(e){if(e.target===this) closeModal();});
-document.addEventListener('keydown',function(e){if(currentIdx===-1) return; if(e.key==='Escape') closeModal(); if(e.key==='ArrowLeft') navModal(-1); if(e.key==='ArrowRight') navModal(1);});
-document.getElementById('samplerGrid').addEventListener('click',function(e){
-  const b=e.target.closest('.expand-btn'); if(b){openModal(b.dataset.theme);return;}
-  const f=e.target.closest('.phone-frame'); if(f) openModal(f.dataset.theme);
+function navigate(dir) {
+  let next = currentIdx + dir;
+  if (next < 0) next = themes.length - 1;
+  if (next >= themes.length) next = 0;
+  showTheme(next);
+}
+
+function scalePhone() {
+  const phone = document.querySelector('#carouselPhone .phone-frame');
+  if (!phone) return;
+  const headerH = document.querySelector('.sampler-header').offsetHeight;
+  const footerH = document.querySelector('.carousel-footer').offsetHeight;
+  const availH = window.innerHeight - headerH - footerH - 24;
+  const availW = window.innerWidth - 200;
+  const s = Math.min(availH / 812, availW / 375, 1);
+  phone.style.transform = `scale(${s})`;
+  phone.style.transformOrigin = 'center center';
+  // Collapse margins so container fits tightly
+  const mV = 812 * (1 - s) / 2;
+  const mH = 375 * (1 - s) / 2;
+  phone.style.marginTop = `-${mV}px`;
+  phone.style.marginBottom = `-${mV}px`;
+  phone.style.marginLeft = `-${mH}px`;
+  phone.style.marginRight = `-${mH}px`;
+}
+
+// Arrow clicks
+document.getElementById('arrowLeft').addEventListener('click', () => navigate(-1));
+document.getElementById('arrowRight').addEventListener('click', () => navigate(1));
+
+// Dot clicks
+document.getElementById('carouselDots').addEventListener('click', (e) => {
+  const dot = e.target.closest('.carousel-dot');
+  if (dot) showTheme(parseInt(dot.dataset.idx, 10));
 });
 
-/* === SCALING === */
-function scaleGrid() {
-  const sizers=document.querySelectorAll('#samplerGrid .phone-sizer'); if(!sizers.length) return;
-  const aw=window.innerWidth-32-(14*(themes.length-1)), cw=aw/themes.length, sx=cw/375;
-  const hh=document.querySelector('.sampler-header').offsetHeight;
-  const ah=window.innerHeight-hh-76-36, sy=ah/812;
-  const s=Math.min(sx,sy,1), sw=Math.floor(375*s), sh=Math.floor(812*s);
-  sizers.forEach(z=>{const p=z.querySelector('.phone-frame');if(!p)return; z.style.width=sw+'px'; z.style.height=sh+'px'; z.style.borderRadius=Math.floor(44*s)+'px'; p.style.transform=`scale(${s})`;});
-}
-window.addEventListener('resize',()=>{scaleGrid();if(currentIdx!==-1)scaleModalPhone();});
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') navigate(-1);
+  if (e.key === 'ArrowRight') navigate(1);
+});
 
-renderGrid();
-document.fonts.ready.then(()=>{document.body.classList.add('fonts-ready');document.getElementById('loadingIndicator').classList.add('hidden');scaleGrid();});
-setTimeout(()=>{document.body.classList.add('fonts-ready');document.getElementById('loadingIndicator').classList.add('hidden');scaleGrid();},3000);
+// Resize
+window.addEventListener('resize', scalePhone);
+
+// Init
+showTheme(0);
+document.fonts.ready.then(() => { document.body.classList.add('fonts-ready'); document.getElementById('loadingIndicator').classList.add('hidden'); scalePhone(); });
+setTimeout(() => { document.body.classList.add('fonts-ready'); document.getElementById('loadingIndicator').classList.add('hidden'); scalePhone(); }, 3000);
 </script>
 </body>
 </html>
