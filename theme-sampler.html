@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LittleLegacy — Theme Sampler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500&family=Baloo+2:wght@400;600;700&family=DM+Sans:wght@400;500&family=Source+Serif+4:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  /* === RESET & BASE === */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    height: 100vh; overflow: hidden; background: #111114;
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    color: #e0e0e0; opacity: 0; transition: opacity 0.4s ease;
+    display: flex; flex-direction: column;
+  }
+  body.fonts-ready { opacity: 1; }
+
+  /* === PAGE LAYOUT === */
+  .sampler-header { text-align: center; padding: 16px 24px 6px; }
+  .sampler-title { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; font-weight: 400; color: #fff; letter-spacing: 0.02em; margin-bottom: 2px; }
+  .sampler-tagline { font-family: 'Cormorant Garamond', serif; font-size: 13px; font-style: italic; color: #777; margin-bottom: 6px; }
+  .sampler-subtitle { font-size: 10px; color: #555; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; }
+  .sampler-grid { display: flex; justify-content: center; align-items: flex-start; padding: 8px 16px 0; gap: 14px; flex: 1; min-height: 0; }
+  .theme-card-wrapper { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 0; }
+  .phone-sizer { overflow: hidden; position: relative; }
+  .phone-sizer .phone-frame { transform-origin: top left; }
+  .theme-label { text-align: center; margin-top: 6px; }
+  .theme-label-name { display: block; font-size: 12px; font-weight: 600; color: #ccc; margin-bottom: 1px; }
+  .theme-label-fonts { display: block; font-size: 9px; color: #666; margin-bottom: 4px; }
+  .expand-btn { padding: 4px 12px; min-height: 28px; border-radius: 14px; border: 1px solid #333; background: transparent; color: #999; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
+  .expand-btn:hover { border-color: #666; color: #fff; background: #222; }
+  .sampler-footer { text-align: center; padding: 4px 24px 10px; }
+  .sampler-footer p { font-size: 10px; color: #444; }
+
+  /* === THEME TOKENS === */
+  [data-theme="nursery"] {
+    --bg: #FFFAF6; --surface: #F8E8E0; --surface-alt: #F0DDD4;
+    --accent: #D4956A; --accent-dark: #A96A3F; --accent-text: #fff;
+    --tag-bg: rgba(181,196,177,0.3); --tag-text: #4A6B47;
+    --charcoal: #2C2825; --muted: #9B8A7A; --border: #E8D5C8;
+    --prompt-bg: #FDF0E8; --prompt-text: #6B5040;
+    --font-h: 'Quicksand', sans-serif; --font-b: 'Nunito', sans-serif;
+    --fab-sh: 0 4px 20px rgba(212,149,106,0.4);
+  }
+  [data-theme="minimalist"] {
+    --bg: #FAFAFA; --surface: #F0F0F0; --surface-alt: #E8E8E8;
+    --accent: #2A8A8A; --accent-dark: #1A6060; --accent-text: #fff;
+    --tag-bg: transparent; --tag-text: #888;
+    --charcoal: #111; --muted: #999; --border: #DDD;
+    --prompt-bg: transparent; --prompt-text: #888;
+    --font-h: 'Plus Jakarta Sans', sans-serif; --font-b: 'Inter', sans-serif;
+    --fab-sh: 0 4px 20px rgba(42,138,138,0.3);
+  }
+  [data-theme="storybook"] {
+    --bg: #F4EEFA; --surface: #E8DFF4; --surface-alt: #DDD2ED;
+    --accent: #9B6DC4; --accent-dark: #7048A0; --accent-text: #fff;
+    --tag-bg: rgba(245,200,120,0.35); --tag-text: #7A5800;
+    --charcoal: #2A1F3D; --muted: #8878A0; --border: #D0C4E4;
+    --prompt-bg: #FFF6DD; --prompt-text: #6B5000;
+    --font-h: 'Baloo 2', cursive; --font-b: 'DM Sans', sans-serif;
+    --fab-sh: 0 4px 20px rgba(155,109,196,0.4);
+  }
+  [data-theme="heritage"] {
+    --bg: #F9F4EC; --surface: #F0E8D8; --surface-alt: #E8DCC8;
+    --accent: #B8700F; --accent-dark: #7A4A08; --accent-text: #fff;
+    --tag-bg: transparent; --tag-text: #8B7355;
+    --charcoal: #1E1A14; --muted: #8B7355; --border: #D4C5A8;
+    --prompt-bg: transparent; --prompt-text: #8B7355;
+    --font-h: 'Cormorant Garamond', Georgia, serif; --font-b: 'Source Serif 4', Georgia, serif;
+    --fab-sh: 0 4px 20px rgba(184,112,15,0.35);
+  }
+  [data-theme="natureschool"] {
+    --bg: #F6F3EB; --surface: #ECE6D8; --surface-alt: #E2DACB;
+    --accent: #C4622D; --accent-dark: #8F3E10; --accent-text: #fff;
+    --tag-bg: rgba(90,115,80,0.15); --tag-text: #3A5530;
+    --charcoal: #2B2318; --muted: #7A6A52; --border: #D8CCAC;
+    --prompt-bg: #F0E8D8; --prompt-text: #5A3A18;
+    --font-h: 'Nunito', sans-serif; --font-b: 'DM Sans', sans-serif;
+    --fab-sh: 0 4px 20px rgba(196,98,45,0.35);
+  }
+
+  /* === PHONE FRAME & CHROME === */
+  .phone-frame { width: 375px; height: 812px; background: var(--bg); border-radius: 44px; box-shadow: 0 0 0 2px #2a2a2e, 0 20px 60px rgba(0,0,0,0.45); position: relative; overflow: hidden; flex-shrink: 0; cursor: pointer; }
+  .status-bar { height: 54px; padding: 14px 28px 0; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 100; background: var(--bg); }
+  .status-time { font-family: var(--font-h); font-size: 15px; font-weight: 600; color: var(--charcoal); }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 16px; }
+  .dynamic-island { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 34px; background: #000; border-radius: 20px; z-index: 200; }
+  .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background: var(--charcoal); border-radius: 3px; opacity: 0.18; z-index: 200; }
+  .screen-container { height: calc(100% - 54px); position: relative; overflow: hidden; }
+  .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--bg); }
+
+  /* === APP COMPONENTS — SHARED STRUCTURE === */
+  .app-header { padding: 10px 24px 8px; display: flex; align-items: center; gap: 12px; }
+  .app-avatar {
+    width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+    background: var(--accent); display: flex; align-items: center; justify-content: center;
+    color: var(--accent-text); font-family: var(--font-h); font-size: 22px; font-weight: 700;
+  }
+  .app-name { font-family: var(--font-h); font-size: 24px; font-weight: 700; color: var(--charcoal); }
+  .app-sub { font-family: var(--font-b); font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .app-tabs { display: flex; gap: 6px; padding: 0 24px 10px; }
+  .app-tab {
+    padding: 7px 18px; border-radius: 24px; border: 2px solid transparent;
+    font-family: var(--font-h); font-size: 13px; font-weight: 600;
+    background: var(--surface); color: var(--muted); cursor: default;
+  }
+  .app-tab.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+  .app-prompt {
+    margin: 0 24px 12px; padding: 10px 16px; position: relative;
+    background: var(--prompt-bg); border-radius: 16px;
+    font-family: var(--font-b); font-size: 13px; font-style: italic; color: var(--prompt-text);
+  }
+
+  .app-list { flex: 1; overflow-y: auto; padding: 0 16px 110px; }
+  .app-list::-webkit-scrollbar { display: none; }
+  .app-date-label {
+    font-family: var(--font-h); font-size: 11px; color: var(--muted);
+    font-weight: 600; padding: 8px 8px 6px;
+  }
+  .app-card {
+    background: var(--surface); border-radius: 20px; padding: 14px 16px;
+    margin-bottom: 10px; position: relative;
+  }
+  .app-card-text {
+    font-family: var(--font-b); font-size: 14px; color: var(--charcoal);
+    line-height: 1.5; margin-bottom: 8px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .app-card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .app-card-date { font-family: var(--font-h); font-size: 10px; color: var(--muted); font-weight: 500; }
+  .app-card-tag {
+    padding: 2px 8px; border-radius: 10px; background: var(--tag-bg);
+    font-family: var(--font-h); font-size: 10px; color: var(--tag-text); font-weight: 600;
+  }
+  .app-card-bars { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+  .app-card-bars span { width: 2px; border-radius: 1px; background: var(--accent); opacity: 0.4; }
+
+  .app-fab { position: absolute; bottom: 96px; left: 50%; transform: translateX(-50%); z-index: 95; }
+  .app-fab-btn {
+    width: 64px; height: 64px; border-radius: 50%; border: none;
+    background: var(--accent); display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--fab-sh);
+  }
+  .app-fab-btn svg { width: 26px; height: 26px; stroke: #fff; fill: none; }
+
+  .app-nav {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 72px;
+    background: var(--bg); display: flex; align-items: center; justify-content: space-around;
+    padding: 0 16px; z-index: 90;
+  }
+  .app-nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 10px; }
+  .app-nav-item svg { width: 22px; height: 22px; stroke: var(--muted); }
+  .app-nav-item span { font-family: var(--font-h); font-size: 9px; color: var(--muted); font-weight: 600; }
+  .app-nav-item.active svg { stroke: var(--accent); }
+  .app-nav-item.active span { color: var(--accent); }
+
+  /* ============================================================
+     NURSERY OVERRIDES — Scrapbook warmth
+     Rounded everything, soft shadows, washi tape, floating pill nav,
+     speech-bubble prompt, slight card rotations
+     ============================================================ */
+  [data-theme="nursery"] .app-avatar {
+    background: linear-gradient(135deg, #D4956A, #E8B898);
+    box-shadow: 0 3px 12px rgba(212,149,106,0.3);
+  }
+  [data-theme="nursery"] .app-card { box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  [data-theme="nursery"] .app-card:nth-child(2) { transform: rotate(-0.5deg); }
+  [data-theme="nursery"] .app-card:nth-child(4) { transform: rotate(0.3deg); }
+  /* Washi tape accents */
+  [data-theme="nursery"] .app-card:nth-child(2)::before {
+    content: ''; position: absolute; top: -3px; right: 20px;
+    width: 32px; height: 14px; background: rgba(181,196,177,0.5); border-radius: 0 0 4px 4px;
+  }
+  [data-theme="nursery"] .app-card:nth-child(4)::before {
+    content: ''; position: absolute; top: -3px; left: 18px;
+    width: 28px; height: 12px; background: rgba(212,180,190,0.45); border-radius: 0 0 3px 3px;
+  }
+  /* Speech-bubble prompt */
+  [data-theme="nursery"] .app-prompt { border-radius: 18px 18px 18px 4px; }
+  [data-theme="nursery"] .app-prompt::after {
+    content: ''; position: absolute; bottom: -6px; left: 16px;
+    width: 12px; height: 12px; background: var(--prompt-bg);
+    border-radius: 0 0 0 8px; clip-path: polygon(0 0, 100% 0, 0 100%);
+  }
+  /* Floating pill nav */
+  [data-theme="nursery"] .app-nav {
+    bottom: 12px; left: 20px; right: 20px; height: 60px;
+    background: var(--surface); border-radius: 30px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  [data-theme="nursery"] .app-fab-btn {
+    background: linear-gradient(135deg, #D4956A, #C8845A);
+    box-shadow: 0 4px 20px rgba(212,149,106,0.4), 0 0 0 6px rgba(212,149,106,0.1);
+  }
+  [data-theme="nursery"] .app-date-label::before {
+    content: ''; display: inline-block; width: 6px; height: 6px;
+    background: var(--accent); border-radius: 50%; opacity: 0.5; margin-right: 6px; vertical-align: 1px;
+  }
+
+  /* ============================================================
+     MINIMALIST OVERRIDES — Editorial restraint
+     No card backgrounds, hairline separators, huge name,
+     left-border prompt, offset FAB, text-only nav, hidden tags
+     ============================================================ */
+  [data-theme="minimalist"] .app-name { font-size: 36px; letter-spacing: -0.03em; line-height: 1; }
+  [data-theme="minimalist"] .app-avatar { width: 36px; height: 36px; font-size: 16px; background: #E0E0E0; color: #888; }
+  [data-theme="minimalist"] .app-sub { letter-spacing: 0.06em; text-transform: uppercase; }
+  /* Underline tabs */
+  [data-theme="minimalist"] .app-tabs { gap: 24px; border-bottom: 1px solid #E0E0E0; padding-bottom: 0; }
+  [data-theme="minimalist"] .app-tab { padding: 0 0 10px; border-radius: 0; background: none; color: #BBB; border: none; }
+  [data-theme="minimalist"] .app-tab.active { background: none; color: #111; box-shadow: none; border-bottom: 2px solid var(--accent); }
+  /* Left-border prompt */
+  [data-theme="minimalist"] .app-prompt {
+    background: none; border-radius: 0; padding: 0 0 0 12px;
+    margin: 14px 24px 12px; border-left: 2px solid #DDD;
+  }
+  /* No-card entries — text rows with hairline separators */
+  [data-theme="minimalist"] .app-card {
+    background: none; border-radius: 0; padding: 16px 0; margin-bottom: 0;
+    border-bottom: 1px solid #EDEDED;
+  }
+  [data-theme="minimalist"] .app-card-tag { display: none; }
+  [data-theme="minimalist"] .app-card-date { letter-spacing: 0.1em; text-transform: uppercase; }
+  [data-theme="minimalist"] .app-date-label { text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
+  /* Small offset FAB */
+  [data-theme="minimalist"] .app-fab { bottom: 76px; left: auto; right: 24px; transform: none; }
+  [data-theme="minimalist"] .app-fab-btn { width: 52px; height: 52px; }
+  [data-theme="minimalist"] .app-fab-btn svg { width: 22px; height: 22px; }
+  /* Text-only nav */
+  [data-theme="minimalist"] .app-nav { height: 68px; border-top: 1px solid #EDEDED; padding: 0 28px; }
+  [data-theme="minimalist"] .app-nav-item svg { display: none; }
+  [data-theme="minimalist"] .app-nav-item span { font-size: 11px; font-weight: 500; letter-spacing: 0.02em; }
+  [data-theme="minimalist"] .app-nav-item { padding: 8px 4px; }
+
+  /* ============================================================
+     STORYBOOK OVERRIDES — Whimsical magic
+     Star accents, sparkle name, banner prompt, icons-in-circles nav,
+     dashed spinning FAB ring, scalloped card borders
+     ============================================================ */
+  [data-theme="storybook"] .app-avatar {
+    background: linear-gradient(135deg, #B88ADF, #8B60C4);
+    box-shadow: 0 3px 12px rgba(155,109,196,0.3);
+  }
+  [data-theme="storybook"] .app-name::after { content: ' \2728'; font-size: 14px; }
+  /* Star accents on cards */
+  [data-theme="storybook"] .app-card { border: 1.5px solid var(--border); }
+  [data-theme="storybook"] .app-card::after {
+    content: '\2728'; position: absolute; top: 6px; right: 14px;
+    font-size: 10px; opacity: 0.5; pointer-events: none;
+  }
+  [data-theme="storybook"] .app-card:nth-child(3)::after { content: '\2B50'; right: 22px; }
+  /* Banner/ribbon prompt */
+  [data-theme="storybook"] .app-prompt { text-align: center; border-radius: 4px; }
+  [data-theme="storybook"] .app-prompt::before,
+  [data-theme="storybook"] .app-prompt::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 16px;
+    background: var(--prompt-bg);
+  }
+  [data-theme="storybook"] .app-prompt::before { left: -6px; clip-path: polygon(100% 0, 100% 100%, 0 50%); }
+  [data-theme="storybook"] .app-prompt::after { right: -6px; clip-path: polygon(0 0, 0 100%, 100% 50%); }
+  [data-theme="storybook"] .app-date-label::before { content: '\2728 '; }
+  /* Dashed FAB ring */
+  [data-theme="storybook"] .app-fab-btn {
+    background: linear-gradient(135deg, #B88ADF, #8B60C4); position: relative;
+  }
+  [data-theme="storybook"] .app-fab::after {
+    content: ''; position: absolute; inset: -6px;
+    border: 2px dashed rgba(155,109,196,0.25); border-radius: 50%;
+    animation: sto-spin 12s linear infinite; pointer-events: none;
+  }
+  @keyframes sto-spin { to { transform: rotate(360deg); } }
+  /* Icons-in-circles nav */
+  [data-theme="storybook"] .app-nav { height: 80px; align-items: flex-start; padding-top: 10px; }
+  [data-theme="storybook"] .app-nav-item svg {
+    width: 20px; height: 20px; padding: 10px; box-sizing: content-box;
+    background: var(--surface); border-radius: 14px;
+  }
+  [data-theme="storybook"] .app-nav-item.active svg { background: var(--accent); stroke: #fff; }
+  [data-theme="storybook"] .app-nav-item span { font-size: 9px; }
+
+  /* ============================================================
+     HERITAGE OVERRIDES — Elegant literary
+     Centered header, ornamental dividers instead of card bg,
+     decorative quote prompt, serif nav, wax-seal FAB, drop cap hint
+     ============================================================ */
+  [data-theme="heritage"] .app-header { flex-direction: column; gap: 4px; text-align: center; }
+  [data-theme="heritage"] .app-header-info { text-align: center; }
+  [data-theme="heritage"] .app-avatar {
+    width: 42px; height: 42px;
+    background: radial-gradient(circle at 40% 35%, #D4922A, #8F5518);
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+  }
+  [data-theme="heritage"] .app-name { font-size: 32px; }
+  [data-theme="heritage"] .app-sub { font-style: italic; }
+  /* Centered underline tabs */
+  [data-theme="heritage"] .app-tabs { gap: 20px; justify-content: center; }
+  [data-theme="heritage"] .app-tab {
+    padding: 4px 2px 8px; border-radius: 0; background: none;
+    color: var(--muted); font-size: 12px; border: none;
+  }
+  [data-theme="heritage"] .app-tab.active { background: none; color: var(--charcoal); box-shadow: none; border-bottom: 1.5px solid var(--accent); }
+  /* Decorative quote prompt */
+  [data-theme="heritage"] .app-prompt {
+    text-align: center; background: none; font-family: var(--font-h);
+    font-size: 16px; padding: 10px 32px;
+  }
+  [data-theme="heritage"] .app-prompt::before { content: '\201C\00a0'; font-size: 28px; color: #D4C5A8; line-height: 0; vertical-align: -8px; }
+  [data-theme="heritage"] .app-prompt::after { content: '\00a0\201D'; font-size: 28px; color: #D4C5A8; line-height: 0; vertical-align: -8px; }
+  /* Transparent cards with ornamental dividers */
+  [data-theme="heritage"] .app-card {
+    background: transparent; border-radius: 0; padding: 14px 0; margin-bottom: 0;
+  }
+  [data-theme="heritage"] .app-card + .app-card::before {
+    content: '\25C6\2014\2014\25C6'; display: block; text-align: center;
+    color: #D4C5A8; font-size: 10px; letter-spacing: 4px; margin-bottom: 10px;
+  }
+  [data-theme="heritage"] .app-card-text { font-size: 15px; line-height: 1.65; -webkit-line-clamp: 3; }
+  [data-theme="heritage"] .app-card-tag { background: none; font-style: italic; font-weight: 400; }
+  [data-theme="heritage"] .app-card-bars span { background: #D4C5A8; }
+  [data-theme="heritage"] .app-date-label {
+    text-align: center; letter-spacing: 0.15em; text-transform: uppercase; font-size: 10px;
+  }
+  /* Wax-seal FAB */
+  [data-theme="heritage"] .app-fab-btn {
+    width: 60px; height: 60px; position: relative;
+    background: radial-gradient(circle at 40% 35%, #D4922A, #8F5518);
+  }
+  [data-theme="heritage"] .app-fab-btn::after {
+    content: ''; position: absolute; inset: 6px; border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.2); pointer-events: none;
+  }
+  /* Serif nav */
+  [data-theme="heritage"] .app-nav { border-top: 1px solid #E8DCC8; height: 76px; }
+  [data-theme="heritage"] .app-nav-item svg { stroke-width: 1.5; stroke: #B8A888; }
+  [data-theme="heritage"] .app-nav-item span {
+    font-family: 'Cormorant Garamond', serif; letter-spacing: 0.08em; text-transform: uppercase; color: #B8A888;
+  }
+
+  /* ============================================================
+     NATURE OVERRIDES — Field journal
+     Timeline dots, left-border cards, stamp-style dates,
+     leaf-prefix tags, torn-edge prompt, organic FAB
+     ============================================================ */
+  [data-theme="natureschool"] .app-avatar {
+    background: linear-gradient(135deg, #C4622D, #E08040);
+    box-shadow: 0 2px 8px rgba(196,98,45,0.25); position: relative;
+  }
+  [data-theme="natureschool"] .app-avatar::after {
+    content: '\1F33F'; position: absolute; bottom: -2px; right: -4px; font-size: 14px;
+  }
+  [data-theme="natureschool"] .app-tab { border-radius: 16px; font-size: 12px; padding: 6px 14px; }
+  /* Left-border torn-edge prompt */
+  [data-theme="natureschool"] .app-prompt {
+    border-radius: 0 10px 10px 0; border-left: 3px solid var(--accent);
+    clip-path: polygon(0 0, 100% 2%, 98% 100%, 0 98%);
+  }
+  [data-theme="natureschool"] .app-prompt::before { content: '\1F33F  '; font-style: normal; }
+  /* Stamp-style date labels */
+  [data-theme="natureschool"] .app-date-label {
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent);
+  }
+  [data-theme="natureschool"] .app-date-label::before {
+    content: ''; display: inline-block; width: 6px; height: 6px;
+    background: var(--accent); border-radius: 50%; margin-right: 6px; vertical-align: 1px;
+  }
+  /* Timeline dots on cards */
+  [data-theme="natureschool"] .app-list { padding-left: 38px; }
+  [data-theme="natureschool"] .app-card { border-radius: 14px; }
+  [data-theme="natureschool"] .app-card::before {
+    content: ''; position: absolute; left: -22px; top: 16px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--accent);
+  }
+  [data-theme="natureschool"] .app-card::after {
+    content: ''; position: absolute; left: -18px; top: 28px;
+    width: 2px; bottom: -12px; background: #D8CCAC; pointer-events: none;
+  }
+  [data-theme="natureschool"] .app-card:last-child::after { display: none; }
+  [data-theme="natureschool"] .app-card-date {
+    font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  [data-theme="natureschool"] .app-card-tag::before { content: '\1F33F  '; font-size: 8px; }
+  /* Organic FAB */
+  [data-theme="natureschool"] .app-fab-btn {
+    background: linear-gradient(135deg, #C4622D, #A04E1E);
+    border: 3px solid rgba(255,255,255,0.2);
+  }
+  /* Top-accent nav */
+  [data-theme="natureschool"] .app-nav { position: relative; }
+  [data-theme="natureschool"] .app-nav::before {
+    content: ''; position: absolute; top: -1px; left: 20px; right: 20px;
+    height: 1px; background: #D8CCAC;
+  }
+
+  /* === EXPAND MODAL === */
+  .expand-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(16px); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+  .expand-modal[data-active="true"] { display: flex; }
+  .modal-top-bar { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  .modal-close-btn { padding: 8px 18px; min-height: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08); color: #fff; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s ease; }
+  .modal-close-btn:hover { background: rgba(255,255,255,0.15); }
+  .modal-phone-container { flex-shrink: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  .modal-phone-container .phone-frame { cursor: default; pointer-events: none; transform-origin: center center; }
+  .modal-label { text-align: center; flex-shrink: 0; }
+  .modal-theme-name { display: block; font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+  .modal-theme-fonts { display: block; font-size: 12px; color: #777; }
+  .modal-nav-hint { font-size: 11px; color: #444; flex-shrink: 0; }
+
+  /* === ACCESSIBILITY === */
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; } }
+  .loading-indicator { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #111114; z-index: 10000; transition: opacity 0.4s ease; }
+  .loading-indicator.hidden { opacity: 0; pointer-events: none; }
+  .loading-text { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: #555; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="loading-indicator" id="loadingIndicator"><span class="loading-text">Loading fonts...</span></div>
+
+<header class="sampler-header">
+  <h1 class="sampler-title">LittleLegacy</h1>
+  <p class="sampler-tagline">You'll never forget the little things.</p>
+  <p class="sampler-subtitle">Theme Sampler &mdash; 5 Distinctive UI Directions</p>
+</header>
+
+<div class="sampler-grid" id="samplerGrid"></div>
+
+<footer class="sampler-footer">
+  <p>Click to expand &middot; &larr; &rarr; to browse &middot; Esc to close</p>
+</footer>
+
+<div class="expand-modal" id="expandModal" role="dialog" aria-modal="true">
+  <div class="modal-top-bar"><button class="modal-close-btn" id="modalClose">&#10005; Close</button></div>
+  <div class="modal-phone-container" id="modalPhoneContainer"></div>
+  <div class="modal-label"><span class="modal-theme-name" id="modalThemeName"></span><span class="modal-theme-fonts" id="modalThemeFonts"></span></div>
+  <div class="modal-nav-hint">&larr; &rarr; browse &middot; Esc close</div>
+</div>
+
+<script>
+const themes = [
+  { key:'nursery', name:'Soft & Warm Nursery', fonts:'Quicksand / Nunito' },
+  { key:'minimalist', name:'Modern Minimalist', fonts:'Plus Jakarta Sans / Inter' },
+  { key:'storybook', name:'Whimsical Storybook', fonts:'Baloo 2 / DM Sans' },
+  { key:'heritage', name:'Heritage Keepsake', fonts:'Cormorant Garamond / Source Serif' },
+  { key:'natureschool', name:'Nature School', fonts:'Nunito / DM Sans' }
+];
+
+const svg = {
+  signal:'<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 13h2v4H1zM5 9h2v8H5zM9 6h2v11H9zM13 2h2v15h-2z"/></svg>',
+  wifi:'<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 7c4.4-4.5 11.6-4.5 16 0M4 10.2c2.8-2.8 7.2-2.8 10 0M7 13.4c1.7-1.7 3.3-1.7 4 0"/><circle cx="9" cy="16" r="1" fill="currentColor" stroke="none"/></svg>',
+  batt:'<svg viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="1"><rect x="0.5" y="0.5" width="20" height="13" rx="3"/><rect x="2" y="2" width="14" height="9.5" rx="1.5" fill="currentColor" stroke="none"/><path d="M22 5v4.5a2 2 0 0 0 0-4.5z" fill="currentColor" stroke="none"/></svg>',
+  mic:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="14" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  add:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>',
+  gear:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  heart:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
+};
+
+const entries = [
+  { text:'Put his shoes on the wrong feet and waddled like a penguin for 10 minutes. He was cracking up the whole time.', date:'Feb 18', tags:['humor'], bars:[6,12,8,14,5] },
+  { text:'Said "I love you mommy" completely unprompted for the first time. I almost cried right there in the kitchen.', date:'Feb 15', tags:['first','milestone'], bars:[8,10,14,7,11] },
+  { text:'Fell asleep holding my hand during story time. I sat there for 20 minutes not wanting to move.', date:'Feb 8', tags:['bedtime'], bars:[5,9,7,12,8] }
+];
+
+const bars = b => b.map(h=>`<span style="height:${h}px"></span>`).join('');
+
+function phoneChrome(themeKey) {
+  return `<div class="phone-frame" data-theme="${themeKey}"><div class="dynamic-island"></div>
+    <div class="status-bar"><span class="status-time">9:41</span><div class="status-icons">${svg.signal}${svg.wifi}${svg.batt}</div></div>
+    <div class="screen-container"><div class="screen">`;
+}
+const phoneEnd = `</div></div><div class="home-indicator"></div></div>`;
+
+/* ===== SINGLE SHARED BUILDER ===== */
+function buildPhone(themeKey) {
+  const cards = entries.map(e => `
+    <div class="app-card">
+      <div class="app-card-text">${e.text}</div>
+      <div class="app-card-meta">
+        <span class="app-card-date">${e.date}</span>
+        ${e.tags.map(t=>`<span class="app-card-tag">${t}</span>`).join('')}
+        <div class="app-card-bars">${bars(e.bars)}</div>
+      </div>
+    </div>`).join('');
+
+  return phoneChrome(themeKey) + `
+    <div class="app-header">
+      <div class="app-avatar"><span>L</span></div>
+      <div class="app-header-info">
+        <div class="app-name">Liam</div>
+        <div class="app-sub">23 memories</div>
+      </div>
+    </div>
+    <div class="app-tabs">
+      <button class="app-tab active">Liam</button>
+      <button class="app-tab">Emma</button>
+      <button class="app-tab">+ Add</button>
+    </div>
+    <div class="app-prompt">What made you laugh today?</div>
+    <div class="app-list">
+      <div class="app-date-label">This Week</div>
+      ${cards}
+    </div>
+    <div class="app-fab"><button class="app-fab-btn">${svg.mic}</button></div>
+    <div class="app-nav">
+      <div class="app-nav-item active">${svg.home}<span>Home</span></div>
+      <div class="app-nav-item">${svg.search}<span>Search</span></div>
+      <div class="app-nav-item">${svg.add}<span>Family</span></div>
+      <div class="app-nav-item">${svg.gear}<span>Settings</span></div>
+    </div>` + phoneEnd;
+}
+
+function renderGrid() {
+  document.getElementById('samplerGrid').innerHTML = themes.map(t => `
+    <div class="theme-card-wrapper" id="theme-${t.key}">
+      <div class="phone-sizer">${buildPhone(t.key)}</div>
+      <div class="theme-label">
+        <span class="theme-label-name">${t.name}</span>
+        <span class="theme-label-fonts">${t.fonts}</span>
+        <button class="expand-btn" data-theme="${t.key}">Expand &#x2197;</button>
+      </div>
+    </div>`).join('');
+}
+
+/* === MODAL === */
+let currentIdx = -1;
+function openModal(key) {
+  const i = themes.findIndex(t=>t.key===key); if(i===-1) return;
+  currentIdx = i;
+  const m = document.getElementById('expandModal');
+  document.getElementById('modalPhoneContainer').innerHTML = buildPhone(key);
+  document.getElementById('modalThemeName').textContent = themes[i].name;
+  document.getElementById('modalThemeFonts').textContent = themes[i].fonts;
+  m.setAttribute('data-active','true');
+  document.body.style.overflow = 'hidden';
+  scaleModalPhone();
+  setTimeout(()=>document.getElementById('modalClose').focus(),50);
+}
+function closeModal() { document.getElementById('expandModal').removeAttribute('data-active'); document.body.style.overflow=''; currentIdx=-1; }
+function navModal(d) { if(currentIdx===-1) return; let n=currentIdx+d; if(n<0) n=themes.length-1; if(n>=themes.length) n=0; openModal(themes[n].key); }
+function scaleModalPhone() {
+  const p=document.querySelector('#modalPhoneContainer .phone-frame'); if(!p) return;
+  const s=Math.min((window.innerHeight-150)/812,1);
+  p.style.transform=`scale(${s})`; p.style.marginTop=`-${812*(1-s)/2}px`; p.style.marginBottom=`-${812*(1-s)/2}px`;
+}
+
+document.getElementById('modalClose').addEventListener('click',closeModal);
+document.getElementById('expandModal').addEventListener('click',function(e){if(e.target===this) closeModal();});
+document.addEventListener('keydown',function(e){if(currentIdx===-1) return; if(e.key==='Escape') closeModal(); if(e.key==='ArrowLeft') navModal(-1); if(e.key==='ArrowRight') navModal(1);});
+document.getElementById('samplerGrid').addEventListener('click',function(e){
+  const b=e.target.closest('.expand-btn'); if(b){openModal(b.dataset.theme);return;}
+  const f=e.target.closest('.phone-frame'); if(f) openModal(f.dataset.theme);
+});
+
+/* === SCALING === */
+function scaleGrid() {
+  const sizers=document.querySelectorAll('#samplerGrid .phone-sizer'); if(!sizers.length) return;
+  const aw=window.innerWidth-32-(14*(themes.length-1)), cw=aw/themes.length, sx=cw/375;
+  const hh=document.querySelector('.sampler-header').offsetHeight;
+  const ah=window.innerHeight-hh-76-36, sy=ah/812;
+  const s=Math.min(sx,sy,1), sw=Math.floor(375*s), sh=Math.floor(812*s);
+  sizers.forEach(z=>{const p=z.querySelector('.phone-frame');if(!p)return; z.style.width=sw+'px'; z.style.height=sh+'px'; z.style.borderRadius=Math.floor(44*s)+'px'; p.style.transform=`scale(${s})`;});
+}
+window.addEventListener('resize',()=>{scaleGrid();if(currentIdx!==-1)scaleModalPhone();});
+
+renderGrid();
+document.fonts.ready.then(()=>{document.body.classList.add('fonts-ready');document.getElementById('loadingIndicator').classList.add('hidden');scaleGrid();});
+setTimeout(()=>{document.body.classList.add('fonts-ready');document.getElementById('loadingIndicator').classList.add('hidden');scaleGrid();},3000);
+</script>
+</body>
+</html>

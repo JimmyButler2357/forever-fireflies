@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LittleLegacy — UI Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --surface: #F1EDE8;
+    --clay: #B8845C;
+    --clay-dark: #8B5E3C;
+    --sage: #8BA88E;
+    --sage-light: #8BA88E22;
+    --charcoal: #2C2825;
+    --warmgray: #7A726A;
+    --rose: #C47070;
+    --font-heading: 'Plus Jakarta Sans', sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    background: #E8E4DF;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-body);
+    background-image:
+      radial-gradient(ellipse at 20% 50%, #B8845C11 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, #8BA88E11 0%, transparent 50%);
+  }
+
+  .mockup-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform-origin: center center;
+  }
+
+  .page-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    color: var(--charcoal);
+    margin-bottom: 6px;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    font-style: italic;
+  }
+
+  .page-subtitle {
+    font-family: var(--font-heading);
+    font-size: 12px;
+    color: var(--warmgray);
+    margin-bottom: 32px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* Phone Frame */
+  .phone-frame {
+    width: 375px;
+    height: 812px;
+    background: var(--bg);
+    border-radius: 44px;
+    box-shadow:
+      0 0 0 2px #D4CFC8,
+      0 20px 60px rgba(44, 40, 37, 0.18),
+      0 8px 24px rgba(44, 40, 37, 0.08),
+      inset 0 0 0 1px rgba(255,255,255,0.5);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    height: 54px;
+    padding: 14px 28px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 100;
+    background: var(--bg);
+  }
+
+  .status-time {
+    font-family: var(--font-heading);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--charcoal);
+  }
+
+  .status-icons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .status-icons svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Dynamic Island */
+  .dynamic-island {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 34px;
+    background: var(--charcoal);
+    border-radius: 20px;
+    z-index: 200;
+  }
+
+  /* Screen Container */
+  .screen-container {
+    height: calc(100% - 54px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    transform: translateY(8px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+  }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 84px;
+    background: var(--bg);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    padding: 10px 16px 0;
+    z-index: 90;
+  }
+
+  .bottom-nav::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to top, var(--bg), transparent);
+    pointer-events: none;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .nav-item svg {
+    width: 24px;
+    height: 24px;
+    stroke: var(--warmgray);
+    transition: stroke 0.2s ease;
+  }
+
+  .nav-item span {
+    font-family: var(--font-heading);
+    font-size: 10px;
+    color: var(--warmgray);
+    font-weight: 500;
+    transition: color 0.2s ease;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-item.active svg { stroke: var(--clay); }
+  .nav-item.active span { color: var(--clay); font-weight: 600; }
+
+  /* ========== HOME SCREEN ========== */
+  .home-screen {
+    background: var(--bg);
+  }
+
+  .home-header {
+    padding: 8px 24px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .child-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--clay), var(--clay-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(184, 132, 92, 0.25);
+  }
+
+  .child-avatar span {
+    color: white;
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  .home-header-text {
+    flex: 1;
+  }
+
+  .child-name {
+    font-family: var(--font-display);
+    font-size: 28px;
+    color: var(--charcoal);
+    font-weight: 400;
+    line-height: 1.1;
+  }
+
+  .child-name-suffix {
+    font-family: var(--font-heading);
+    font-size: 13px;
+    color: var(--warmgray);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  .memory-count {
+    font-family: var(--font-heading);
+    font-size: 12px;
+    color: var(--warmgray);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+
+  /* Child Tabs */
+  .child-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 24px 14px;
+  }
+
+  .child-tab {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: none;
+    font-family: var(--font-heading);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    background: var(--surface);
+    color: var(--warmgray);
+  }
+
+  .child-tab.active {
+    background: var(--clay);
+    color: white;
+  }
+
+  /* Entries List */
+  .entries-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px 100px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .entries-list::-webkit-scrollbar { display: none; }
+
+  .date-group {
+    margin-bottom: 4px;
+  }
+
+  .date-label {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    color: var(--warmgray);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    padding: 12px 8px 8px;
+  }
+
+  .entry-card {
+    background: var(--surface);
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .entry-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(44, 40, 37, 0.06);
+  }
+
+  .entry-card:active {
+    transform: scale(0.985);
+  }
+
+  .entry-text {
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--charcoal);
+    line-height: 1.5;
+    margin-bottom: 10px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .entry-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .entry-date {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    color: var(--warmgray);
+    font-weight: 500;
+  }
+
+  .entry-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--warmgray);
+    opacity: 0.5;
+  }
+
+  .tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    background: var(--sage-light);
+    font-family: var(--font-heading);
+    font-size: 11px;
+    color: var(--sage);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .entry-audio-indicator {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .audio-bar {
+    width: 2px;
+    border-radius: 1px;
+    background: var(--clay);
+    opacity: 0.5;
+  }
+
+  /* Record Button */
+  .record-btn-container {
+    position: absolute;
+    bottom: 92px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 95;
+  }
+
+  .record-btn {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--clay), var(--clay-dark));
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 4px 20px rgba(184, 132, 92, 0.35),
+      0 2px 8px rgba(184, 132, 92, 0.2);
+    transition: all 0.2s ease;
+    animation: pulse-gentle 3s ease-in-out infinite;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .record-btn:hover {
+    transform: scale(1.05);
+    box-shadow:
+      0 6px 28px rgba(184, 132, 92, 0.4),
+      0 3px 12px rgba(184, 132, 92, 0.25);
+  }
+
+  .record-btn:active {
+    transform: scale(0.95);
+    animation: none;
+  }
+
+  .record-btn svg {
+    width: 28px;
+    height: 28px;
+    stroke: white;
+    fill: none;
+  }
+
+  @keyframes pulse-gentle {
+    0%, 100% { box-shadow: 0 4px 20px rgba(184, 132, 92, 0.35), 0 2px 8px rgba(184, 132, 92, 0.2); }
+    50% { box-shadow: 0 4px 28px rgba(184, 132, 92, 0.5), 0 2px 12px rgba(184, 132, 92, 0.3), 0 0 0 8px rgba(184, 132, 92, 0.08); }
+  }
+
+  /* ========== RECORDING SCREEN ========== */
+  .recording-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(250, 248, 245, 0.97);
+    z-index: 150;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .recording-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .recording-prompt {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--warmgray);
+    font-style: italic;
+    margin-bottom: 60px;
+    text-align: center;
+    padding: 0 40px;
+    line-height: 1.4;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.5s ease 0.2s;
+  }
+
+  .recording-overlay.active .recording-prompt {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .waveform-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 80px;
+    margin-bottom: 24px;
+  }
+
+  .wave-bar {
+    width: 3.5px;
+    border-radius: 2px;
+    background: var(--clay);
+    transition: height 0.1s ease;
+  }
+
+  .recording-overlay.active .wave-bar {
+    animation: wave-pulse 0.8s ease-in-out infinite alternate;
+  }
+
+  @keyframes wave-pulse {
+    0% { height: 8px; opacity: 0.35; }
+    100% { height: var(--max-h, 50px); opacity: 0.85; }
+  }
+
+  .recording-timer {
+    font-family: var(--font-heading);
+    font-size: 36px;
+    font-weight: 300;
+    color: var(--charcoal);
+    margin-bottom: 60px;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stop-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--rose);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(196, 112, 112, 0.3);
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .stop-btn:hover { transform: scale(1.05); }
+  .stop-btn:active { transform: scale(0.95); }
+
+  .stop-btn-inner {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: white;
+  }
+
+  .cancel-link {
+    margin-top: 20px;
+    font-family: var(--font-heading);
+    font-size: 14px;
+    color: var(--warmgray);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 16px;
+    transition: color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .cancel-link:hover { color: var(--charcoal); }
+
+  /* ========== DETAIL VIEW ========== */
+  .detail-screen {
+    background: var(--bg);
+    transform: translateX(100%);
+    opacity: 1;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+  }
+
+  .detail-screen.active {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  .detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px 12px;
+  }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 4px;
+    font-family: var(--font-heading);
+    font-size: 15px;
+    color: var(--clay);
+    font-weight: 500;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .back-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--clay);
+  }
+
+  .fav-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.2s ease;
+  }
+
+  .fav-btn:active { transform: scale(1.2); }
+
+  .fav-btn svg {
+    width: 24px;
+    height: 24px;
+    stroke: var(--rose);
+    transition: fill 0.3s ease;
+  }
+
+  .fav-btn.favorited svg {
+    fill: var(--rose);
+  }
+
+  .detail-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 24px 40px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .detail-date {
+    font-family: var(--font-heading);
+    font-size: 13px;
+    color: var(--warmgray);
+    font-weight: 500;
+    margin-bottom: 16px;
+    letter-spacing: 0.02em;
+  }
+
+  .detail-transcript {
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.65;
+    color: var(--charcoal);
+    margin-bottom: 28px;
+    letter-spacing: -0.01em;
+  }
+
+  .play-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: none;
+    border-radius: 16px;
+    padding: 14px 20px;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s ease;
+    margin-bottom: 28px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .play-btn:hover { background: #EBE6E0; }
+  .play-btn:active { transform: scale(0.98); }
+
+  .play-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--clay), var(--clay-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .play-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke: none;
+    fill: white;
+    margin-left: 2px;
+  }
+
+  .play-info {
+    text-align: left;
+  }
+
+  .play-label {
+    font-family: var(--font-heading);
+    font-size: 14px;
+    color: var(--charcoal);
+    font-weight: 600;
+  }
+
+  .play-duration {
+    font-family: var(--font-heading);
+    font-size: 12px;
+    color: var(--warmgray);
+    font-weight: 400;
+    margin-top: 1px;
+  }
+
+  .play-waveform {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .play-waveform span {
+    width: 2.5px;
+    border-radius: 1px;
+    background: var(--clay);
+    opacity: 0.35;
+  }
+
+  .detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .detail-tag {
+    padding: 5px 14px;
+    border-radius: 12px;
+    font-family: var(--font-heading);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .detail-tag.child {
+    background: rgba(184, 132, 92, 0.12);
+    color: var(--clay-dark);
+  }
+
+  .detail-tag.topic {
+    background: var(--sage-light);
+    color: var(--sage);
+    font-weight: 600;
+  }
+
+  .detail-recorded-by {
+    font-family: var(--font-heading);
+    font-size: 12px;
+    color: var(--warmgray);
+    margin-top: 16px;
+    opacity: 0.7;
+  }
+
+  /* ========== SEARCH SCREEN ========== */
+  .search-screen {
+    background: var(--bg);
+  }
+
+  .search-header {
+    padding: 8px 20px 0;
+  }
+
+  .search-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    color: var(--charcoal);
+    font-weight: 400;
+    margin-bottom: 16px;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+  }
+
+  .search-bar svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--warmgray);
+    flex-shrink: 0;
+  }
+
+  .search-bar input {
+    flex: 1;
+    border: none;
+    background: none;
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--charcoal);
+    outline: none;
+  }
+
+  .search-bar input::placeholder {
+    color: var(--warmgray);
+    opacity: 0.7;
+  }
+
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    padding: 0 0 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filter-row::-webkit-scrollbar { display: none; }
+
+  .filter-pill {
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1.5px solid #D4CFC8;
+    background: transparent;
+    font-family: var(--font-heading);
+    font-size: 12px;
+    color: var(--warmgray);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .filter-pill.active {
+    border-color: var(--clay);
+    background: rgba(184, 132, 92, 0.08);
+    color: var(--clay-dark);
+  }
+
+  .filter-pill svg {
+    width: 12px;
+    height: 12px;
+    display: inline;
+    vertical-align: -1px;
+    margin-right: 4px;
+    stroke: currentColor;
+  }
+
+  .search-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px 100px;
+  }
+
+  .search-section-title {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    color: var(--warmgray);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    padding: 8px 0 12px;
+  }
+
+  .search-result {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .search-result:active { transform: scale(0.98); }
+
+  .search-result-child {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    color: var(--clay);
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  .search-result-text {
+    font-size: 14px;
+    color: var(--charcoal);
+    line-height: 1.45;
+    margin-bottom: 6px;
+  }
+
+  .search-result-text mark {
+    background: rgba(184, 132, 92, 0.18);
+    color: var(--charcoal);
+    border-radius: 2px;
+    padding: 0 2px;
+  }
+
+  .search-result-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* On This Day */
+  .on-this-day {
+    background: linear-gradient(135deg, rgba(184, 132, 92, 0.08), rgba(139, 168, 142, 0.08));
+    border-radius: 18px;
+    padding: 18px 18px;
+    margin: 0 0 20px;
+  }
+
+  .otd-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .otd-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(184, 132, 92, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .otd-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--clay);
+  }
+
+  .otd-label {
+    font-family: var(--font-heading);
+    font-size: 12px;
+    color: var(--clay-dark);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .otd-text {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--charcoal);
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .otd-meta {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    color: var(--warmgray);
+    margin-top: 8px;
+  }
+
+  /* Footer Label */
+  .mockup-footer {
+    margin-top: 32px;
+    text-align: center;
+  }
+
+  .mockup-footer span {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    color: var(--warmgray);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
+  /* Entry animations */
+  .entry-card {
+    opacity: 0;
+    transform: translateY(12px);
+    animation: fadeInUp 0.4s ease forwards;
+  }
+
+  .entry-card:nth-child(1) { animation-delay: 0.05s; }
+  .entry-card:nth-child(2) { animation-delay: 0.1s; }
+  .entry-card:nth-child(3) { animation-delay: 0.15s; }
+  .entry-card:nth-child(4) { animation-delay: 0.2s; }
+  .entry-card:nth-child(5) { animation-delay: 0.25s; }
+
+  @keyframes fadeInUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Home indicator */
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: var(--charcoal);
+    border-radius: 3px;
+    opacity: 0.18;
+    z-index: 200;
+  }
+</style>
+</head>
+<body>
+
+<div class="mockup-wrapper" id="mockupWrapper">
+<div class="page-title">LittleLegacy</div>
+<div class="page-subtitle">Interactive UI Mockup</div>
+
+<div class="phone-frame">
+  <div class="dynamic-island"></div>
+
+  <div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg viewBox="0 0 18 18" fill="none" stroke="#2C2825" stroke-width="1.5"><path d="M1 13h2v4H1zM5 9h2v8H5zM9 6h2v11H9zM13 2h2v15h-2z"/></svg>
+      <svg viewBox="0 0 18 18" fill="none" stroke="#2C2825" stroke-width="1.5"><path d="M1 7c4.4-4.5 11.6-4.5 16 0M4 10.2c2.8-2.8 7.2-2.8 10 0M7 13.4c1.7-1.7 3.3-1.7 4 0"/><circle cx="9" cy="16" r="1" fill="#2C2825" stroke="none"/></svg>
+      <svg viewBox="0 0 24 14" fill="none" stroke="#2C2825" stroke-width="1"><rect x="0.5" y="0.5" width="20" height="13" rx="3"/><rect x="2" y="2" width="14" height="9.5" rx="1.5" fill="#2C2825" stroke="none"/><path d="M22 5v4.5a2 2 0 0 0 0-4.5z" fill="#2C2825" stroke="none"/></svg>
+    </div>
+  </div>
+
+  <div class="screen-container">
+
+    <!-- HOME SCREEN -->
+    <div class="screen home-screen active" id="homeScreen">
+      <div class="home-header">
+        <div class="child-avatar"><span>L</span></div>
+        <div class="home-header-text">
+          <div class="child-name">Liam<span class="child-name-suffix">'s Book</span></div>
+          <div class="memory-count">23 memories</div>
+        </div>
+      </div>
+
+      <div class="child-tabs">
+        <button class="child-tab active">Liam</button>
+        <button class="child-tab">Emma</button>
+        <button class="child-tab">+ Add</button>
+      </div>
+
+      <div class="entries-list">
+        <div class="date-group">
+          <div class="date-label">This Week</div>
+
+          <div class="entry-card" onclick="showDetail(0)">
+            <div class="entry-text">Put his shoes on the wrong feet and waddled like a penguin for 10 minutes. He was cracking up the whole time.</div>
+            <div class="entry-meta">
+              <span class="entry-date">Feb 18</span>
+              <span class="entry-dot"></span>
+              <span class="tag-pill">humor</span>
+              <div class="entry-audio-indicator">
+                <span class="audio-bar" style="height: 6px;"></span>
+                <span class="audio-bar" style="height: 12px;"></span>
+                <span class="audio-bar" style="height: 8px;"></span>
+                <span class="audio-bar" style="height: 14px;"></span>
+                <span class="audio-bar" style="height: 5px;"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="entry-card" onclick="showDetail(1)">
+            <div class="entry-text">Said "I love you mommy" completely unprompted for the first time. I almost cried right there in the kitchen.</div>
+            <div class="entry-meta">
+              <span class="entry-date">Feb 15</span>
+              <span class="entry-dot"></span>
+              <span class="tag-pill">first</span>
+              <span class="tag-pill">milestone</span>
+              <div class="entry-audio-indicator">
+                <span class="audio-bar" style="height: 8px;"></span>
+                <span class="audio-bar" style="height: 10px;"></span>
+                <span class="audio-bar" style="height: 14px;"></span>
+                <span class="audio-bar" style="height: 7px;"></span>
+                <span class="audio-bar" style="height: 11px;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="date-group">
+          <div class="date-label">Last Week</div>
+
+          <div class="entry-card" onclick="showDetail(2)">
+            <div class="entry-text">Built a tower of blocks taller than himself, then knocked it over laughing so hard he fell over too.</div>
+            <div class="entry-meta">
+              <span class="entry-date">Feb 12</span>
+              <span class="entry-dot"></span>
+              <span class="tag-pill">humor</span>
+              <div class="entry-audio-indicator">
+                <span class="audio-bar" style="height: 10px;"></span>
+                <span class="audio-bar" style="height: 6px;"></span>
+                <span class="audio-bar" style="height: 12px;"></span>
+                <span class="audio-bar" style="height: 9px;"></span>
+                <span class="audio-bar" style="height: 5px;"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="entry-card" onclick="showDetail(3)">
+            <div class="entry-text">Tried broccoli and actually asked for more. I nearly fell off my chair. This is the kid who screamed at a pea last month.</div>
+            <div class="entry-meta">
+              <span class="entry-date">Feb 10</span>
+              <span class="entry-dot"></span>
+              <span class="tag-pill">food</span>
+              <div class="entry-audio-indicator">
+                <span class="audio-bar" style="height: 7px;"></span>
+                <span class="audio-bar" style="height: 13px;"></span>
+                <span class="audio-bar" style="height: 9px;"></span>
+                <span class="audio-bar" style="height: 11px;"></span>
+                <span class="audio-bar" style="height: 6px;"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="entry-card" onclick="showDetail(4)">
+            <div class="entry-text">Fell asleep holding my hand during story time. I sat there for 20 minutes not wanting to move.</div>
+            <div class="entry-meta">
+              <span class="entry-date">Feb 8</span>
+              <span class="entry-dot"></span>
+              <span class="tag-pill">bedtime</span>
+              <div class="entry-audio-indicator">
+                <span class="audio-bar" style="height: 5px;"></span>
+                <span class="audio-bar" style="height: 9px;"></span>
+                <span class="audio-bar" style="height: 7px;"></span>
+                <span class="audio-bar" style="height: 12px;"></span>
+                <span class="audio-bar" style="height: 8px;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="record-btn-container">
+        <button class="record-btn" onclick="showRecording()">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="1" width="6" height="14" rx="3"/>
+            <path d="M5 10a7 7 0 0 0 14 0"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="bottom-nav">
+        <button class="nav-item active" onclick="showScreen('home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>Home</span>
+        </button>
+        <button class="nav-item" onclick="showScreen('search')">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span>Search</span>
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+            <line x1="12" y1="11" x2="12" y2="17"/>
+            <line x1="9" y1="14" x2="15" y2="14"/>
+          </svg>
+          <span>Add Child</span>
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span>Settings</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SEARCH SCREEN -->
+    <div class="screen search-screen" id="searchScreen">
+      <div class="search-header">
+        <div class="search-title">Search</div>
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" placeholder="Search memories..." id="searchInput">
+        </div>
+        <div class="filter-row">
+          <button class="filter-pill active">All Children</button>
+          <button class="filter-pill">Liam</button>
+          <button class="filter-pill">Emma</button>
+          <button class="filter-pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Date Range
+          </button>
+          <button class="filter-pill">Milestones</button>
+          <button class="filter-pill">Humor</button>
+        </div>
+      </div>
+
+      <div class="search-body">
+        <div class="on-this-day">
+          <div class="otd-header">
+            <div class="otd-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <span class="otd-label">On This Day — 1 Year Ago</span>
+          </div>
+          <div class="otd-text">"Liam took his very first steps today. Three wobbly steps from the coffee table to the couch."</div>
+          <div class="otd-meta">Feb 21, 2025 · milestone, first</div>
+        </div>
+
+        <div class="search-section-title">Recent Memories</div>
+
+        <div class="search-result">
+          <div class="search-result-child">Liam</div>
+          <div class="search-result-text">Put his shoes on the wrong feet and waddled like a <mark>penguin</mark> for 10 minutes</div>
+          <div class="entry-meta">
+            <span class="entry-date">Feb 18</span>
+            <span class="entry-dot"></span>
+            <span class="tag-pill">humor</span>
+          </div>
+        </div>
+
+        <div class="search-result">
+          <div class="search-result-child">Emma</div>
+          <div class="search-result-text">Drew a picture of our family and gave everyone <mark>wings</mark> because "we can fly when we're together"</div>
+          <div class="entry-meta">
+            <span class="entry-date">Feb 17</span>
+            <span class="entry-dot"></span>
+            <span class="tag-pill">creativity</span>
+          </div>
+        </div>
+
+        <div class="search-result">
+          <div class="search-result-child">Liam</div>
+          <div class="search-result-text">Said "I love you mommy" completely unprompted for the first time</div>
+          <div class="entry-meta">
+            <span class="entry-date">Feb 15</span>
+            <span class="entry-dot"></span>
+            <span class="tag-pill">first</span>
+            <span class="tag-pill">milestone</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-nav">
+        <button class="nav-item" onclick="showScreen('home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>Home</span>
+        </button>
+        <button class="nav-item active" onclick="showScreen('search')">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span>Search</span>
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+            <line x1="12" y1="11" x2="12" y2="17"/>
+            <line x1="9" y1="14" x2="15" y2="14"/>
+          </svg>
+          <span>Add Child</span>
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          <span>Settings</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- DETAIL SCREEN -->
+    <div class="screen detail-screen" id="detailScreen">
+      <div class="detail-header">
+        <button class="back-btn" onclick="hideDetail()">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </button>
+        <button class="fav-btn" onclick="toggleFav(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="detail-body">
+        <div class="detail-date" id="detailDate"></div>
+        <div class="detail-transcript" id="detailTranscript"></div>
+
+        <button class="play-btn">
+          <div class="play-icon">
+            <svg viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          </div>
+          <div class="play-info">
+            <div class="play-label">Play recording</div>
+            <div class="play-duration" id="detailDuration">0:34</div>
+          </div>
+          <div class="play-waveform">
+            <span style="height:8px"></span><span style="height:14px"></span><span style="height:10px"></span><span style="height:18px"></span><span style="height:12px"></span><span style="height:16px"></span><span style="height:8px"></span><span style="height:20px"></span><span style="height:14px"></span><span style="height:10px"></span><span style="height:16px"></span><span style="height:12px"></span><span style="height:8px"></span><span style="height:14px"></span><span style="height:18px"></span><span style="height:10px"></span><span style="height:6px"></span><span style="height:12px"></span><span style="height:16px"></span><span style="height:8px"></span>
+          </div>
+        </button>
+
+        <div class="detail-tags" id="detailTags"></div>
+        <div class="detail-recorded-by">Recorded by Mom</div>
+      </div>
+    </div>
+
+    <!-- RECORDING OVERLAY -->
+    <div class="recording-overlay" id="recordingOverlay">
+      <div class="recording-prompt">What made you smile today?</div>
+
+      <div class="waveform-container" id="waveform"></div>
+
+      <div class="recording-timer" id="recordingTimer">0:00</div>
+
+      <button class="stop-btn" onclick="hideRecording()">
+        <div class="stop-btn-inner"></div>
+      </button>
+
+      <button class="cancel-link" onclick="hideRecording()">Cancel</button>
+    </div>
+
+  </div>
+
+  <div class="home-indicator"></div>
+</div>
+
+<div class="mockup-footer">
+  <span>LittleLegacy · UI Concept</span>
+</div>
+</div><!-- end mockup-wrapper -->
+
+<script>
+  // Entry data
+  const entries = [
+    {
+      text: 'Put his shoes on the wrong feet and waddled like a penguin for 10 minutes. He was cracking up the whole time and kept saying "look mommy, I\'m a penguin!" Every time he fell over he just laughed harder.',
+      date: 'February 18, 2026 · 9:12 PM',
+      tags: ['humor'],
+      duration: '0:34',
+      child: 'Liam'
+    },
+    {
+      text: 'Said "I love you mommy" completely unprompted for the first time. I was just standing in the kitchen making dinner and he walked up, hugged my leg, and said it. I almost cried right there. He\'s said it back before when we say it first, but this was all him.',
+      date: 'February 15, 2026 · 8:47 PM',
+      tags: ['first', 'milestone'],
+      duration: '0:52',
+      child: 'Liam'
+    },
+    {
+      text: 'Built a tower of blocks taller than himself, then knocked it over laughing so hard he fell over too. He spent a solid 20 minutes rebuilding just to knock it over again. Pure joy.',
+      date: 'February 12, 2026 · 9:03 PM',
+      tags: ['humor'],
+      duration: '0:28',
+      child: 'Liam'
+    },
+    {
+      text: 'Tried broccoli and actually asked for more. I nearly fell off my chair. This is the kid who screamed at a pea last month. I don\'t know what changed but I\'m not asking questions, just putting more broccoli on the plate.',
+      date: 'February 10, 2026 · 8:55 PM',
+      tags: ['food'],
+      duration: '0:41',
+      child: 'Liam'
+    },
+    {
+      text: 'Fell asleep holding my hand during story time. I sat there for 20 minutes not wanting to move. His little fingers wrapped around mine. These are the moments I never want to forget.',
+      date: 'February 8, 2026 · 9:22 PM',
+      tags: ['bedtime'],
+      duration: '0:37',
+      child: 'Liam'
+    }
+  ];
+
+  // Screen navigation
+  function showScreen(screen) {
+    document.getElementById('homeScreen').classList.toggle('active', screen === 'home');
+    document.getElementById('searchScreen').classList.toggle('active', screen === 'search');
+    document.getElementById('detailScreen').classList.remove('active');
+  }
+
+  // Detail view
+  function showDetail(index) {
+    const entry = entries[index];
+    document.getElementById('detailDate').textContent = entry.date;
+    document.getElementById('detailTranscript').textContent = entry.text;
+    document.getElementById('detailDuration').textContent = entry.duration;
+
+    const tagsContainer = document.getElementById('detailTags');
+    tagsContainer.innerHTML = `<span class="detail-tag child">${entry.child}</span>` +
+      entry.tags.map(t => `<span class="detail-tag topic">${t}</span>`).join('');
+
+    document.getElementById('detailScreen').classList.add('active');
+  }
+
+  function hideDetail() {
+    document.getElementById('detailScreen').classList.remove('active');
+  }
+
+  // Favorite toggle
+  function toggleFav(btn) {
+    btn.classList.toggle('favorited');
+  }
+
+  // Recording overlay
+  let timerInterval;
+  let seconds = 0;
+
+  function showRecording() {
+    const overlay = document.getElementById('recordingOverlay');
+    overlay.classList.add('active');
+    seconds = 0;
+    updateTimer();
+    timerInterval = setInterval(() => {
+      seconds++;
+      updateTimer();
+    }, 1000);
+  }
+
+  function hideRecording() {
+    const overlay = document.getElementById('recordingOverlay');
+    overlay.classList.remove('active');
+    clearInterval(timerInterval);
+  }
+
+  function updateTimer() {
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    document.getElementById('recordingTimer').textContent =
+      `${min}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  // Generate waveform bars
+  function createWaveform() {
+    const container = document.getElementById('waveform');
+    const barCount = 32;
+    for (let i = 0; i < barCount; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'wave-bar';
+      const maxH = 12 + Math.random() * 50;
+      bar.style.setProperty('--max-h', maxH + 'px');
+      bar.style.height = '8px';
+      bar.style.animationDelay = (Math.random() * 0.6) + 's';
+      bar.style.animationDuration = (0.5 + Math.random() * 0.5) + 's';
+      container.appendChild(bar);
+    }
+  }
+
+  createWaveform();
+
+  // Auto-scale to fit viewport
+  function scaleToFit() {
+    const wrapper = document.getElementById('mockupWrapper');
+    const contentW = 375 + 40; // phone width + some margin
+    const contentH = 812 + 120; // phone height + title/footer
+    const scaleX = window.innerWidth / contentW;
+    const scaleY = window.innerHeight / contentH;
+    const scale = Math.min(scaleX, scaleY, 1.2); // cap at 1.2x so it doesn't get huge on big monitors
+    wrapper.style.transform = `scale(${scale})`;
+  }
+
+  scaleToFit();
+  window.addEventListener('resize', scaleToFit);
+
+  // Prompts rotation for recording screen
+  const prompts = [
+    "What made you smile today?",
+    "Any little moment worth remembering?",
+    "What did they say that surprised you?",
+    "How was bedtime tonight?",
+    "What's something new they tried today?"
+  ];
+</script>
+</body>
+</html>
