@@ -1,0 +1,2640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Core Memories — Design Tuner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ═══ Reset ═══ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #FAF8F5;
+      --card: #FFFFFF;
+      --border: #EDE8E3;
+      --tag: #F3EDE8;
+      --tag-warmer: #EBE6E0;
+      --heart-empty: #D9D2CB;
+      --card-pressed: #F7F4F1;
+      --text: #2C2420;
+      --text-soft: #8C7E74;
+      --text-muted: #B5AAA0;
+      --accent: #E8724A;
+      --accent-soft: rgba(232,114,74,0.08);
+      --accent-shadow: rgba(232,114,74,0.35);
+      --accent-pressed: #D4613B;
+      --serif: 'Merriweather', serif;
+      --noise-bg: none;
+      --voice-style: normal;
+      --border-style: solid;
+      --border-width: 1px;
+      --texture-opacity: 0;
+      --recording-backdrop: rgba(244,226,214,0.45);
+
+      /* Shape */
+      --radius-card: 14px;
+      --radius-input: 12px;
+      --radius-tab: 20px;
+      --radius-tag: 8px;
+      --radius-mic: 30px;
+
+      /* Shadows */
+      --shadow-card: 0 1px 3px rgba(44,36,32,0.06);
+      --shadow-prompt: 0 2px 12px rgba(44,36,32,0.06);
+      --shadow-mic: 0 4px 20px var(--accent-shadow);
+
+      /* Spacing */
+      --card-pad-v: 12px;
+      --card-pad-h: 14px;
+      --card-gap: 10px;
+      --tab-pad-v: 5px;
+      --tab-pad-h: 12px;
+      --tab-gap: 6px;
+      --tag-pad-v: 2px;
+      --tag-pad-h: 7px;
+      --transcript-pad: 14px;
+      --prompt-pad-v: 14px;
+      --prompt-pad-h: 16px;
+      --screen-pad: 16px;
+      --section-gap: 10px;
+    }
+
+    /* ═══ Layout — Full viewport, phones left, controls right ═══ */
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      background: #F0EDE8;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 24px;
+      flex-shrink: 0;
+      border-bottom: 1px solid #E5E0DA;
+    }
+
+    .header h1 { font-size: 16px; font-weight: 800; }
+    .header h1 span { color: #B5AAA0; font-weight: 400; }
+
+    .btn-reset {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      background: none;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-reset:hover { background: rgba(232,114,74,0.08); }
+
+    .tuner-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .mockups-area {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      overflow: auto;
+      min-width: 0;
+    }
+
+    .controls-panel {
+      width: 370px;
+      flex-shrink: 0;
+      background: white;
+      border-left: 1px solid #E5E0DA;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .controls-panel::-webkit-scrollbar { width: 5px; }
+    .controls-panel::-webkit-scrollbar-track { background: transparent; }
+    .controls-panel::-webkit-scrollbar-thumb { background: #D9D2CB; border-radius: 3px; }
+
+    /* ═══ Phone Frame ═══ */
+    .mockup-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .mockup-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #B5AAA0;
+    }
+
+    .phone {
+      width: 280px;
+      height: 560px;
+      background: var(--bg);
+      border-radius: 32px;
+      border: 1px solid #D6D0CA;
+      box-shadow: 0 8px 32px rgba(44,36,32,0.08), 0 2px 8px rgba(44,36,32,0.04);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ═══ Shared Mockup Styles ═══ */
+    .mock-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 44px 16px 10px;
+    }
+
+    .mock-topbar-left { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .mock-topbar-right { display: flex; align-items: center; gap: 14px; }
+    .mock-icon { font-size: 16px; color: var(--text); cursor: default; line-height: 1; }
+    .mock-icon-muted { font-size: 16px; color: var(--text-muted); cursor: default; line-height: 1; }
+
+    /* ═══ Cards — longhand border for reliable dotted/dashed ═══ */
+    .mock-card,
+    .detail-transcript,
+    .detail-audio,
+    .mock-prompt-card {
+      border-width: var(--border-width);
+      border-style: var(--border-style);
+      border-color: var(--border);
+    }
+
+    .mock-card {
+      background: var(--card);
+      border-radius: var(--radius-card);
+      padding: var(--card-pad-v) var(--card-pad-h);
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Texture overlays */
+    .mock-card .texture-overlay,
+    .detail-transcript .texture-overlay,
+    .mock-prompt-card .texture-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background-image: var(--noise-bg);
+      background-repeat: repeat;
+      background-size: 150px;
+      opacity: var(--texture-opacity);
+      pointer-events: none;
+      mix-blend-mode: multiply;
+    }
+
+    /* Tag pill texture overlay */
+    .mock-tag.style-textured .tag-texture {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background-image: var(--noise-bg);
+      background-repeat: repeat;
+      background-size: 150px;
+      opacity: 0.12;
+      pointer-events: none;
+      mix-blend-mode: multiply;
+    }
+
+    /* Border variants */
+    .border-gradient .mock-card,
+    .border-gradient .detail-transcript,
+    .border-gradient .detail-audio,
+    .border-gradient .mock-prompt-card {
+      border-color: transparent;
+      box-shadow: var(--shadow-card), 0 0 0 0.5px rgba(44,36,32,0.06);
+    }
+
+    .border-none .mock-card,
+    .border-none .detail-transcript,
+    .border-none .detail-audio,
+    .border-none .mock-prompt-card {
+      border-color: transparent;
+    }
+
+    /* ═══ Search Pill ═══ */
+    .mock-search-pill {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--tag);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-tab);
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    /* ═══ Child Tabs ═══ */
+    .mock-tabs { display: flex; gap: var(--tab-gap); padding: 0 var(--screen-pad) 10px; }
+
+    .mock-tab {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: var(--tab-pad-v) var(--tab-pad-h);
+      border-radius: var(--radius-tab);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: default;
+    }
+
+    .mock-tab.active { border: 2px solid; }
+    .mock-tab.inactive {
+      background: var(--card);
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      box-shadow: var(--shadow-card);
+    }
+
+    .mock-tab-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    /* ═══ Entry Card Elements ═══ */
+    .card-header { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .card-child-name { font-size: 11px; font-weight: 700; }
+    .card-meta-text { font-size: 10px; font-weight: 600; color: var(--text-muted); }
+    .card-heart { margin-left: auto; font-size: 13px; color: var(--accent); }
+
+    .card-preview {
+      font-family: var(--serif);
+      font-style: var(--voice-style);
+      font-size: 13.5px;
+      font-weight: 400;
+      line-height: 1.55;
+      color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .card-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+
+    /* ═══ Tag Pills ═══ */
+    .mock-tag {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-soft);
+      padding: var(--tag-pad-v) var(--tag-pad-h);
+      border-radius: var(--radius-tag);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mock-tag.style-flat { background: var(--tag); }
+    .mock-tag.style-textured { background: var(--tag); }
+    .mock-tag.style-warmer { background: var(--tag-warmer); }
+    .mock-tag.style-outlined {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      padding: 1px 6px;
+    }
+
+    .mock-tag-add { font-size: 10px; font-weight: 500; color: var(--accent); cursor: default; }
+
+    /* ═══ Home Screen ═══ */
+    .home-title {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+
+    .home-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 var(--screen-pad);
+      padding-bottom: 80px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--card-gap);
+    }
+    .home-scroll::-webkit-scrollbar { width: 0; }
+
+    .home-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 20px;
+      gap: 6px;
+    }
+
+    .home-bottom-fade {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      background: linear-gradient(transparent, var(--bg));
+      pointer-events: none;
+    }
+
+    .mock-mic-btn {
+      width: 60px;
+      height: 60px;
+      border-radius: var(--radius-mic);
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 22px;
+      box-shadow: var(--shadow-mic);
+      position: relative;
+      z-index: 2;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .home-write-link {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-soft);
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ═══ Entry Detail ═══ */
+    .detail-content {
+      flex: 1;
+      overflow: hidden;
+      padding: 0 var(--screen-pad);
+      display: flex;
+      flex-direction: column;
+      gap: var(--section-gap);
+    }
+
+    .detail-date-row { display: flex; align-items: baseline; gap: 6px; }
+    .detail-date { font-size: 13px; font-weight: 700; color: var(--text); }
+    .detail-time { font-size: 10px; font-weight: 600; color: var(--text-muted); }
+
+    .detail-child-row { display: flex; align-items: center; gap: 8px; }
+
+    .detail-child-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: var(--radius-tab);
+      border: 2px solid;
+    }
+    .detail-child-pill .card-dot { width: 7px; height: 7px; }
+    .detail-child-name { font-size: 12px; font-weight: 700; }
+    .detail-age { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+
+    .detail-tags-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+    .detail-transcript {
+      background: var(--card);
+      border-radius: var(--radius-card);
+      padding: var(--transcript-pad);
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .detail-transcript-text {
+      font-family: var(--serif);
+      font-style: var(--voice-style);
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.65;
+      color: var(--text);
+    }
+
+    .detail-saved {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-align: right;
+      margin-top: 10px;
+    }
+
+    .detail-audio {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--card);
+      border-radius: var(--radius-input);
+      padding: 8px 12px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .audio-play {
+      width: 32px;
+      height: 32px;
+      border-radius: 16px;
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .audio-play-icon {
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 5px 0 5px 9px;
+      border-color: transparent transparent transparent var(--accent);
+      margin-left: 2px;
+    }
+
+    .audio-track {
+      flex: 1;
+      height: 3px;
+      background: #EDE8E3;
+      border-radius: 2px;
+      position: relative;
+    }
+    .audio-progress {
+      position: absolute;
+      left: 0; top: 0;
+      height: 100%;
+      width: 35%;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+    .audio-duration {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* ═══ Recording Screen ═══ */
+    .recording-backdrop {
+      position: absolute;
+      inset: 0;
+      background: var(--recording-backdrop);
+      pointer-events: none;
+    }
+
+    .recording-content {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 0 var(--screen-pad);
+      gap: var(--section-gap);
+      overflow: hidden;
+    }
+
+    .recording-close {
+      font-size: 18px;
+      color: var(--text);
+      padding: 44px 16px 10px;
+      cursor: default;
+      position: relative;
+    }
+
+    .mock-prompt-card {
+      background: var(--card);
+      border-radius: var(--radius-input);
+      padding: var(--prompt-pad-v) var(--prompt-pad-h);
+      box-shadow: var(--shadow-prompt);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .prompt-text {
+      font-family: var(--serif);
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: var(--text-soft);
+    }
+
+    .recording-bottom {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 28px;
+      gap: 10px;
+    }
+
+    .recording-hint {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .mock-mic-btn-large {
+      width: 84px;
+      height: 84px;
+      border-radius: var(--radius-mic);
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 32px;
+      box-shadow: var(--shadow-mic);
+      border: none;
+      transition: all 0.2s;
+    }
+
+    /* ═══════════════════════════════════════════
+       CONTROLS PANEL
+       ═══════════════════════════════════════════ */
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #B5AAA0;
+      margin-bottom: 14px;
+    }
+
+    .section-divider {
+      height: 1px;
+      background: #EDE8E3;
+      margin: 18px 0;
+    }
+
+    .control-group { margin-bottom: 14px; }
+
+    .control-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-soft);
+      margin-bottom: 6px;
+    }
+
+    /* ── Dropdown ── */
+    .ctrl-select {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      background: #FAF8F5;
+      border: 1px solid #EDE8E3;
+      border-radius: 8px;
+      padding: 7px 10px;
+      cursor: pointer;
+      width: 100%;
+    }
+    .ctrl-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    /* ── Toggle ── */
+    .toggle-row { display: flex; align-items: center; gap: 8px; }
+
+    .toggle {
+      width: 36px;
+      height: 20px;
+      background: #D9D2CB;
+      border-radius: 10px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: none;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .toggle.active { background: var(--accent); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .toggle.active::after { transform: translateX(16px); }
+
+    .toggle-desc { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+
+    /* ── Color Swatch Grid (theme colors) ── */
+    .color-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.15s, border-color 0.15s;
+      box-shadow: 0 1px 3px rgba(44,36,32,0.1);
+    }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.selected {
+      border-color: var(--text);
+      box-shadow: 0 0 0 2px white, 0 0 0 4px var(--text);
+    }
+
+    .color-swatch-check {
+      display: none;
+      position: absolute;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+    .color-swatch.selected .color-swatch-check { display: flex; }
+
+    .swatch-label {
+      font-size: 10px;
+      color: #B5AAA0;
+      margin-top: 5px;
+    }
+
+    /* ── Neutral Swatch Strip (bg/card — near-white colors need contrast) ── */
+    .swatch-strip {
+      background: #EDE8E3;
+      border-radius: 8px;
+      padding: 8px;
+    }
+
+    .swatch-strip .color-swatch {
+      border: 1px solid rgba(44,36,32,0.1);
+      box-shadow: none;
+    }
+    .swatch-strip .color-swatch.selected {
+      border: 2px solid var(--text);
+      box-shadow: 0 0 0 2px #EDE8E3, 0 0 0 4px var(--text);
+    }
+
+    /* Dark check for light swatches */
+    .swatch-strip .color-swatch-check {
+      color: var(--text-soft);
+      text-shadow: none;
+      font-size: 11px;
+    }
+
+    /* Reference markers under current/recommended stops */
+    .swatch-strip .color-swatch[data-marker]::after {
+      content: attr(data-marker);
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 7px;
+      font-weight: 700;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    /* ── Swatch Family Rows ── */
+    .swatch-family {
+      margin-bottom: 6px;
+    }
+    .swatch-family:last-child { margin-bottom: 0; }
+    .swatch-family-label {
+      font-size: 8px;
+      font-weight: 700;
+      color: #B5AAA0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .swatch-family-colors {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    /* ── Opacity slider ── */
+    .opacity-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .opacity-label { font-size: 10px; color: #B5AAA0; }
+    .opacity-slider { width: 100px; }
+    .opacity-value { font-size: 10px; font-weight: 500; color: #B5AAA0; font-family: 'SF Mono', monospace; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      background: linear-gradient(to right, #EDE8E3, #D9CEBD);
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(44,36,32,0.15);
+      cursor: grab;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: white;
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(44,36,32,0.15);
+      cursor: grab;
+    }
+
+    /* ── Chip Group ── */
+    .chip-group { display: flex; gap: 5px; flex-wrap: wrap; }
+
+    .chip {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 16px;
+      border: 1px solid #EDE8E3;
+      background: white;
+      color: var(--text-soft);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip:hover { border-color: #D9D2CB; }
+    .chip.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    /* ── Footer ── */
+    .controls-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+      padding-top: 14px;
+      border-top: 1px solid #EDE8E3;
+    }
+
+    .btn-export {
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      padding: 7px 18px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-export:hover { opacity: 0.85; }
+
+    /* ═══ Export Modal ═══ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(44,36,32,0.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.visible { display: flex; }
+
+    .modal-box {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 12px 40px rgba(44,36,32,0.20);
+    }
+    .modal-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+    .modal-code {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      background: #FAF8F5;
+      border: 1px solid #EDE8E3;
+      border-radius: 8px;
+      padding: 14px;
+      white-space: pre;
+      overflow-x: auto;
+      margin-bottom: 14px;
+      color: #2C2420;
+    }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn-copy {
+      font-size: 11px; font-weight: 600; color: var(--accent);
+      background: rgba(232,114,74,0.08); border: none; border-radius: 8px;
+      padding: 7px 14px; cursor: pointer;
+    }
+    .btn-close-modal {
+      font-size: 11px; font-weight: 600; color: var(--text-soft);
+      background: #F3EDE8; border: none; border-radius: 8px;
+      padding: 7px 14px; cursor: pointer;
+    }
+
+    /* ═══ Scale Labels (for sliders) ═══ */
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      font-weight: 500;
+      color: #B5AAA0;
+      margin-top: 4px;
+      padding: 0 2px;
+    }
+    .scale-label-value {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-soft);
+      margin-top: 4px;
+    }
+
+    /* ═══ Card Accent Decorations ═══ */
+    .mock-card.accent-left-bar::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 12px;
+      bottom: 12px;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background: var(--child-color, #7BAFD4);
+      z-index: 2;
+    }
+
+    .mock-card.accent-top-band::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--child-color, #7BAFD4);
+      z-index: 2;
+    }
+
+    .mock-card.accent-corner-dot::after {
+      content: '';
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--child-color, #7BAFD4);
+      z-index: 2;
+    }
+
+    .mock-card.accent-gradient-edge::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--child-color-faint, rgba(123,175,212,0.10)) 0%, transparent 30%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ═══ Mic Button Style Variants ═══ */
+    .mic-pill-label {
+      display: none;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .mic-pill-label-large {
+      display: none;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .mock-mic-btn.mic-gradient {
+      background: radial-gradient(circle at 35% 35%, var(--accent-light), var(--accent), var(--accent-pressed));
+    }
+
+    .mock-mic-btn.mic-outlined,
+    .mock-mic-btn-large.mic-outlined {
+      background: white;
+      border: 2.5px solid var(--accent);
+      color: var(--accent);
+      box-shadow: 0 2px 12px rgba(44,36,32,0.08);
+    }
+
+    .mock-mic-btn.mic-soft,
+    .mock-mic-btn-large.mic-soft {
+      background: var(--accent-soft);
+      color: var(--accent);
+      box-shadow: 0 2px 8px rgba(44,36,32,0.06);
+    }
+
+    .mock-mic-btn.mic-pill,
+    .mock-mic-btn-large.mic-pill {
+      width: auto;
+      border-radius: 9999px;
+      padding: 0 24px;
+      gap: 8px;
+    }
+
+    .mock-mic-btn.mic-pill .mic-pill-label,
+    .mock-mic-btn-large.mic-pill .mic-pill-label-large {
+      display: inline;
+    }
+
+    .mock-mic-btn-large.mic-gradient {
+      background: radial-gradient(circle at 35% 35%, var(--accent-light), var(--accent), var(--accent-pressed));
+    }
+
+    /* ═══ Card Titles ═══ */
+    .card-title {
+      display: none;
+      margin-bottom: 2px;
+      color: var(--text);
+    }
+
+    .card-title-bold .card-title {
+      display: block;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 13.5px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .card-title-serif .card-title {
+      display: block;
+      font-family: var(--serif);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .card-title-smallcaps .card-title {
+      display: block;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      font-variant: small-caps;
+      letter-spacing: 0.5px;
+      line-height: 1.3;
+    }
+
+    /* ═══ Preview Line Clamp Overrides ═══ */
+    .preview-1 .card-preview { -webkit-line-clamp: 1; }
+    .preview-2 .card-preview { -webkit-line-clamp: 2; }
+    .preview-3 .card-preview { -webkit-line-clamp: 3; }
+
+    /* ═══ Tab Style Variants ═══ */
+
+    /* --- Pills (default — current styling from base rules) --- */
+    .tabs-pills .mock-tab-dot { display: inline-block; }
+
+    /* --- Underline --- */
+    .tabs-underline .mock-tab {
+      border-radius: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding-bottom: calc(var(--tab-pad-v) + 3px);
+      border-bottom: 2.5px solid transparent !important;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .tabs-underline .mock-tab.active {
+      border-bottom-color: currentColor !important;
+    }
+    .tabs-underline .mock-tab.inactive {
+      color: var(--text-muted);
+    }
+    .tabs-underline .mock-tab-dot { display: none; }
+
+    /* --- Segmented --- */
+    .tabs-segmented {
+      background: var(--tag) !important;
+      border-radius: var(--radius-tab) !important;
+      padding: 3px !important;
+      gap: 2px !important;
+    }
+    .tabs-segmented .mock-tab {
+      flex: 1;
+      justify-content: center;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: calc(var(--radius-tab) - 2px) !important;
+      font-size: 11px;
+      transition: background 0.2s, color 0.2s;
+    }
+    .tabs-segmented .mock-tab.active {
+      background: var(--card) !important;
+      box-shadow: 0 1px 3px rgba(44,36,32,0.08) !important;
+    }
+    .tabs-segmented .mock-tab.inactive {
+      background: transparent !important;
+      color: var(--text-muted);
+    }
+    .tabs-segmented .mock-tab-dot { display: none; }
+
+    /* --- Chip --- */
+    .tabs-chip .mock-tab {
+      border-radius: 8px !important;
+      border: 1.5px solid var(--border) !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      transition: all 0.15s;
+    }
+    .tabs-chip .mock-tab.inactive {
+      color: var(--text-muted);
+    }
+    .tabs-chip .mock-tab-dot { display: inline-block; }
+
+    /* --- Text + Dot --- */
+    .tabs-text-dot .mock-tab {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      position: relative;
+      padding-bottom: calc(var(--tab-pad-v) + 10px);
+    }
+    .tabs-text-dot .mock-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .tabs-text-dot .mock-tab.inactive {
+      color: var(--text-muted);
+    }
+    .tabs-text-dot .mock-tab-dot { display: none; }
+
+    /* ═══ Reviewer Notes ═══ */
+    .notes-textarea {
+      width: 100%;
+      min-height: 80px;
+      max-height: 200px;
+      resize: vertical;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text);
+      background: #FAF8F5;
+      border: 1px solid #EDE8E3;
+      border-radius: 8px;
+      padding: 10px;
+      line-height: 1.5;
+    }
+    .notes-textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .notes-textarea::placeholder { color: #B5AAA0; }
+
+    /* ═══ Responsive ═══ */
+    @media (max-width: 1300px) {
+      .phone { width: 240px; height: 480px; }
+    }
+
+    @media (max-width: 1100px) {
+      html, body { height: auto; overflow: auto; }
+      .tuner-layout { flex-direction: column; overflow: visible; }
+      .mockups-area {
+        flex-wrap: wrap;
+        padding: 20px;
+      }
+      .controls-panel {
+        width: 100%;
+        max-width: 700px;
+        margin: 0 auto;
+        border-left: none;
+        border-top: 1px solid #E5E0DA;
+        border-radius: 0;
+      }
+      .phone { width: 300px; height: 600px; }
+    }
+
+    @media (max-width: 700px) {
+      .mockups-area { flex-direction: column; align-items: center; }
+      .phone { width: 320px; height: 620px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ Header ═══ -->
+<div class="header">
+  <h1>Core Memories <span>— Design Tuner</span></h1>
+  <button class="btn-reset" onclick="resetAll()">Reset All</button>
+</div>
+
+<div class="tuner-layout">
+
+<!-- ═══ Phone Mockups (left side) ═══ -->
+<div class="mockups-area" id="mockups">
+
+  <!-- ── HOME SCREEN ── -->
+  <div class="mockup-wrapper">
+    <div class="mockup-label">HOME</div>
+    <div class="phone" id="phone-home">
+      <div class="mock-topbar">
+        <div class="mock-topbar-left">
+          <div class="home-title">Core Memories</div>
+        </div>
+        <div class="mock-topbar-right">
+          <div class="mock-search-pill">
+            <span style="font-size:11px">&#x1F50D;</span> Search
+          </div>
+          <span class="mock-icon">&hearts;</span>
+          <span class="mock-icon-muted">&#x2699;</span>
+        </div>
+      </div>
+
+      <div class="mock-tabs tabs-pills" id="home-tabs">
+        <div class="mock-tab active" data-color="#B5AAA0" style="background:rgba(181,170,160,0.12); border-color:#B5AAA0; color:#B5AAA0;">
+          All
+        </div>
+        <div class="mock-tab inactive" data-color="#7BAFD4">
+          <span class="mock-tab-dot" style="background:#7BAFD4;"></span>
+          <span>Emma</span>
+        </div>
+        <div class="mock-tab inactive" data-color="#D4A07B">
+          <span class="mock-tab-dot" style="background:#D4A07B;"></span>
+          <span>Noah</span>
+        </div>
+      </div>
+
+      <div class="home-scroll preview-2">
+        <div class="mock-card" style="--child-color:#7BAFD4; --child-color-faint:rgba(123,175,212,0.10);">
+          <div class="texture-overlay"></div>
+          <div class="card-header">
+            <span class="card-dot" style="background:#7BAFD4;"></span>
+            <span class="card-child-name" style="color:#7BAFD4;">Emma</span>
+            <span class="card-meta-text">&middot; Sat, Feb 28 &middot; 8:42 PM</span>
+            <span class="card-heart">&hearts;</span>
+          </div>
+          <div class="card-title">Her First Full Sentence</div>
+          <div class="card-preview">Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried.</div>
+          <div class="card-tags">
+            <span class="mock-tag style-flat">first words</span>
+            <span class="mock-tag style-flat">milestone</span>
+          </div>
+        </div>
+
+        <div class="mock-card" style="--child-color:#D4A07B; --child-color-faint:rgba(212,160,123,0.10);">
+          <div class="texture-overlay"></div>
+          <div class="card-header">
+            <span class="card-dot" style="background:#D4A07B;"></span>
+            <span class="card-child-name" style="color:#D4A07B;">Noah</span>
+            <span class="card-meta-text">&middot; Fri, Feb 27 &middot; 6:15 PM</span>
+          </div>
+          <div class="card-title">The Block Tower</div>
+          <div class="card-preview">Noah built this incredible tower out of blocks and then very carefully knocked it down. He laughed so hard he fell over. Pure joy.</div>
+          <div class="card-tags">
+            <span class="mock-tag style-flat">funny</span>
+            <span class="mock-tag style-flat">play</span>
+          </div>
+        </div>
+
+        <div class="mock-card" style="--child-color:#7BAFD4; --child-color-faint:rgba(123,175,212,0.10);">
+          <div class="texture-overlay"></div>
+          <div class="card-header">
+            <span class="card-dot" style="background:#7BAFD4;"></span>
+            <span class="card-child-name" style="color:#7BAFD4;">Emma</span>
+            <span class="card-meta-text">&middot; Thu, Feb 26 &middot; 7:30 PM</span>
+            <span class="card-heart">&hearts;</span>
+          </div>
+          <div class="card-title">Where Does the Moon Go?</div>
+          <div class="card-preview">Emma asked me tonight &ldquo;Mama, where does the moon go in the morning?&rdquo; I told her it goes to sleep and she said &ldquo;just like me!&rdquo;</div>
+          <div class="card-tags">
+            <span class="mock-tag style-flat">bedtime</span>
+            <span class="mock-tag style-flat">questions</span>
+          </div>
+        </div>
+
+        <div class="mock-card" style="--child-color:#D4A07B; --child-color-faint:rgba(212,160,123,0.10);">
+          <div class="texture-overlay"></div>
+          <div class="card-header">
+            <span class="card-dot" style="background:#D4A07B;"></span>
+            <span class="card-child-name" style="color:#D4A07B;">Noah</span>
+            <span class="card-meta-text">&middot; Wed, Feb 25 &middot; 4:45 PM</span>
+          </div>
+          <div class="card-title">First Steps in the Park</div>
+          <div class="card-preview">Noah took three wobbly steps on the grass today at the park. He kept reaching for the dog and just went for it.</div>
+          <div class="card-tags">
+            <span class="mock-tag style-flat">milestone</span>
+            <span class="mock-tag style-flat">park</span>
+          </div>
+        </div>
+
+        <div class="mock-card" style="--child-color:#7BAFD4; --child-color-faint:rgba(123,175,212,0.10);">
+          <div class="texture-overlay"></div>
+          <div class="card-header">
+            <span class="card-dot" style="background:#7BAFD4;"></span>
+            <span class="card-child-name" style="color:#7BAFD4;">Emma</span>
+            <span class="card-meta-text">&middot; Tue, Feb 24 &middot; 3:20 PM</span>
+          </div>
+          <div class="card-title">The Butterfly Song</div>
+          <div class="card-preview">Emma made up a song about butterflies in the car today. Something about purple wings and dancing. She sang it three times.</div>
+          <div class="card-tags">
+            <span class="mock-tag style-flat">creative</span>
+            <span class="mock-tag style-flat">car ride</span>
+          </div>
+        </div>
+
+        <div class="mock-card" style="--child-color:#D4A07B; --child-color-faint:rgba(212,160,123,0.10);">
+          <div class="texture-overlay"></div>
+          <div class="card-header">
+            <span class="card-dot" style="background:#D4A07B;"></span>
+            <span class="card-child-name" style="color:#D4A07B;">Noah</span>
+            <span class="card-meta-text">&middot; Mon, Feb 23 &middot; 12:15 PM</span>
+          </div>
+          <div class="card-title">Sharing His Snack</div>
+          <div class="card-preview">Noah offered me a bite of his banana unprompted. He held it out and said &ldquo;mama bite.&rdquo; Sweetest thing.</div>
+          <div class="card-tags">
+            <span class="mock-tag style-flat">sharing</span>
+            <span class="mock-tag style-flat">sweet</span>
+          </div>
+        </div>
+
+        <div class="mock-card" style="--child-color:#7BAFD4; --child-color-faint:rgba(123,175,212,0.10);">
+          <div class="texture-overlay"></div>
+          <div class="card-header">
+            <span class="card-dot" style="background:#7BAFD4;"></span>
+            <span class="card-child-name" style="color:#7BAFD4;">Emma</span>
+            <span class="card-meta-text">&middot; Sun, Feb 22 &middot; 10:30 AM</span>
+          </div>
+          <div class="card-title">Painting Our Family</div>
+          <div class="card-preview">Emma painted a picture of our family today. Everyone has really long legs and tiny heads. She was so proud.</div>
+          <div class="card-tags">
+            <span class="mock-tag style-flat">art</span>
+            <span class="mock-tag style-flat">funny</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-bottom-fade"></div>
+      <div class="home-bottom">
+        <div class="mock-mic-btn">&#x1F399;<span class="mic-pill-label">Record</span></div>
+        <div class="home-write-link">&#x270E; or write instead</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ENTRY DETAIL ── -->
+  <div class="mockup-wrapper">
+    <div class="mockup-label">ENTRY DETAIL</div>
+    <div class="phone" id="phone-detail">
+      <div class="mock-topbar">
+        <div class="mock-topbar-left">
+          <span class="mock-icon">&#x2039;</span>
+        </div>
+        <div class="mock-topbar-right">
+          <span class="mock-icon" style="color:var(--accent);">&hearts;</span>
+          <span class="mock-icon-muted">&#x1F5D1;</span>
+        </div>
+      </div>
+
+      <div class="detail-content">
+        <div class="detail-date-row">
+          <span class="detail-date">Saturday, February 28</span>
+          <span class="detail-time">8:42 PM</span>
+        </div>
+
+        <div class="detail-child-row">
+          <div class="detail-child-pill" style="background:rgba(123,175,212,0.12); border-color:#7BAFD4; box-shadow:0 2px 8px rgba(123,175,212,0.18);">
+            <span class="card-dot" style="background:#7BAFD4;"></span>
+            <span class="detail-child-name" style="color:#7BAFD4;">Emma</span>
+          </div>
+          <span class="detail-age">2y 4m</span>
+        </div>
+
+        <div class="detail-tags-row">
+          <span class="mock-tag style-flat">first words</span>
+          <span class="mock-tag style-flat">milestone</span>
+          <span class="mock-tag-add">+ add</span>
+        </div>
+
+        <div class="detail-transcript">
+          <div class="texture-overlay"></div>
+          <div class="detail-transcript-text">
+            Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried. She's growing up so fast and I don't want to forget any of it.<br><br>
+            She was sitting in the living room playing with her stuffed animals when she just looked up and said it so clearly. I almost dropped my coffee.
+          </div>
+          <div class="detail-saved">All changes saved</div>
+        </div>
+
+        <div class="detail-audio">
+          <div class="audio-play">
+            <div class="audio-play-icon"></div>
+          </div>
+          <div class="audio-track">
+            <div class="audio-progress"></div>
+          </div>
+          <span class="audio-duration">1:24</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RECORDING ── -->
+  <div class="mockup-wrapper">
+    <div class="mockup-label">RECORDING</div>
+    <div class="phone" id="phone-recording">
+      <div class="recording-backdrop"></div>
+      <div class="recording-close">&times;</div>
+
+      <div class="recording-content">
+        <div class="mock-prompt-card">
+          <div class="texture-overlay"></div>
+          <div class="prompt-text">What made Emma smile today?</div>
+        </div>
+
+        <div class="mock-prompt-card">
+          <div class="texture-overlay"></div>
+          <div class="prompt-text">Tell me about bedtime tonight.</div>
+        </div>
+
+        <div class="mock-prompt-card">
+          <div class="texture-overlay"></div>
+          <div class="prompt-text">What's something funny Noah did?</div>
+        </div>
+
+        <div class="recording-bottom">
+          <div class="recording-hint">Tap to start recording</div>
+          <div class="mock-mic-btn-large">&#x1F399;<span class="mic-pill-label-large">Record</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ Controls Panel (right side) ═══ -->
+<div class="controls-panel">
+
+  <!-- ─── Quick Presets ─── -->
+  <div class="section-label">Quick Presets</div>
+
+  <div class="control-group">
+    <div class="chip-group" id="ctrl-presets">
+      <button class="chip" data-value="modern-clean" onclick="applyPreset('modern-clean')">Modern Clean</button>
+      <button class="chip" data-value="warm-journal" onclick="applyPreset('warm-journal')">Warm Journal</button>
+      <button class="chip" data-value="playful-pop" onclick="applyPreset('playful-pop')">Playful Pop</button>
+      <button class="chip" data-value="minimal-calm" onclick="applyPreset('minimal-calm')">Minimal Calm</button>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── Typography ─── -->
+  <div class="section-label">Typography</div>
+
+  <div class="control-group">
+    <div class="control-label">Serif Font</div>
+    <select class="ctrl-select" id="ctrl-font" onchange="updateFont(this.value)">
+      <option value="Georgia">Georgia (original)</option>
+      <option value="Merriweather" selected>Merriweather</option>
+      <option value="Lora">Lora</option>
+      <option value="Libre Baskerville">Libre Baskerville</option>
+      <option value="Crimson Text">Crimson Text</option>
+    </select>
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">Italic Voice</div>
+    <div class="toggle-row">
+      <button class="toggle" id="ctrl-italic" onclick="toggleItalic()"></button>
+      <span class="toggle-desc" id="italic-label">Off — normal style</span>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── Colors ─── -->
+  <div class="section-label">Colors</div>
+
+  <div class="control-group">
+    <div class="control-label">Theme Color</div>
+    <div class="color-grid" id="ctrl-theme-colors"></div>
+    <div class="swatch-label" id="theme-color-label">Coral (current)</div>
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">Background</div>
+    <div class="swatch-strip" id="bg-strip">
+      <div class="color-grid" id="ctrl-bg-colors"></div>
+    </div>
+    <div class="swatch-label" id="bg-color-label">#FAF8F5 — Current</div>
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">Card Surface</div>
+    <div class="swatch-strip" id="card-strip">
+      <div class="color-grid" id="ctrl-card-colors"></div>
+    </div>
+    <div class="swatch-label" id="card-color-label">#FFFFFF — Current</div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── Child Tabs ─── -->
+  <div class="section-label">Child Tabs</div>
+
+  <div class="control-group">
+    <div class="control-label">Tab Style</div>
+    <div class="chip-group" id="ctrl-tab-style">
+      <button class="chip selected" data-value="pills" onclick="selectTabStyle('pills')">Pills</button>
+      <button class="chip" data-value="underline" onclick="selectTabStyle('underline')">Underline</button>
+      <button class="chip" data-value="segmented" onclick="selectTabStyle('segmented')">Segmented</button>
+      <button class="chip" data-value="chip" onclick="selectTabStyle('chip')">Chip</button>
+      <button class="chip" data-value="text-dot" onclick="selectTabStyle('text-dot')">Text + Dot</button>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── Shape & Depth ─── -->
+  <div class="section-label">Shape & Depth</div>
+
+  <div class="control-group">
+    <div class="control-label">Corner Radius</div>
+    <input type="range" style="width:100%;" min="0" max="4" step="1" value="2" id="ctrl-radius" oninput="updateRadius(+this.value)">
+    <div class="scale-labels">
+      <span>Sharp</span><span>Subtle</span><span>Standard</span><span>Soft</span><span>Bubbly</span>
+    </div>
+    <div class="scale-label-value" id="radius-label">Standard — card: 14px</div>
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">Shadow Intensity</div>
+    <input type="range" style="width:100%;" min="0" max="3" step="1" value="2" id="ctrl-shadow" oninput="updateShadow(+this.value)">
+    <div class="scale-labels">
+      <span>Flat</span><span>Whisper</span><span>Standard</span><span>Raised</span>
+    </div>
+    <div class="scale-label-value" id="shadow-label">Standard</div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── Spacing ─── -->
+  <div class="section-label">Spacing</div>
+
+  <div class="control-group">
+    <div class="control-label">Density</div>
+    <div class="chip-group" id="ctrl-spacing">
+      <button class="chip" data-value="compact" onclick="selectSpacing('compact')">Compact</button>
+      <button class="chip selected" data-value="standard" onclick="selectSpacing('standard')">Standard</button>
+      <button class="chip" data-value="cozy" onclick="selectSpacing('cozy')">Cozy</button>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── Cards ─── -->
+  <div class="section-label">Cards</div>
+
+  <div class="control-group">
+    <div class="control-label">Card Titles</div>
+    <div class="chip-group" id="ctrl-card-title">
+      <button class="chip selected" data-value="none" onclick="selectCardTitle('none')">None</button>
+      <button class="chip" data-value="bold" onclick="selectCardTitle('bold')">Bold</button>
+      <button class="chip" data-value="serif" onclick="selectCardTitle('serif')">Serif</button>
+      <button class="chip" data-value="smallcaps" onclick="selectCardTitle('smallcaps')">Small Caps</button>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">Preview Length</div>
+    <div class="chip-group" id="ctrl-preview-lines">
+      <button class="chip" data-value="1" onclick="selectPreviewLines(1)">Compact</button>
+      <button class="chip selected" data-value="2" onclick="selectPreviewLines(2)">Standard</button>
+      <button class="chip" data-value="3" onclick="selectPreviewLines(3)">Full</button>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── Surface & Texture ─── -->
+  <div class="section-label">Surface & Texture</div>
+
+  <div class="control-group">
+    <div class="control-label">Paper Texture</div>
+    <div class="toggle-row">
+      <button class="toggle" id="ctrl-texture" onclick="toggleTexture()"></button>
+      <span class="toggle-desc" id="texture-label">Off — adds paper grain</span>
+    </div>
+    <div class="opacity-row" id="opacity-wrap" style="display:none;">
+      <span class="opacity-label">Intensity:</span>
+      <input type="range" class="opacity-slider" min="5" max="150" step="5" value="50" id="ctrl-opacity" oninput="updateOpacity(+this.value)">
+      <span class="opacity-value" id="opacity-value">5.0%</span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">Card Borders</div>
+    <div class="chip-group" id="ctrl-borders">
+      <button class="chip selected" data-value="solid" onclick="selectBorder('solid')">Solid</button>
+      <button class="chip" data-value="dotted" onclick="selectBorder('dotted')">Dotted</button>
+      <button class="chip" data-value="dashed" onclick="selectBorder('dashed')">Dashed</button>
+      <button class="chip" data-value="gradient" onclick="selectBorder('gradient')">Gradient</button>
+      <button class="chip" data-value="none" onclick="selectBorder('none')">None</button>
+    </div>
+    <div class="opacity-row" id="border-width-wrap">
+      <span class="opacity-label">Width:</span>
+      <input type="range" class="opacity-slider" min="5" max="30" step="5" value="10" id="ctrl-border-width" oninput="updateBorderWidth(+this.value)">
+      <span class="opacity-value" id="border-width-value">1.0px</span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">Tag Pills</div>
+    <div class="chip-group" id="ctrl-pills">
+      <button class="chip selected" data-value="flat" onclick="selectPill('flat')">Flat</button>
+      <button class="chip" data-value="textured" onclick="selectPill('textured')">Textured</button>
+      <button class="chip" data-value="warmer" onclick="selectPill('warmer')">Warmer</button>
+      <button class="chip" data-value="outlined" onclick="selectPill('outlined')">Outlined</button>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── Card Decoration ─── -->
+  <div class="section-label">Card Decoration</div>
+
+  <div class="control-group">
+    <div class="control-label">Card Accent</div>
+    <div class="chip-group" id="ctrl-card-accent">
+      <button class="chip selected" data-value="none" onclick="selectCardAccent('none')">None</button>
+      <button class="chip" data-value="left-bar" onclick="selectCardAccent('left-bar')">Left Bar</button>
+      <button class="chip" data-value="top-band" onclick="selectCardAccent('top-band')">Top Band</button>
+      <button class="chip" data-value="corner-dot" onclick="selectCardAccent('corner-dot')">Corner Dot</button>
+      <button class="chip" data-value="gradient-edge" onclick="selectCardAccent('gradient-edge')">Gradient</button>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── Buttons ─── -->
+  <div class="section-label">Buttons</div>
+
+  <div class="control-group">
+    <div class="control-label">Mic Button Style</div>
+    <div class="chip-group" id="ctrl-mic-style">
+      <button class="chip selected" data-value="solid" onclick="selectMicStyle('solid')">Solid</button>
+      <button class="chip" data-value="gradient" onclick="selectMicStyle('gradient')">Gradient</button>
+      <button class="chip" data-value="outlined" onclick="selectMicStyle('outlined')">Outlined</button>
+      <button class="chip" data-value="soft" onclick="selectMicStyle('soft')">Soft</button>
+      <button class="chip" data-value="pill" onclick="selectMicStyle('pill')">Pill</button>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ─── Reviewer Notes ─── -->
+  <div class="section-label">Reviewer Notes</div>
+
+  <div class="control-group">
+    <textarea class="notes-textarea" id="ctrl-notes" placeholder="Add your design notes here... (included in Export)" oninput="state.reviewNotes = this.value"></textarea>
+  </div>
+
+  <div class="controls-footer">
+    <button class="btn-export" onclick="showExport()">Export Values</button>
+  </div>
+</div>
+
+</div><!-- end tuner-layout -->
+
+<!-- ═══ Export Modal ═══ -->
+<div class="modal-overlay" id="export-modal">
+  <div class="modal-box">
+    <div class="modal-title">Theme Values</div>
+    <div class="modal-code" id="export-code"></div>
+    <div class="modal-actions">
+      <button class="btn-copy" onclick="copyExport()">Copy</button>
+      <button class="btn-close-modal" onclick="closeExport()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ Noise Texture Generation ═══
+function generateNoiseTexture() {
+  const size = 150;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.createImageData(size, size);
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    const v = Math.floor(Math.random() * 255);
+    imageData.data[i]     = v;
+    imageData.data[i + 1] = v;
+    imageData.data[i + 2] = v;
+    imageData.data[i + 3] = 255;
+  }
+  ctx.putImageData(imageData, 0, 0);
+  return `url(${canvas.toDataURL()})`;
+}
+
+const noiseDataUrl = generateNoiseTexture();
+document.documentElement.style.setProperty('--noise-bg', noiseDataUrl);
+
+// ═══ Theme Colors (20 curated accent colors) ═══
+const THEME_COLORS = [
+  { name: 'Coral',         hex: '#E8724A' },
+  { name: 'Terracotta',    hex: '#D06848' },
+  { name: 'Burnt Sienna',  hex: '#C8694A' },
+  { name: 'Clay',          hex: '#BE7050' },
+  { name: 'Dusty Rose',    hex: '#D4616B' },
+  { name: 'Berry',         hex: '#C25A64' },
+  { name: 'Rosewood',      hex: '#B05A5A' },
+  { name: 'Amber',         hex: '#D49045' },
+  { name: 'Honey',         hex: '#C48840' },
+  { name: 'Marigold',      hex: '#CC9040' },
+  { name: 'Sage',          hex: '#6B9B72' },
+  { name: 'Forest',        hex: '#5E8E65' },
+  { name: 'Olive',         hex: '#8B9B60' },
+  { name: 'Dusty Blue',    hex: '#5E8EA8' },
+  { name: 'Ocean',         hex: '#5A88A0' },
+  { name: 'Slate',         hex: '#6E8B9E' },
+  { name: 'Lavender',      hex: '#8B7BAA' },
+  { name: 'Plum',          hex: '#9B6B98' },
+  { name: 'Mauve',         hex: '#A07080' },
+  { name: 'Warm Brown',    hex: '#9E7B6B' },
+];
+
+// ═══ Background Color Families ═══
+// Each family is a row of swatches. Warm is the original spectrum;
+// the others add subtle tints for variety while staying muted/on-brand.
+
+const BG_FAMILIES = [
+  {
+    name: 'Warm',
+    colors: [
+      { hex: '#FCFAF8', label: 'Coolest' },
+      { hex: '#FAF8F5', label: 'Current', marker: 'cur' },
+      { hex: '#F9F6F1', label: 'Slightly warmer' },
+      { hex: '#F8F5EF', label: 'Noticeable shift' },
+      { hex: '#F7F3EC', label: 'Proposed — parchment', marker: 'rec' },
+      { hex: '#F6F1E9', label: 'Rich parchment' },
+      { hex: '#F5F0E7', label: 'Deep warm' },
+      { hex: '#F4EEE4', label: 'Antique paper' },
+      { hex: '#F3EDE3', label: 'Very warm' },
+      { hex: '#F1EBE0', label: 'Warmest' },
+    ]
+  },
+  {
+    name: 'Cool',
+    colors: [
+      { hex: '#FAFAFA', label: 'Near white' },
+      { hex: '#F5F5F7', label: 'Light silver' },
+      { hex: '#F0F1F3', label: 'Soft gray' },
+      { hex: '#EBEDF0', label: 'Cool mist' },
+    ]
+  },
+  {
+    name: 'Blush',
+    colors: [
+      { hex: '#FBF8F9', label: 'Barely blush' },
+      { hex: '#F8F2F4', label: 'Rose mist' },
+      { hex: '#F4ECEF', label: 'Petal' },
+      { hex: '#F0E7EA', label: 'Dusty rose' },
+    ]
+  },
+  {
+    name: 'Sage',
+    colors: [
+      { hex: '#F7FAF7', label: 'Barely sage' },
+      { hex: '#F1F6F1', label: 'Mint mist' },
+      { hex: '#EBF1EB', label: 'Soft sage' },
+      { hex: '#E5ECE5', label: 'Garden' },
+    ]
+  },
+  {
+    name: 'Sky',
+    colors: [
+      { hex: '#F7F9FB', label: 'Barely sky' },
+      { hex: '#F0F4F8', label: 'Morning mist' },
+      { hex: '#E9EFF5', label: 'Soft sky' },
+      { hex: '#E3E9F0', label: 'Cloudy blue' },
+    ]
+  },
+  {
+    name: 'Lavender',
+    colors: [
+      { hex: '#F9F7FB', label: 'Barely lavender' },
+      { hex: '#F3F0F7', label: 'Lilac mist' },
+      { hex: '#ECE8F2', label: 'Soft lavender' },
+      { hex: '#E6E2ED', label: 'Wisteria' },
+    ]
+  },
+];
+
+// ═══ Card Color Families ═══
+const CARD_FAMILIES = [
+  {
+    name: 'Warm',
+    colors: [
+      { hex: '#FFFFFF', label: 'Pure white', marker: 'cur' },
+      { hex: '#FEFDFB', label: 'Barely off-white' },
+      { hex: '#FEFCF9', label: 'Hint of warmth' },
+      { hex: '#FDFAF6', label: 'Proposed — cream', marker: 'rec' },
+      { hex: '#FCF9F4', label: 'Warm page' },
+      { hex: '#FBF7F1', label: 'Notebook cream' },
+      { hex: '#FAF6EF', label: 'Warmer' },
+      { hex: '#F9F4ED', label: 'Old paper' },
+      { hex: '#F8F3EB', label: 'Rich cream' },
+      { hex: '#F7F1E8', label: 'Warmest' },
+    ]
+  },
+  {
+    name: 'Cool',
+    colors: [
+      { hex: '#FEFEFF', label: 'Ice white' },
+      { hex: '#FBFCFE', label: 'Cool white' },
+      { hex: '#F8F9FC', label: 'Silver page' },
+    ]
+  },
+  {
+    name: 'Blush',
+    colors: [
+      { hex: '#FFFDFE', label: 'Rose white' },
+      { hex: '#FCF9FB', label: 'Petal page' },
+      { hex: '#F9F5F8', label: 'Blush page' },
+    ]
+  },
+  {
+    name: 'Sage',
+    colors: [
+      { hex: '#FDFFFE', label: 'Mint white' },
+      { hex: '#F9FCF9', label: 'Sage page' },
+      { hex: '#F5F9F5', label: 'Garden page' },
+    ]
+  },
+  {
+    name: 'Sky',
+    colors: [
+      { hex: '#FDFEFF', label: 'Sky white' },
+      { hex: '#F9FBFE', label: 'Cloud page' },
+      { hex: '#F5F8FC', label: 'Blue page' },
+    ]
+  },
+  {
+    name: 'Lavender',
+    colors: [
+      { hex: '#FEFEFF', label: 'Lilac white' },
+      { hex: '#FBFAFD', label: 'Lavender page' },
+      { hex: '#F7F5FB', label: 'Purple page' },
+    ]
+  },
+];
+
+// ═══ Cascade — derive companion colors from any bg hex ═══
+// These offsets are based on the original warm cream relationships:
+// border ≈ bg minus (13,16,18), tag ≈ bg minus (7,11,13), etc.
+// Works for any hue because the offsets are small relative shifts.
+
+function deriveCascadeFromHex(bgHex) {
+  const { r, g, b } = hexToRgb(bgHex);
+  return {
+    border:      rgbToHex(r - 13, g - 16, b - 18),
+    tag:         rgbToHex(r - 7,  g - 11, b - 13),
+    heartEmpty:  rgbToHex(r - 33, g - 38, b - 42),
+    cardPressed: rgbToHex(r - 3,  g - 4,  b - 4),
+  };
+}
+
+// Look up a color's label from the families data
+function findColorLabel(families, hex) {
+  for (const fam of families) {
+    for (const c of fam.colors) {
+      if (c.hex.toUpperCase() === hex.toUpperCase()) return c.label;
+    }
+  }
+  return hex;
+}
+
+const FONT_MAP = {
+  'Georgia': "'Georgia', serif",
+  'Merriweather': "'Merriweather', serif",
+  'Lora': "'Lora', serif",
+  'Libre Baskerville': "'Libre Baskerville', serif",
+  'Crimson Text': "'Crimson Text', serif",
+};
+
+// ═══ Radius Scales ═══
+const RADIUS_SCALES = [
+  { name: 'Sharp',    card: 4,  input: 6,  tab: 12,   tag: 4,  mic: 20 },
+  { name: 'Subtle',   card: 8,  input: 10, tab: 16,   tag: 6,  mic: 24 },
+  { name: 'Standard', card: 14, input: 12, tab: 20,   tag: 8,  mic: 30 },
+  { name: 'Soft',     card: 18, input: 16, tab: 24,   tag: 10, mic: 34 },
+  { name: 'Bubbly',   card: 24, input: 20, tab: 9999, tag: 12, mic: 42 },
+];
+
+// ═══ Shadow Levels ═══
+const SHADOW_LEVELS = [
+  { name: 'Flat',     card: 'none',                                prompt: 'none',                                mic: '0 2px 8px {accentShadow20}' },
+  { name: 'Whisper',  card: '0 1px 2px rgba(44,36,32,0.03)',      prompt: '0 1px 4px rgba(44,36,32,0.03)',       mic: '0 2px 12px {accentShadow}' },
+  { name: 'Standard', card: '0 1px 3px rgba(44,36,32,0.06)',      prompt: '0 2px 12px rgba(44,36,32,0.06)',      mic: '0 4px 20px {accentShadow}' },
+  { name: 'Raised',   card: '0 3px 10px rgba(44,36,32,0.10)',     prompt: '0 4px 16px rgba(44,36,32,0.08)',      mic: '0 6px 28px {accentShadow}' },
+];
+
+// ═══ Spacing Modes ═══
+const SPACING_MODES = {
+  compact:  { cardPadV: 8,  cardPadH: 10, cardGap: 6,  tabPadV: 3, tabPadH: 8,  tabGap: 4, tagPadV: 1, tagPadH: 5, transcriptPad: 10, promptPadV: 10, promptPadH: 12, screenPad: 12, sectionGap: 6 },
+  standard: { cardPadV: 12, cardPadH: 14, cardGap: 10, tabPadV: 5, tabPadH: 12, tabGap: 6, tagPadV: 2, tagPadH: 7, transcriptPad: 14, promptPadV: 14, promptPadH: 16, screenPad: 16, sectionGap: 10 },
+  cozy:     { cardPadV: 16, cardPadH: 18, cardGap: 14, tabPadV: 7, tabPadH: 14, tabGap: 8, tagPadV: 3, tagPadH: 9, transcriptPad: 18, promptPadV: 18, promptPadH: 20, screenPad: 20, sectionGap: 14 },
+};
+
+// ═══ Mood Presets ═══
+const PRESETS = {
+  'modern-clean': {
+    name: 'Modern Clean',
+    radiusScale: 0, shadowLevel: 0,
+    textureOn: false, textureOpacity: 50,
+    borderStyle: 'solid', borderWidth: 10,
+    cardAccent: 'none', micStyle: 'solid',
+    tabStyle: 'pills', cardTitleStyle: 'none',
+    previewLines: 2, spacingMode: 'standard', pillStyle: 'flat',
+  },
+  'warm-journal': {
+    name: 'Warm Journal',
+    radiusScale: 3, shadowLevel: 1,
+    textureOn: true, textureOpacity: 50,
+    borderStyle: 'dotted', borderWidth: 10,
+    cardAccent: 'left-bar', micStyle: 'solid',
+    tabStyle: 'underline', cardTitleStyle: 'serif',
+    previewLines: 2, spacingMode: 'cozy', pillStyle: 'textured',
+  },
+  'playful-pop': {
+    name: 'Playful Pop',
+    radiusScale: 4, shadowLevel: 3,
+    textureOn: false, textureOpacity: 50,
+    borderStyle: 'gradient', borderWidth: 10,
+    cardAccent: 'corner-dot', micStyle: 'gradient',
+    tabStyle: 'segmented', cardTitleStyle: 'bold',
+    previewLines: 2, spacingMode: 'standard', pillStyle: 'warmer',
+  },
+  'minimal-calm': {
+    name: 'Minimal Calm',
+    radiusScale: 1, shadowLevel: 0,
+    textureOn: false, textureOpacity: 50,
+    borderStyle: 'none', borderWidth: 10,
+    cardAccent: 'none', micStyle: 'outlined',
+    tabStyle: 'text-dot', cardTitleStyle: 'none',
+    previewLines: 1, spacingMode: 'compact', pillStyle: 'outlined',
+  },
+};
+
+// ═══ State ═══
+let state = {
+  font: 'Merriweather',
+  italic: false,
+  themeColorIndex: 0,
+  bgHex: '#FAF8F5',   // selected background color
+  cardHex: '#FFFFFF',  // selected card surface color
+  textureOn: false,
+  textureOpacity: 50,
+  borderStyle: 'solid',
+  pillStyle: 'flat',
+  radiusScale: 2,      // 0–4 (Sharp → Bubbly)
+  shadowLevel: 2,      // 0–3 (Flat → Raised)
+  spacingMode: 'standard', // compact / standard / cozy
+  cardAccent: 'none',  // none / left-bar / top-band / corner-dot / gradient-edge
+  micStyle: 'solid',   // solid / gradient / outlined / soft / pill
+  borderWidth: 10,     // 5–30 (displayed as 0.5–3.0px, stored as tenths)
+  tabStyle: 'pills',   // pills / underline / segmented / chip / text-dot
+  cardTitleStyle: 'none', // none / bold / serif / smallcaps
+  previewLines: 2,     // 1, 2, or 3
+  reviewNotes: '',     // free text for reviewer
+};
+
+// ═══ Helpers ═══
+function hexToRgb(hex) {
+  return {
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+  };
+}
+
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(v =>
+    Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')
+  ).join('').toUpperCase();
+}
+
+function lerpColor(hex1, hex2, t) {
+  const c1 = hexToRgb(hex1);
+  const c2 = hexToRgb(hex2);
+  return rgbToHex(
+    c1.r + (c2.r - c1.r) * t,
+    c1.g + (c2.g - c1.g) * t,
+    c1.b + (c2.b - c1.b) * t,
+  );
+}
+
+function darkenColor(hex, amount) {
+  const { r, g, b } = hexToRgb(hex);
+  return rgbToHex(r * (1 - amount), g * (1 - amount), b * (1 - amount));
+}
+
+function lightenColor(hex, amount) {
+  const { r, g, b } = hexToRgb(hex);
+  return rgbToHex(r + (255 - r) * amount, g + (255 - g) * amount, b + (255 - b) * amount);
+}
+
+function deriveAccent(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return {
+    accent: hex,
+    accentLight: lightenColor(hex, 0.25),
+    accentSoft: `rgba(${r},${g},${b},0.08)`,
+    accentGlow: `rgba(${r},${g},${b},0.12)`,
+    accentShadow: `rgba(${r},${g},${b},0.35)`,
+    accentShadow20: `rgba(${r},${g},${b},0.20)`,
+    accentPressed: darkenColor(hex, 0.12),
+  };
+}
+
+// ═══ Build Swatch Grids ═══
+
+function buildThemeColorGrid() {
+  const grid = document.getElementById('ctrl-theme-colors');
+  THEME_COLORS.forEach((color, i) => {
+    const swatch = document.createElement('button');
+    swatch.className = 'color-swatch' + (i === state.themeColorIndex ? ' selected' : '');
+    swatch.style.background = color.hex;
+    swatch.title = color.name;
+    swatch.innerHTML = '<span class="color-swatch-check">&#x2713;</span>';
+    swatch.onclick = () => selectThemeColor(i);
+    grid.appendChild(swatch);
+  });
+}
+
+function buildFamilySwatches(containerId, families, selectedHex, onSelect) {
+  const container = document.getElementById(containerId);
+  families.forEach(family => {
+    const row = document.createElement('div');
+    row.className = 'swatch-family';
+
+    const label = document.createElement('div');
+    label.className = 'swatch-family-label';
+    label.textContent = family.name;
+    row.appendChild(label);
+
+    const colors = document.createElement('div');
+    colors.className = 'swatch-family-colors';
+
+    family.colors.forEach(color => {
+      const swatch = document.createElement('button');
+      swatch.className = 'color-swatch' + (color.hex === selectedHex ? ' selected' : '');
+      swatch.style.background = color.hex;
+      swatch.title = color.label;
+      swatch.dataset.hex = color.hex;
+      if (color.marker) swatch.dataset.marker = color.marker;
+      swatch.innerHTML = '<span class="color-swatch-check">&#x2713;</span>';
+      swatch.onclick = () => onSelect(color.hex);
+      colors.appendChild(swatch);
+    });
+
+    row.appendChild(colors);
+    container.appendChild(row);
+  });
+}
+
+// ═══ Apply State ═══
+
+function applyState() {
+  const root = document.documentElement;
+  const bg = state.bgHex;
+  const card = state.cardHex;
+  const themeColor = THEME_COLORS[state.themeColorIndex].hex;
+  const accent = deriveAccent(themeColor);
+  const cascade = deriveCascadeFromHex(bg);
+
+  // Colors
+  root.style.setProperty('--bg', bg);
+  root.style.setProperty('--card', card);
+  root.style.setProperty('--border', cascade.border);
+  root.style.setProperty('--tag', cascade.tag);
+  root.style.setProperty('--heart-empty', cascade.heartEmpty);
+  root.style.setProperty('--card-pressed', cascade.cardPressed);
+
+  // Warmer tag — blend between tag and border
+  root.style.setProperty('--tag-warmer', lerpColor(cascade.tag, cascade.border, 0.3));
+
+  // Accent
+  root.style.setProperty('--accent', accent.accent);
+  root.style.setProperty('--accent-soft', accent.accentSoft);
+  root.style.setProperty('--accent-shadow', accent.accentShadow);
+  root.style.setProperty('--accent-pressed', accent.accentPressed);
+
+  // Typography
+  root.style.setProperty('--serif', FONT_MAP[state.font]);
+  root.style.setProperty('--voice-style', state.italic ? 'italic' : 'normal');
+
+  // Texture
+  root.style.setProperty('--texture-opacity', state.textureOn ? (state.textureOpacity / 1000) : 0);
+
+  // Border style — use separate width/style properties for reliability
+  const mockups = document.getElementById('mockups');
+  mockups.classList.remove('border-gradient', 'border-none');
+
+  const bw = (state.borderWidth / 10) + 'px';
+  if (state.borderStyle === 'gradient') {
+    mockups.classList.add('border-gradient');
+    root.style.setProperty('--border-style', 'solid');
+    root.style.setProperty('--border-width', bw);
+  } else if (state.borderStyle === 'none') {
+    mockups.classList.add('border-none');
+    root.style.setProperty('--border-style', 'solid');
+    root.style.setProperty('--border-width', bw);
+  } else {
+    root.style.setProperty('--border-style', state.borderStyle);
+    root.style.setProperty('--border-width', bw);
+  }
+
+  // Recording backdrop — slightly warmer tint of the bg color
+  const bgRgb = hexToRgb(bg);
+  root.style.setProperty('--recording-backdrop',
+    `rgba(${Math.min(255, bgRgb.r + 2)},${Math.max(0, bgRgb.g - 6)},${Math.max(0, bgRgb.b - 14)},0.45)`
+  );
+
+  // Home screen bottom fade
+  const homeFade = document.querySelector('.home-bottom-fade');
+  if (homeFade) homeFade.style.background = `linear-gradient(transparent, ${bg})`;
+
+  // Tag pill classes
+  document.querySelectorAll('.mock-tag').forEach(tag => {
+    tag.className = 'mock-tag style-' + state.pillStyle;
+    let texDiv = tag.querySelector('.tag-texture');
+    if (state.pillStyle === 'textured') {
+      if (!texDiv) {
+        texDiv = document.createElement('div');
+        texDiv.className = 'tag-texture';
+        tag.appendChild(texDiv);
+      }
+    } else if (texDiv) {
+      texDiv.remove();
+    }
+  });
+
+  // ── Radius ──
+  const rs = RADIUS_SCALES[state.radiusScale];
+  root.style.setProperty('--radius-card', rs.card + 'px');
+  root.style.setProperty('--radius-input', rs.input + 'px');
+  root.style.setProperty('--radius-tab', rs.tab + 'px');
+  root.style.setProperty('--radius-tag', rs.tag + 'px');
+  root.style.setProperty('--radius-mic', rs.mic + 'px');
+
+  // ── Shadows ──
+  const sl = SHADOW_LEVELS[state.shadowLevel];
+  root.style.setProperty('--shadow-card', sl.card);
+  root.style.setProperty('--shadow-prompt', sl.prompt);
+  // Mic shadow uses accent color — replace placeholders
+  const micShadow = sl.mic
+    .replace('{accentShadow}', accent.accentShadow)
+    .replace('{accentShadow20}', accent.accentShadow20);
+  root.style.setProperty('--shadow-mic', micShadow);
+
+  // ── Spacing ──
+  const sp = SPACING_MODES[state.spacingMode];
+  root.style.setProperty('--card-pad-v', sp.cardPadV + 'px');
+  root.style.setProperty('--card-pad-h', sp.cardPadH + 'px');
+  root.style.setProperty('--card-gap', sp.cardGap + 'px');
+  root.style.setProperty('--tab-pad-v', sp.tabPadV + 'px');
+  root.style.setProperty('--tab-pad-h', sp.tabPadH + 'px');
+  root.style.setProperty('--tab-gap', sp.tabGap + 'px');
+  root.style.setProperty('--tag-pad-v', sp.tagPadV + 'px');
+  root.style.setProperty('--tag-pad-h', sp.tagPadH + 'px');
+  root.style.setProperty('--transcript-pad', sp.transcriptPad + 'px');
+  root.style.setProperty('--prompt-pad-v', sp.promptPadV + 'px');
+  root.style.setProperty('--prompt-pad-h', sp.promptPadH + 'px');
+  root.style.setProperty('--screen-pad', sp.screenPad + 'px');
+  root.style.setProperty('--section-gap', sp.sectionGap + 'px');
+
+  // ── Card Accent ──
+  const accentClasses = ['accent-none', 'accent-left-bar', 'accent-top-band', 'accent-corner-dot', 'accent-gradient-edge'];
+  const accentClass = state.cardAccent === 'none' ? '' : 'accent-' + state.cardAccent;
+  document.querySelectorAll('.mock-card').forEach(card => {
+    accentClasses.forEach(c => card.classList.remove(c));
+    if (accentClass) card.classList.add(accentClass);
+  });
+
+  // ── Mic Button Style ──
+  const micClasses = ['mic-gradient', 'mic-outlined', 'mic-soft', 'mic-pill'];
+  root.style.setProperty('--accent-light', accent.accentLight);
+  document.querySelectorAll('.mock-mic-btn, .mock-mic-btn-large').forEach(btn => {
+    micClasses.forEach(c => btn.classList.remove(c));
+    if (state.micStyle !== 'solid') {
+      btn.classList.add('mic-' + state.micStyle);
+    }
+  });
+
+  // ── Tab Style ──
+  const homeTabs = document.getElementById('home-tabs');
+  if (homeTabs) {
+    const tabStyles = ['tabs-pills', 'tabs-underline', 'tabs-segmented', 'tabs-chip', 'tabs-text-dot'];
+    tabStyles.forEach(cls => homeTabs.classList.remove(cls));
+    homeTabs.classList.add('tabs-' + state.tabStyle);
+
+    // Apply per-tab coloring based on style
+    document.querySelectorAll('#home-tabs .mock-tab').forEach(tab => {
+      // Reset inline styles that may have been set by previous style
+      tab.style.removeProperty('border-color');
+      tab.style.removeProperty('background');
+      tab.style.removeProperty('color');
+      tab.style.removeProperty('box-shadow');
+
+      const color = tab.dataset.color;
+      if (!color) return;
+      const rgb = hexToRgb(color);
+
+      if (tab.classList.contains('active')) {
+        if (state.tabStyle === 'pills') {
+          tab.style.background = `rgba(${rgb.r},${rgb.g},${rgb.b},0.12)`;
+          tab.style.borderColor = color;
+          tab.style.color = color;
+        } else if (state.tabStyle === 'underline' || state.tabStyle === 'text-dot' || state.tabStyle === 'segmented') {
+          tab.style.color = color;
+        } else if (state.tabStyle === 'chip') {
+          tab.style.borderColor = color;
+          tab.style.background = `rgba(${rgb.r},${rgb.g},${rgb.b},0.08)`;
+          tab.style.color = color;
+          tab.style.boxShadow = `0 0 8px rgba(${rgb.r},${rgb.g},${rgb.b},0.20)`;
+        }
+      }
+    });
+  }
+
+  // ── Card Titles ──
+  const homeScroll = document.querySelector('.home-scroll');
+  if (homeScroll) {
+    homeScroll.classList.remove('card-title-bold', 'card-title-serif', 'card-title-smallcaps');
+    if (state.cardTitleStyle !== 'none') {
+      homeScroll.classList.add('card-title-' + state.cardTitleStyle);
+    }
+
+    // ── Preview Lines ──
+    homeScroll.classList.remove('preview-1', 'preview-2', 'preview-3');
+    homeScroll.classList.add('preview-' + state.previewLines);
+  }
+
+  // ── Clear preset selection on manual change ──
+  document.querySelectorAll('#ctrl-presets .chip').forEach(c => c.classList.remove('selected'));
+
+  // Update swatch labels
+  document.getElementById('bg-color-label').textContent =
+    bg + ' — ' + findColorLabel(BG_FAMILIES, bg);
+  document.getElementById('card-color-label').textContent =
+    card + ' — ' + findColorLabel(CARD_FAMILIES, card);
+}
+
+// ═══ Control Handlers ═══
+
+function updateFont(val) {
+  state.font = val;
+  applyState();
+}
+
+function toggleItalic() {
+  state.italic = !state.italic;
+  const btn = document.getElementById('ctrl-italic');
+  const label = document.getElementById('italic-label');
+  btn.classList.toggle('active', state.italic);
+  label.textContent = state.italic
+    ? "On — parent's words in italic"
+    : "Off — normal style";
+  applyState();
+}
+
+function selectThemeColor(index) {
+  state.themeColorIndex = index;
+  document.querySelectorAll('#ctrl-theme-colors .color-swatch').forEach((s, i) => {
+    s.classList.toggle('selected', i === index);
+  });
+  document.getElementById('theme-color-label').textContent =
+    THEME_COLORS[index].name + (index === 0 ? ' (current)' : '');
+  applyState();
+}
+
+function selectBgColor(hex) {
+  state.bgHex = hex;
+  document.querySelectorAll('#ctrl-bg-colors .color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.hex === hex);
+  });
+  applyState();
+}
+
+function selectCardColor(hex) {
+  state.cardHex = hex;
+  document.querySelectorAll('#ctrl-card-colors .color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.hex === hex);
+  });
+  applyState();
+}
+
+function toggleTexture() {
+  state.textureOn = !state.textureOn;
+  const btn = document.getElementById('ctrl-texture');
+  const label = document.getElementById('texture-label');
+  const wrap = document.getElementById('opacity-wrap');
+  btn.classList.toggle('active', state.textureOn);
+  label.textContent = state.textureOn ? 'On — grain visible' : 'Off — adds paper grain';
+  wrap.style.display = state.textureOn ? 'flex' : 'none';
+  applyState();
+}
+
+function updateOpacity(val) {
+  state.textureOpacity = val;
+  document.getElementById('opacity-value').textContent = (val / 10).toFixed(1) + '%';
+  applyState();
+}
+
+function selectBorder(val) {
+  state.borderStyle = val;
+  document.querySelectorAll('#ctrl-borders .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === val);
+  });
+  // Show/hide width slider — no width control for gradient or none
+  document.getElementById('border-width-wrap').style.display =
+    (val === 'gradient' || val === 'none') ? 'none' : 'flex';
+  applyState();
+}
+
+function updateBorderWidth(val) {
+  state.borderWidth = val;
+  document.getElementById('border-width-value').textContent = (val / 10).toFixed(1) + 'px';
+  applyState();
+}
+
+function selectPill(val) {
+  state.pillStyle = val;
+  document.querySelectorAll('#ctrl-pills .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === val);
+  });
+  applyState();
+}
+
+function updateRadius(val) {
+  state.radiusScale = val;
+  const rs = RADIUS_SCALES[val];
+  document.getElementById('radius-label').textContent = rs.name + ' — card: ' + rs.card + 'px';
+  applyState();
+}
+
+function updateShadow(val) {
+  state.shadowLevel = val;
+  document.getElementById('shadow-label').textContent = SHADOW_LEVELS[val].name;
+  applyState();
+}
+
+function selectSpacing(val) {
+  state.spacingMode = val;
+  document.querySelectorAll('#ctrl-spacing .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === val);
+  });
+  applyState();
+}
+
+function selectCardAccent(val) {
+  state.cardAccent = val;
+  document.querySelectorAll('#ctrl-card-accent .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === val);
+  });
+  applyState();
+}
+
+function selectMicStyle(val) {
+  state.micStyle = val;
+  document.querySelectorAll('#ctrl-mic-style .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === val);
+  });
+  applyState();
+}
+
+function selectTabStyle(val) {
+  state.tabStyle = val;
+  document.querySelectorAll('#ctrl-tab-style .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === val);
+  });
+  applyState();
+}
+
+function selectCardTitle(val) {
+  state.cardTitleStyle = val;
+  document.querySelectorAll('#ctrl-card-title .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === val);
+  });
+  applyState();
+}
+
+function selectPreviewLines(val) {
+  state.previewLines = val;
+  document.querySelectorAll('#ctrl-preview-lines .chip').forEach(c => {
+    c.classList.toggle('selected', +c.dataset.value === val);
+  });
+  applyState();
+}
+
+// ═══ Sync Controls to State ═══
+// Used by presets to update all panel UI after batch-changing state
+function syncControlsToState() {
+  // Font dropdown
+  document.getElementById('ctrl-font').value = state.font;
+
+  // Italic toggle
+  const italicBtn = document.getElementById('ctrl-italic');
+  italicBtn.classList.toggle('active', state.italic);
+  document.getElementById('italic-label').textContent = state.italic
+    ? "On — parent's words in italic" : "Off — normal style";
+
+  // Texture toggle
+  const textureBtn = document.getElementById('ctrl-texture');
+  textureBtn.classList.toggle('active', state.textureOn);
+  document.getElementById('texture-label').textContent = state.textureOn
+    ? 'On — grain visible' : 'Off — adds paper grain';
+  document.getElementById('opacity-wrap').style.display = state.textureOn ? 'flex' : 'none';
+  document.getElementById('ctrl-opacity').value = state.textureOpacity;
+  document.getElementById('opacity-value').textContent = (state.textureOpacity / 10).toFixed(1) + '%';
+
+  // Radius slider
+  document.getElementById('ctrl-radius').value = state.radiusScale;
+  const rs = RADIUS_SCALES[state.radiusScale];
+  document.getElementById('radius-label').textContent = rs.name + ' — card: ' + rs.card + 'px';
+
+  // Shadow slider
+  document.getElementById('ctrl-shadow').value = state.shadowLevel;
+  document.getElementById('shadow-label').textContent = SHADOW_LEVELS[state.shadowLevel].name;
+
+  // Border width slider
+  document.getElementById('ctrl-border-width').value = state.borderWidth;
+  document.getElementById('border-width-value').textContent = (state.borderWidth / 10).toFixed(1) + 'px';
+  document.getElementById('border-width-wrap').style.display =
+    (state.borderStyle === 'gradient' || state.borderStyle === 'none') ? 'none' : 'flex';
+
+  // All chip groups
+  const chipMappings = [
+    { id: 'ctrl-borders', value: state.borderStyle },
+    { id: 'ctrl-pills', value: state.pillStyle },
+    { id: 'ctrl-spacing', value: state.spacingMode },
+    { id: 'ctrl-card-accent', value: state.cardAccent },
+    { id: 'ctrl-mic-style', value: state.micStyle },
+    { id: 'ctrl-tab-style', value: state.tabStyle },
+    { id: 'ctrl-card-title', value: state.cardTitleStyle },
+    { id: 'ctrl-preview-lines', value: String(state.previewLines) },
+  ];
+
+  chipMappings.forEach(({ id, value }) => {
+    document.querySelectorAll(`#${id} .chip`).forEach(c => {
+      c.classList.toggle('selected', c.dataset.value === value);
+    });
+  });
+}
+
+// ═══ Presets ═══
+function applyPreset(presetKey) {
+  const preset = PRESETS[presetKey];
+  if (!preset) return;
+
+  // Copy preset values into state (but NOT color properties)
+  Object.keys(preset).forEach(key => {
+    if (key !== 'name' && state.hasOwnProperty(key)) {
+      state[key] = preset[key];
+    }
+  });
+
+  // Sync all control UI to new state
+  syncControlsToState();
+  applyState();
+
+  // Re-highlight selected preset chip (after applyState cleared them)
+  document.querySelectorAll('#ctrl-presets .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === presetKey);
+  });
+}
+
+function resetAll() {
+  state = {
+    font: 'Merriweather',
+    italic: false,
+    themeColorIndex: 0,
+    bgHex: '#FAF8F5',
+    cardHex: '#FFFFFF',
+    textureOn: false,
+    textureOpacity: 50,
+    borderStyle: 'solid',
+    pillStyle: 'flat',
+    radiusScale: 2,
+    shadowLevel: 2,
+    spacingMode: 'standard',
+    cardAccent: 'none',
+    micStyle: 'solid',
+    borderWidth: 10,
+    tabStyle: 'pills',
+    cardTitleStyle: 'none',
+    previewLines: 2,
+    reviewNotes: '',
+  };
+
+  // Reset form controls
+  document.getElementById('ctrl-font').value = 'Merriweather';
+  document.getElementById('ctrl-italic').classList.remove('active');
+  document.getElementById('italic-label').textContent = "Off — normal style";
+  document.getElementById('ctrl-texture').classList.remove('active');
+  document.getElementById('texture-label').textContent = 'Off — adds paper grain';
+  document.getElementById('opacity-wrap').style.display = 'none';
+  document.getElementById('ctrl-opacity').value = 50;
+  document.getElementById('opacity-value').textContent = '5.0%';
+  document.getElementById('theme-color-label').textContent = 'Coral (current)';
+
+  // Reset sliders
+  document.getElementById('ctrl-radius').value = 2;
+  document.getElementById('radius-label').textContent = 'Standard — card: 14px';
+  document.getElementById('ctrl-shadow').value = 2;
+  document.getElementById('shadow-label').textContent = 'Standard';
+  document.getElementById('ctrl-border-width').value = 10;
+  document.getElementById('border-width-value').textContent = '1.0px';
+  document.getElementById('border-width-wrap').style.display = 'flex';
+
+  // Reset swatch selections
+  document.querySelectorAll('#ctrl-theme-colors .color-swatch').forEach((s, i) => {
+    s.classList.toggle('selected', i === 0);
+  });
+  document.querySelectorAll('#ctrl-bg-colors .color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.hex === '#FAF8F5');
+  });
+  document.querySelectorAll('#ctrl-card-colors .color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.hex === '#FFFFFF');
+  });
+
+  // Reset chips
+  document.querySelectorAll('#ctrl-borders .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === 'solid');
+  });
+  document.querySelectorAll('#ctrl-pills .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === 'flat');
+  });
+  document.querySelectorAll('#ctrl-spacing .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === 'standard');
+  });
+  document.querySelectorAll('#ctrl-card-accent .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === 'none');
+  });
+  document.querySelectorAll('#ctrl-mic-style .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === 'solid');
+  });
+  document.querySelectorAll('#ctrl-tab-style .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === 'pills');
+  });
+  document.querySelectorAll('#ctrl-card-title .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === 'none');
+  });
+  document.querySelectorAll('#ctrl-preview-lines .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.value === '2');
+  });
+  document.querySelectorAll('#ctrl-presets .chip').forEach(c => {
+    c.classList.remove('selected');
+  });
+
+  // Reset notes
+  document.getElementById('ctrl-notes').value = '';
+
+  applyState();
+}
+
+// ═══ Export ═══
+
+function showExport() {
+  const bg = state.bgHex;
+  const card = state.cardHex;
+  const themeColor = THEME_COLORS[state.themeColorIndex];
+  const accent = deriveAccent(themeColor.hex);
+  const cascade = deriveCascadeFromHex(bg);
+  const border = cascade.border;
+  const tag = cascade.tag;
+  const cardPressed = cascade.cardPressed;
+  const heartEmpty = cascade.heartEmpty;
+  const opacity = state.textureOn ? (state.textureOpacity / 1000) : 0;
+
+  const lines = [
+    `// Paste into constants/theme.ts`,
+    ``,
+    `// Colors`,
+    `bg: '${bg}',`,
+    `card: '${card}',`,
+    `border: '${border}',`,
+    `tag: '${tag}',`,
+    `cardPressed: '${cardPressed}',`,
+    `heartEmpty: '${heartEmpty}',`,
+    ``,
+    `// Accent — ${themeColor.name}`,
+    `accent: '${themeColor.hex}',`,
+    `accentSoft: '${accent.accentSoft}',`,
+    `accentPressed: '${accent.accentPressed}',`,
+    `accentGlow: '${accent.accentGlow}',`,
+    `heartFilled: '${themeColor.hex}',`,
+    ``,
+    `// Font`,
+    `serif: '${state.font}',`,
+    `italic: ${state.italic},`,
+    ``,
+    `// Surface`,
+    `textureOpacity: ${opacity},`,
+    `borderStyle: '${state.borderStyle}',`,
+    `borderWidth: ${(state.borderWidth / 10).toFixed(1)},  // px`,
+    `pillStyle: '${state.pillStyle}',`,
+    ``,
+    `// Shape`,
+    `radiusScale: '${RADIUS_SCALES[state.radiusScale].name}',  // card:${RADIUS_SCALES[state.radiusScale].card}, input:${RADIUS_SCALES[state.radiusScale].input}, tab:${RADIUS_SCALES[state.radiusScale].tab}, tag:${RADIUS_SCALES[state.radiusScale].tag}`,
+    `shadowLevel: '${SHADOW_LEVELS[state.shadowLevel].name}',`,
+    ``,
+    `// Layout`,
+    `spacingDensity: '${state.spacingMode}',`,
+    ``,
+    `// Decoration`,
+    `cardAccent: '${state.cardAccent}',`,
+    `micButtonStyle: '${state.micStyle}',`,
+    ``,
+    `// Navigation`,
+    `tabStyle: '${state.tabStyle}',`,
+    ``,
+    `// Cards`,
+    `cardTitleStyle: '${state.cardTitleStyle}',`,
+    `previewLines: ${state.previewLines},`,
+  ];
+
+  // Reviewer notes
+  if (state.reviewNotes.trim()) {
+    lines.push('');
+    lines.push('// ─── Reviewer Notes ───');
+    state.reviewNotes.trim().split('\n').forEach(line => {
+      lines.push('// ' + line);
+    });
+  }
+
+  document.getElementById('export-code').textContent = lines.join('\n');
+  document.getElementById('export-modal').classList.add('visible');
+}
+
+function copyExport() {
+  const code = document.getElementById('export-code').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.querySelector('.btn-copy');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+}
+
+function closeExport() {
+  document.getElementById('export-modal').classList.remove('visible');
+}
+
+document.getElementById('export-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeExport();
+});
+
+// ═══ Initialize ═══
+buildThemeColorGrid();
+buildFamilySwatches('ctrl-bg-colors', BG_FAMILIES, state.bgHex, selectBgColor);
+buildFamilySwatches('ctrl-card-colors', CARD_FAMILIES, state.cardHex, selectCardColor);
+applyState();
+</script>
+
+</body>
+</html>

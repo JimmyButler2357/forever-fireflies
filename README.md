@@ -50,7 +50,7 @@ A **voice-first memory journal app for parents of young children**. Parents tap 
 | Analytics | PostHog |
 | AI Tagging (V2) | Anthropic Claude API (Haiku) |
 | Builds | Expo EAS Build |
-| Platform | iOS-first launch |
+| Platform | iOS + Android (Expo cross-platform) |
 
 ---
 

@@ -83,7 +83,7 @@ Ship native on-device transcription for MVP. Monitor these signals to decide whe
 
 **Approach: Set up child first, then capture first memory**
 
-The onboarding flow is 8 screens, designed to get the parent to their first saved entry in under 90 seconds while establishing the emotional tone.
+The onboarding flow is 9 screens, designed to get the parent to their first saved entry in under 90 seconds while establishing the emotional tone.
 
 1. **Sign In** — Apple Sign-In, Google Sign-In, or Email. Georgia serif title "Core Memories" with tagline "You'll never forget the little things." Legal links below auth buttons.
 2. **Add Child** — Name (required), birthday (required — powers age stamps on every entry), nickname (optional — used for voice auto-detection). All fields visible upfront, no progressive disclosure. Birthday uses an inline styled scroll wheel picker (Month/Day/Year) within the card to maintain the app's warm aesthetic. Parents can add multiple children before proceeding — added children appear as colored pills above the form.
@@ -92,7 +92,8 @@ The onboarding flow is 8 screens, designed to get the parent to their first save
 5. **First Recording** — Personalized prompt with child's name, pulsing mic button with warm radial gradient backdrop. "Or write instead" text fallback. 60-second limit.
 6. **First Memory (Text)** — Alternative to voice for step 5. Georgia serif text area with child pre-populated.
 7. **Memory Saved** — Emotional payoff. Heart animation, "[Child name]'s first memory, saved." and "Your voice and your words — kept forever." Intentionally minimal — do not add to this screen.
-8. **Paywall** — Convert to trial subscriber after experiencing core value. Annual/monthly pricing (annual pre-selected), 7-day free trial, visible dismiss button, restore purchase link. Exits to Home in the first-entry celebration state.
+8. **Welcome Preview** — Shows what the app looks like with months of data: a populated Home feed with multiple entries, the Core Memories screen with favorites, and the Search screen finding a specific moment. Gives the parent a vision of what they're building toward before being asked to subscribe. Static mockup with sample data — not the user's actual entries.
+9. **Paywall** — Convert to trial subscriber after experiencing core value. Annual/monthly pricing (annual pre-selected), 7-day free trial, visible dismiss button, restore purchase link. Exits to Home in the first-entry celebration state.
 
 **Key changes from earlier design:**
 - Child setup comes *before* first recording (not after). Creating the child's profile first anchors the experience — the parent knows *whose* book they're writing in.
@@ -103,7 +104,7 @@ The onboarding flow is 8 screens, designed to get the parent to their first save
 ### 2.3 Browse & Relive
 
 **Primary view: Home screen with per-child tabs**
-- Top bar with app title (Georgia serif), search pill, heart icon (→ Core Memories), settings gear
+- Top bar with app title (Georgia serif), search icon (→ Search), heart icon (→ Core Memories), settings gear. In first-entry state, only settings icon is shown — search and heart are hidden
 - Horizontal scrollable child tabs below the top bar: "All" (default, shows every child's entries) plus one tab per child, color-coded with the child's assigned color
 - Single-child variant: when only one child is registered, tabs are replaced by a warm pill showing the child's name, age, and memory count
 - Entry cards in reverse-chronological order: child name pills (colored dot + name), date, time, 2-line transcript preview, tag pills. Favorited entries get a warm orange glow border and filled heart
@@ -114,7 +115,7 @@ The onboarding flow is 8 screens, designed to get the parent to their first save
 
 **Search:**
 - Full-text keyword search across all transcripts with auto-focus
-- Filter chips: child name (multi-select, colored), tags, date range (presets: Last 7 days, Last month, Last 3 months, Custom)
+- Filter chips: child name (multi-select, colored), tags, date range (presets: Last 7 days, Last 30 days, Last 3 months, All time)
 - Result cards with highlighted search matches
 - Natural language query support ("When did Emma first walk?") — V2 via AI-powered semantic search
 - Warm empty state when no results match
@@ -123,13 +124,15 @@ The onboarding flow is 8 screens, designed to get the parent to their first save
 
 The Entry Detail screen serves both new entries (from recording or text input) and existing entries (from Home, Search, or Core Memories). All edits auto-save — no save button.
 
-**Layout (always stacked — three metadata lines):**
+**Layout (always stacked — four metadata lines):**
 
-Line 1: Date (bold) and time (muted).
+Line 1: Date (bold) and time (muted). Tapping the date opens an inline scroll-wheel date picker (reuse the same component as the birthday picker in onboarding). Defaults to today for new entries; shows the entry's saved date for existing entries. This enables backdating — recording a memory that happened yesterday, last week, or any past date.
 
-Line 2: Child pills — colored dot + name + × for each tagged child. A + button opens the child picker (hidden when all children already tagged). Each pill's × removes that child. The × on the *last* remaining pill triggers swap mode instead of removal (zero-child state is blocked).
+Line 2: Location (muted text, optional). Shows the auto-detected location label (e.g., "Tampa, FL") or "Add location" placeholder. Tapping opens a text input where the parent can type any location name — no map or GPS picker, just a free-text field. Auto-detect runs silently at recording time using the device's location, converting coordinates to a readable place name. Parent can edit or clear at any time.
 
-Line 3: Age line — each child's age at the time of the entry in muted text (e.g., "Emma 2y 4m · Liam 4y 1m").
+Line 3: Child pills — colored dot + name + × for each tagged child. A + button opens the child picker (hidden when all children already tagged). Each pill's × removes that child. The × on the *last* remaining pill triggers swap mode instead of removal (zero-child state is blocked).
+
+Line 4: Age line — each child's age at the time of the entry in muted text (e.g., "Emma 2y 4m · Liam 4y 1m").
 
 **Child picker:** Inline panel with toggle pills for all children. Stays open for multi-select. Tap outside (e.g., on the transcript) to close, as long as at least one child is selected. Checkmarks on selected children. Swap mode shows "Switch from [name]:" context when triggered by the last pill's ×.
 
@@ -143,7 +146,7 @@ Line 3: Age line — each child's age at the time of the entry in muted text (e.
 
 **Heart toggle:** Tap to mark/unmark as a Core Memory (stays on this screen).
 
-**Delete:** Trash icon in top bar → confirmation dialog. Always a soft delete with 30-day recovery. "Entries are kept for 30 days" note in the dialog.
+**Delete:** Trash icon in top bar → confirmation dialog. Always a soft delete with 30-day recovery. "Entries are kept for 30 days" note in the dialog. Recently Deleted section in Settings shows soft-deleted entries with a "Delete forever" option for manual permanent deletion and a "Restore" option.
 
 **Post-recording banner:** When arriving from a recording, a "Memory saved" banner with heart icon auto-dismisses after a few seconds with a fade-out and collapse animation.
 
@@ -223,7 +226,7 @@ Expected output: [{"tag": "humor", "confidence": 0.95}, {"tag": "milestone", "co
 **Notification design (updated to match wireframe):**
 - User sets preferred time during onboarding (step 4 — time picker with 8:30 PM default)
 - Adjustable in Settings at any time
-- **Personalized prompt:** Notification uses the child's name and age — "What made Emma smile today?" with a secondary line: "She's 2 years, 4 months old — these days go fast." This makes the notification feel personal, not like a generic app ping. The prompt text rotates nightly from a curated bank.
+- **Personalized prompt:** Notification uses the child's name and age — "What made Emma smile today?" with a secondary line: "[Child name] is [age] old — these days go fast." Age format auto-adjusts based on child's age (e.g., "2 years" for toddlers, "2 years, 4 months" when months add meaningful context). The prompt text rotates nightly from a curated bank.
 - **Action buttons:** "Record" (accent orange, opens Recording screen directly) and "Remind me later" (neutral, 30-minute fixed snooze). No "Open App" button — tapping the notification body itself opens to Home.
 - **Warm visual treatment:** The notification card has a warm gradient background to distinguish it from standard system notifications.
 - If ignored for multiple days, reduce frequency — never increase pressure
@@ -244,7 +247,7 @@ Expected output: [{"tag": "humor", "confidence": 0.95}, {"tag": "milestone", "co
 
 ---
 
-## 4b. Emotional Moments & Delight Features
+## 4.2 Emotional Moments & Delight Features
 
 Small, intentional touches that give the app warmth and make key moments feel special. These are approved — each one is scoped enough to build.
 
@@ -280,6 +283,23 @@ When a new child is added and their first entry is saved, that card gets a perma
 
 **Phase:** MVP (fires on first entry per child)
 
+### "Ink Reveal" Transcript Animation
+
+When a voice recording gets transcribed, instead of the text just appearing, it "writes itself" onto the page — like ink appearing on parchment. Think of the Marauder's Map from Harry Potter: words materializing out of nothing.
+
+**How it works:**
+- Words fade in left-to-right across each line, sequenced so earlier words appear before later ones
+- A slight blur-to-sharp effect accompanies each word, like wet ink drying on paper
+- The entire animation plays over ~2–3 seconds (total duration TBD during implementation)
+- Only triggers on voice transcripts — not text entries (the parent already saw those words as they typed them)
+- Only plays on first view of a transcript — after that, the text is just there. Requires a per-entry `transcript_seen` flag to track
+
+**Why it matters:** The moment "your voice became words" is the core magic of the app. This animation makes that transformation feel genuinely special instead of instantaneous and forgettable.
+
+**Reduced motion:** When the device's Reduce Motion setting is enabled, skip the animation entirely and show the transcript immediately (per NFR-013).
+
+**Phase:** V1.5
+
 ### "Quiet Week" Prompt
 
 If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial appears before the normal feed: "It's been a little while. Anything from this week worth remembering?" with a mic button right there. Tone is warm, not guilt-inducing — a hand back in, not a guilt trip. A "not right now" dismissal takes them straight to their normal feed. Only triggers once per inactive stretch — if they dismiss it and don't record, it doesn't show again the next day.
@@ -294,7 +314,7 @@ If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial a
 - **Free trial:** 7-day trial (implemented in wireframe paywall), full access to all features. A/B test 14-day variant once live.
 - **After trial:** $5.99/month or $49.99/year (launch pricing — ~3.5 months free on annual). Annual plan pre-selected in the paywall with a "Save 30%" badge.
 - **Price testing:** Use RevenueCat Experiments to A/B test $4.99 and $6.99 monthly variants once there's enough traffic. You can always lower a price; raising it after launch is much harder.
-- **Paywall behavior:** Entries recorded during trial become visible but locked (see dates, child names, first few words — but cannot play audio or read full text). This creates loss aversion and is the highest-converting approach for emotional data.
+- **Paywall behavior:** Entries recorded during trial become visible but locked (see dates, child names, first few words — but cannot play audio or read full text). This creates loss aversion and is the highest-converting approach for emotional data. Locked entry card design to be specced during Phase 6 (Subscription & Paywall implementation).
 - **Paywall placement:** After the first recording in onboarding (step 8), after the parent has experienced core value. Visible dismiss button — no dark patterns. "Already subscribed? Restore purchase" link at bottom.
 - **Win-back email:** "You recorded [X] memories about [child name] during your trial. They're waiting for you."
 
@@ -319,13 +339,15 @@ If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial a
 - Single user (one parent) per account
 - One journal with multiple children (tab per child)
 
-### Phase 2 — Partner Sharing
-- Invite partner to the same account
-- Both parents can add entries to any child's book
-- Entries show which parent recorded them
-- Partner must approve/accept invitation (no unilateral access)
+### Phase 2 — Parent Merge (Linked Accounts)
+- Each parent has their own account with their own login — no shared credentials
+- Parents pair accounts via an invitation flow (one sends invite, other accepts)
+- Both see a unified feed of shared children and entries
+- Each entry stores a `recorded_by` field showing which parent recorded it
+- Second parent can add their own voice recording and perspective to an existing memory — creating a dual-perspective entry
+- Memory view filtering: toggle between "My memories," "Partner's memories," "Both," or "Others" (grandparents via share links)
 - Included in the base subscription — no premium tier upsell
-- Partner prompt feature: both parents get the same daily prompt → record independently → paired responses surfaced side by side at week's end. Creates a dual-perspective archive and doubles engagement per household
+- Partner prompt feature: both parents get the same daily prompt → record independently → paired responses surfaced side by side at week's end
 
 ### Phase 3 — Extended Family
 - Share a link (one-time or ongoing) for grandparents, aunts, etc.
@@ -337,6 +359,8 @@ If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial a
 ---
 
 ## 7. Feature Roadmap
+
+> **High-level overview:** See [`feature-roadmap.md`](feature-roadmap.md) for the one-page bird's-eye view of all features across versions. The detailed checklists below are the full spec-level breakdown.
 
 ### MVP (Month 1-3) — Core Loop
 - [ ] Voice recording with on-device transcription (60-second auto-stop)
@@ -361,8 +385,13 @@ If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial a
 - [ ] Backdating entries (date picker on in-app capture path; notification path defaults to today)
 - [ ] "First memory" badge per child (permanent marker on the first entry)
 - [ ] Prompt cards on Recording screen (age-bracketed, shuffled from curated bank)
+- [ ] Welcome preview page — new onboarding screen before paywall showing what the app looks like with months of data (full feed, search, Core Memories) so parents see what they're subscribing to
+- [ ] Location capture — auto-detect device location as readable text label (e.g., "Tampa, FL") + manual override field. Stored on each entry for future search. No map/GPS complexity — just a text field
+- [ ] Schema future-proofing — add `title`, `recorded_by`, and `location_text` fields to entry table during backend setup, even though full features ship later
 
 ### V1.5 (Month 4-6) — Retention & Polish
+- [ ] **AI-generated titles** — each memory gets an auto-generated title based on transcript content (e.g., "Emma's First Giggle," "Bath Time Chaos"). Displayed on entry cards in the feed, making entries scannable and distinct. Title is editable by parent — AI suggests, parent controls. Generated via the same Claude API call as tagging (see Section 3.3). Essential for parent merge (V2) where titles help reference specific memories. Bake `title` field into schema at V1.0
+- [ ] **AI transcript cleanup** — light AI pass on raw transcripts to remove filler words (um, uh, like, you know) and fix obvious speech-to-text errors while preserving the parent's authentic voice and meaning. Runs as part of the same Claude API call as titles and tags. On-device transcription first, then text sent to AI for cleanup — no audio leaves the device. Parent sees the cleaned version but can always revert to the original transcript
 - [ ] "On this day" memory resurfacing (1 year ago today) — see Section 4b for card design spec
 - [ ] Milestone celebrations — AI detects milestone language, flags with star badge + celebration animation; auto-prompts parent to share via record request link. See Section 4b for badge design spec
 - [ ] Age milestone markers in timeline — divider cards at birthday boundaries. See Section 4b
@@ -371,6 +400,9 @@ If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial a
 - [ ] Improved transcription (cloud fallback for low-confidence entries — see Section 2.1.1)
 - [ ] "Quiet week" prompt for inactive users — see Section 4b
 - [ ] LLM-powered auto-tagging upgrade (Claude Haiku — see Section 3.3)
+- [ ] **Add photos (cap 3)** — attach up to 3 photos per entry via camera or gallery picker. Photos display in Entry Detail below the transcript. Keeps the focus on voice/text (the differentiator) while letting parents add visual context. Photos stored in Supabase Storage alongside audio files
+- [ ] **Birthday quiz** — on a child's birthday, app sends a special push notification or shows an in-app interstitial with guided questions ("What's their favorite food right now?" "What word do they say funny?" "What are they obsessed with?"). Responses saved as a structured text entry tagged with the child and a "birthday" tag. Creates an annual snapshot tradition. Overlaps with Keepsakes' core workflow, validating demand
+- [ ] **Help / menu section** — expandable dropdown or dedicated screen accessible from the top bar. Includes: FAQ, "Ways to Use Your Memories" (4 articles linking to website — e.g., "Share with Grandparents," "Create a Birthday Tradition," "Build a Bedtime Routine," "Make a Keepsake Book"), Contact Us, mission/about, and a deeper dive into family connection. Content links to external website rather than living in-app
 - [ ] Share individual entries — tap share to generate a read-only link with entry text, child name, date, and audio playback; shareable via native share sheet
 - [ ] In-app feedback — "Contact Us" in Settings opens email compose with device info + app version auto-attached
 - [ ] Family recap emails — weekly text digest + monthly audio highlight reel with "voices this month" section (see Section 4)
@@ -379,7 +411,11 @@ If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial a
 - [ ] Audio playback on Home entry cards (port inline play from Core Memories to standard cards if validated)
 
 ### V2 (Month 6-12) — Growth & Expansion
-- [ ] Partner sharing (two parents, one account) — included in base subscription, no premium tier
+- [ ] **Parent merge (linked accounts)** — replaces "partner sharing (two parents, one account)." Each parent has their own account with their own login. Parents pair accounts via an invitation flow (one sends invite, other accepts). Both see a unified feed of shared children and entries. Each entry stores a `recorded_by` field showing which parent recorded it. Second parent can add their own recording/perspective to an existing memory — the entry then has two voice recordings and two transcript sections. UI needs to handle dual-perspective entries (either two text blocks within one entry, or a tabbed "Mom's version / Dad's version" view — to be designed). Included in base subscription, no premium tier. Partner must approve invitation (no unilateral access)
+- [ ] **Memory view filtering** — new filter axis on Home and Search screens. Toggle between: "My memories," "Partner's memories," "Both," and "Others" (grandparents/family who contributed via share links). Works alongside the existing child tab filter. Depends on parent merge infrastructure being in place
+- [ ] **Search scroll (Google Photos style)** — as you scroll the entry feed (Home or Search), a floating date indicator shows your position in time. Fast-scrolling accelerates through months and years with snap points at date boundaries. Uses section list headers that stick as you scroll. Becomes essential once a user has hundreds of entries — a "success problem" worth solving when retention is strong
+- [ ] **Start/stop recording** — pause and resume during a 60-second recording. Audio segments stitched together seamlessly. Transcript handles the gap gracefully. Lets parents collect their thoughts mid-recording without wasting time. Recording timer pauses during breaks
+- [ ] **Location search + recaps** — search and filter entries by location using simple text matching, not geo-queries (e.g., type "Italy" and find all entries where location contains "Italy"). Location-based recaps (e.g., "Your Tampa trip, Summer 2025" — auto-grouped entries from the same location and time period). Builds on location capture from V1.0
 - [ ] "Memory Sparks" — import photo from camera roll, app prompts "What was happening here?"
 - [ ] AI semantic search — natural language queries ("When did Liam first talk about wanting a dog?") with synthesized answers linking to original audio; built on pgvector + RAG pattern; grows more powerful with usage
 - [ ] Keepsake book builder + print-on-demand integration
@@ -389,7 +425,6 @@ If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial a
 - [ ] Referral program — invite a parent friend, both get a free month; built into Settings
 - [ ] Yearly recap — "Year in Memories" email with curated audio, growth stats, month-by-month highlights, year-end letter prompt; timed near renewal (see Section 4)
 - [ ] Titled record requests via link — parent sends a named, themed recording link to family; recipient records on simple web page, no app/account needed
-- [ ] Photo attachment to voice entries — after recording, option to snap or select one photo
 - [ ] Family tree / people tagging — set up family members once, tag in entries, filter by person
 - [ ] Partner prompt / "question of the day" — both parents get same prompt, record independently, paired at week's end
 - [ ] Seasonal & holiday memory prompts with family invites
@@ -398,6 +433,7 @@ If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial a
 ### V3+ (Year 2) — Platform
 - [ ] "Interview Mode" — guided Q&A to record the child's own answers
 - [ ] Collaborative family timeline
+- [ ] **Responsive milestones** — as kids hit milestones (detected from dates or memory content), app surfaces age-appropriate recommendations, parenting wisdom, and (opt-in) curated product suggestions via affiliate links. Requires dedicated marketing support to execute without compromising the app's trusted, journal-first identity. Parked for now — revisit when the app has scale and marketing capacity
 - [ ] Foster care adaptation (structured documentation, agency partnerships)
 - [ ] Export options (PDF, full data export)
 - [ ] Offline recording with background sync
@@ -405,6 +441,8 @@ If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial a
 ---
 
 ## 8. Data & Privacy
+
+> **Detailed schema:** See [`database-schema.md`](database-schema.md) for complete table definitions, column specs, indexes, RLS policies, and migration sequence.
 
 ### Principles
 - User data is never sold, mined, or used for advertising
@@ -450,19 +488,21 @@ These are the performance, security, and quality targets that apply at MVP. More
 - **NFR-010:** Voice recording includes visual feedback (breathing circle + timer) for users who cannot hear audio playback
 - **NFR-011:** Support for Dynamic Type (iOS) and font scaling (Android)
 - **NFR-012:** Color contrast ratio ≥4.5:1 for all text. Note: verify textMuted (#B5AAA0) against bg (#FAF8F5) meets this threshold.
+- **NFR-013:** Respect device-level Reduce Motion setting (`prefers-reduced-motion`). When enabled, disable decorative animations (pulseGlow, breathe, fadeInUp stagger) while preserving functional transitions (screen navigation, modal enter/exit). Hook already implemented in `hooks/useReduceMotion.ts`.
 
 ---
 
 ## 10. Technical Stack (Confirmed)
 
 ### Platform
-- **iOS-first launch.** Target demographic (moms of toddlers) skews heavily iPhone. Android can follow using the same React Native codebase once MVP is validated.
+- **iOS + Android simultaneous launch.** Expo and React Native provide a single codebase for both platforms. Target demographic (moms of toddlers) skews iPhone, but Android users represent a significant audience worth capturing from day one.
 
 ### Frontend
 - **React Native + Expo (TypeScript)** — single codebase, familiar to React web devs, Expo handles builds/OTA updates/app store submission via EAS
-- **UI:** NativeWind (Tailwind CSS for React Native) — fastest path for a solo dev coming from web React
-- **State management:** Zustand — lightweight, minimal boilerplate, scales better than Context for multiple state domains (auth, entries, children, UI)
-- **Speech-to-text:** `expo-speech-recognition` (by jamsch) — wraps Apple SFSpeechRecognizer (iOS) and Google SpeechRecognizer (Android), real-time streaming transcription, zero cost, proper Expo config plugin, built-in audio file persistence (`recordingOptions.persist`), ~54K weekly npm downloads. Replaces `@react-native-voice/voice` which has a broken Expo config plugin (`@expo/config-plugins@^2.0.0` vs. current SDK's `~9.0.0`)
+- **UI:** React Native StyleSheet with centralized design tokens (`constants/theme.ts`). All colors, typography, spacing, radii, and shadows imported from theme — no hardcoded values in components
+- **State management:** Zustand — lightweight, minimal boilerplate, scales better than Context for multiple state domains (auth, entries, children, UI). MVP auth store tracks onboarding completion only; full auth state (user identity, tokens) added during Phase 4a Supabase integration
+- **Animations:** React Native built-in Animated API for Expo Go compatibility during static prototype phase. Migrate to React Native Reanimated when custom dev client is introduced in Phase 4 (required for speech recognition). Reanimated also supports web via CSS transitions
+- **Speech-to-text:** `expo-speech-recognition` (by jamsch) — target library for Phase 4c. Wraps Apple SFSpeechRecognizer (iOS) and Google SpeechRecognizer (Android), real-time streaming transcription, zero cost, proper Expo config plugin, built-in audio file persistence (`recordingOptions.persist`). Not yet integrated — current prototype uses mock transcription data
 
 ### Backend
 - **Supabase (direct client SDK)** — PostgreSQL + Auth + Storage + Row Level Security. App talks to Supabase directly; Edge Functions handle server-side logic (tagging pipeline, background processing). No custom API layer for MVP.
@@ -480,8 +520,14 @@ These are the performance, security, and quality targets that apply at MVP. More
 - **PostHog** — open source, generous free tier (1M events/mo), privacy-friendly. Good alignment with the app's privacy-first positioning. Tracks retention, funnel analysis, and custom events.
 
 ### AI Tagging (MVP → V2)
-- **MVP:** Keyword matching + lightweight NLP for topic classification
-- **V2:** Anthropic Claude API (Haiku) for LLM-based classification (see Section 3.3)
+- **MVP:** Keyword matching for topic classification — implemented during Phase 4d (Saving Entries). Current prototype uses manual tagging only
+- **V1.5:** Anthropic Claude API (Haiku) for LLM-based classification, AI-generated titles, and AI transcript cleanup (see Section 3.3). Single API call handles all three tasks
+- **V2:** AI semantic search via pgvector + RAG (see Semantic Search below)
+
+### Cloud Transcription (V2)
+- **Target provider:** Deepgram Nova-2 — $0.0043/min, $200 free credit (see Section 2.1.1 for detailed evaluation)
+- Fallback for entries where on-device transcription has low confidence
+- Not needed at MVP — on-device speech recognition is sufficient for most use cases
 
 ### Semantic Search (V2)
 - **pgvector** extension in Supabase PostgreSQL for vector embedding storage
@@ -520,24 +566,7 @@ Zero-effort decisions during development that prevent expensive rework at scale.
 
 ## 11. Competitive Positioning
 
-### What exists today
-- **Baby tracker apps** (Huckleberry, Baby Tracker): Focus on feeding/sleep schedules, not memories. Stop being useful after infancy.
-- **Generic journals** (Day One, Journey): No child-linking, no voice-first, no family sharing, no keepsake books.
-- **Social media** (Instagram, Facebook): Memories buried in algorithmic feeds, mixed with non-family content, privacy concerns.
-- **Physical notebooks:** Effective but unsearchable, unshared, and can't preserve the parent's voice.
-
-### Core-Memories's wedge
-- Voice-first input is the primary differentiator — no competitor leads with voice
-- Child-linked, tagged entries create structure that generic journals lack
-- Audio preservation means grandchildren could someday hear their grandparent's voice describing the day they were born
-- Keepsake book as an output creates a tangible artifact that deepens emotional lock-in
-
-### Competitive moat
-- **Data lock-in:** After 1-2 years of daily/weekly memories, switching cost is enormous
-- **Brand/community:** Position as the trusted, privacy-respecting home for childhood memories
-- **Emotional lock-in:** The audio recordings create irreplaceable value — you can't export your voice to another app and get the same experience
-- **Compounding value:** The archive becomes more emotionally valuable over time — mundane entries from today become irreplaceable time capsules in 3-5 years. The longer someone uses the app, the harder it is to leave and the more powerful the renewal pitch becomes
-- **Multi-voice archive:** Family contributor recordings (V2) transform the archive from a solo journal into a chorus of family voices that no competitor can replicate
+> **Full analysis:** See [`Competitive Landscape`](../research/competitors.md) for detailed head-to-head comparisons across baby journal apps, voice-first journaling apps, and general journaling tools.
 
 ---
 
@@ -584,7 +613,7 @@ Zero-effort decisions during development that prevent expensive rework at scale.
 - [ ] **Free trial length:** 7 vs. 14 days — A/B test once live
 - [ ] **COPPA compliance:** Legal review needed for storing data about children
 - [ ] **Audio storage costs:** Model the per-user storage cost at scale (1 entry/day x 60 seconds x 1,000 users)
-- [ ] **Platform:** Launch iOS-only or iOS + Android simultaneously?
+- [x] **Platform:** ~~Launch iOS-only or iOS + Android simultaneously?~~ **Decided: iOS + Android simultaneously via Expo.**
 - [ ] **Age display granularity:** Should age auto-adjust format based on child's age (days for 0–3 months, weeks for 3–12 months, months for 1–3 years, years+months for 3+)?
 - [ ] **Recording extension:** Should a "Keep Going" button at 60s extend to 3 minutes? Defer until user data shows how often entries hit the 60-second cap.
 - [ ] **Child deletion behavior:** When a child is deleted from Settings, what happens to their entries?
@@ -622,3 +651,4 @@ Features that came up in discovery but aren't prioritized yet:
 | Letter to future child | Special recording mode — parent speaks directly to their child for them to hear someday; distinct UI | Medium | Strong marketing content; distinct from Time Capsule |
 | Text-based printed journal | Clean paperback diary: dated transcriptions, age stamps, optional photos, QR codes linking to original audio | Medium | Design data model to support now; implement V2+. Complements keepsake book |
 | Audio playback on Home cards | Port inline play from Core Memories to standard entry cards on Home | Medium | Validate on Core Memories first; add to Home in V1.5 if engagement is high |
+| Merge two memories (drag & drop) | Combine two separate entries into one by dragging one onto the other | Low | Parked — UX is unclear (what happens to two audio files, two transcripts, different child tags?). Rare edge case. Simpler workaround: copy-paste text between entries and delete the duplicate |

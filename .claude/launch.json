@@ -6,6 +6,18 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["C:/Users/jimmy/AppData/Roaming/npm/node_modules/http-server/bin/http-server", "-p", "3458", "-c-1"],
       "port": 3458
+    },
+    {
+      "name": "expo-web",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/expo/bin/cli", "start", "--web", "--port", "8083"],
+      "port": 8083
+    },
+    {
+      "name": "static-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:/Users/jimmy/AppData/Roaming/npm/node_modules/http-server/bin/http-server", "dist", "-p", "8084", "-c-1", "--spa"],
+      "port": 8084
     }
   ]
 }

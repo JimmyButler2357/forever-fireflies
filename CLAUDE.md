@@ -1,8 +1,10 @@
 # Core Memories — Project Instructions
 
+**Session prefix: CM**
+
 ## Design System
 
-**Before doing any UI work**, read `/docs/design-system-principles.md`. It is the source of truth for all visual implementation.
+**Before doing any UI work**, read `/docs/design/design-style.md`. It is the source of truth for all visual implementation.
 
 ### Quick-Reference Rules
 

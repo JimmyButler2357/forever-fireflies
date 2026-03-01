@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Core Memories — Header Explorer</title>
+  <style>
+    /* ═══ Design Tokens (from design-style.md) ═══ */
+    :root {
+      --bg: #FAF8F5;
+      --card: #FFFFFF;
+      --text: #2C2420;
+      --textSoft: #8C7E74;
+      --textMuted: #B5AAA0;
+      --accent: #E8724A;
+      --accentSoft: #FFF0EB;
+      --accentPressed: #D4613B;
+      --accentGlow: rgba(232,114,74,0.12);
+      --border: #EDE8E3;
+      --tag: #F3EDE8;
+      --heartEmpty: #D9D2CB;
+      --cardPressed: #F7F4F1;
+      --overlay: rgba(44,36,32,0.45);
+      --coreBg: #F9F2EB;
+
+      --shadow-sm: 0 1px 3px rgba(44,36,32,0.06);
+      --shadow-md: 0 4px 12px rgba(44,36,32,0.10);
+      --shadow-lg: 0 12px 40px rgba(44,36,32,0.20);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-card: 14px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+
+      --serif: 'Georgia', serif;
+      --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    /* ═══ Reset ═══ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--sans);
+      background: #E8E2DC;
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ═══ Page Layout ═══ */
+    .page-header {
+      text-align: center;
+      padding: 48px 20px 12px;
+    }
+    .page-header h1 {
+      font-family: var(--serif);
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+    .page-header p {
+      font-size: 14px;
+      color: var(--textSoft);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    /* ═══ Toolbar ═══ */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(232,226,220,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .selected-count {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--textSoft);
+    }
+    .selected-count span {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .toolbar-btn {
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: var(--radius-full);
+      border: none;
+      cursor: pointer;
+      transition: all 150ms ease;
+    }
+    .btn-clear {
+      background: var(--tag);
+      color: var(--textSoft);
+    }
+    .btn-clear:hover { background: var(--border); }
+    .btn-compare {
+      background: var(--accent);
+      color: white;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    .btn-compare.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .btn-compare.active:hover { background: var(--accentPressed); }
+
+    /* ═══ Grid ═══ */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 24px;
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; max-width: 440px; }
+    }
+
+    /* ═══ Variation Card ═══ */
+    .variation {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      border: 2px solid var(--border);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 200ms ease, box-shadow 200ms ease, transform 150ms ease;
+      position: relative;
+    }
+    .variation:hover {
+      border-color: var(--textMuted);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .variation.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent), 0 4px 20px var(--accentGlow);
+    }
+    .variation.selected .select-badge {
+      background: var(--accent);
+      color: white;
+      transform: scale(1);
+    }
+
+    /* ═══ Card Meta ═══ */
+    .card-meta {
+      padding: 16px 20px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .card-info h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .card-info p {
+      font-size: 12px;
+      color: var(--textSoft);
+      line-height: 1.4;
+    }
+    .card-number {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--textMuted);
+      background: var(--tag);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+    }
+    .select-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--tag);
+      color: var(--textMuted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 200ms ease;
+      transform: scale(0.9);
+      z-index: 5;
+    }
+
+    /* ═══ Phone Frame ═══ */
+    .phone-frame {
+      width: 375px;
+      margin: 0 auto 16px;
+      background: var(--bg);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(44,36,32,0.08);
+      position: relative;
+    }
+    .phone-frame.warm-bg { background: var(--coreBg); }
+    .phone-frame.gradient-bg {
+      background: linear-gradient(180deg, var(--coreBg) 0%, var(--bg) 100%);
+    }
+
+    /* Status bar */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 20px 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .status-bar .time { font-size: 14px; font-weight: 700; }
+    .status-icons { display: flex; gap: 4px; align-items: center; }
+    .status-icons svg { width: 16px; height: 16px; }
+
+    /* Fake content below header */
+    .fake-content {
+      padding: 12px 20px 20px;
+    }
+    .fake-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+    .fake-line {
+      height: 10px;
+      background: var(--border);
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    .fake-line:last-child { margin-bottom: 0; }
+    .fake-line.short { width: 60%; }
+    .fake-line.medium { width: 80%; }
+    .fake-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #7BAFD4;
+      display: inline-block;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .fake-dot-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .fake-dot-row .fake-line { margin-bottom: 0; width: 80px; height: 8px; }
+
+    /* ═══ Compare Modal ═══ */
+    .compare-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .compare-overlay.visible { display: flex; }
+    .compare-panel {
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      max-width: 95vw;
+      max-height: 90vh;
+      overflow: auto;
+      padding: 32px;
+    }
+    .compare-panel h2 {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .compare-panel .subtitle {
+      font-size: 13px;
+      color: var(--textSoft);
+      margin-bottom: 24px;
+    }
+    .compare-grid {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .compare-grid .phone-frame {
+      margin: 0;
+      flex-shrink: 0;
+    }
+    .compare-label {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 12px;
+    }
+    .compare-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: var(--tag);
+      color: var(--textSoft);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .compare-close:hover { background: var(--border); }
+
+    /* ═══ SVG Icon Helpers ═══ */
+    .icon { display: inline-flex; align-items: center; justify-content: center; }
+    .icon svg { display: block; }
+
+    /* ═══ Shared Header Parts ═══ */
+    .header-icon-btn {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      transition: background 150ms ease;
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       HEADER STYLES — Each variation is scoped
+    ═══════════════════════════════════════════ */
+
+    /* --- V1: Minimal Flat --- */
+    .header-v1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 20px 12px;
+    }
+    .header-v1 .title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .header-v1 .icons { display: flex; gap: 0; }
+
+    /* --- V2: Floating Card --- */
+    .header-v2-wrap {
+      padding: 4px 16px 8px;
+    }
+    .header-v2 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--card);
+      border-radius: var(--radius-card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+    }
+    .header-v2 .title {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .header-v2 .icons { display: flex; gap: 0; }
+
+    /* --- V3: Centered Title --- */
+    .header-v3 {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4px 20px 12px;
+      position: relative;
+    }
+    .header-v3 .title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .header-v3 .icon-row {
+      display: flex;
+      gap: 0;
+    }
+    .header-v3 .back-area {
+      position: absolute;
+      left: 20px;
+      top: 4px;
+    }
+
+    /* --- V4: Left Title + Pill Search --- */
+    .header-v4 {
+      padding: 8px 20px 12px;
+    }
+    .header-v4 .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .header-v4 .title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .header-v4 .icons { display: flex; gap: 0; }
+    .header-v4 .search-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: 10px 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .header-v4 .search-pill span {
+      font-size: 14px;
+      color: var(--textMuted);
+    }
+
+    /* --- V5: Bottom Accent Line --- */
+    .header-v5 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 20px 12px;
+      border-bottom: 2.5px solid var(--accent);
+    }
+    .header-v5 .title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .header-v5 .icons { display: flex; gap: 0; }
+
+    /* --- V6: Glassmorphism --- */
+    .header-v6-wrap {
+      padding: 4px 12px 8px;
+    }
+    .header-v6 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(255,255,255,0.7);
+      box-shadow: 0 2px 12px rgba(44,36,32,0.06);
+    }
+    .header-v6 .title {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .header-v6 .icons { display: flex; gap: 0; }
+
+    /* --- V7: Split Level --- */
+    .header-v7 {
+      padding: 4px 20px 12px;
+    }
+    .header-v7 .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .header-v7 .title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .header-v7 .subtitle-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--textMuted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+    .header-v7 .bottom-row {
+      display: flex;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .header-v7 .action-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--tag);
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--textSoft);
+    }
+
+    /* --- V8: Compact Dense --- */
+    .header-v8 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 16px 8px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-v8 .title {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .header-v8 .icons {
+      display: flex;
+      gap: 0;
+    }
+    .header-v8 .header-icon-btn {
+      width: 36px;
+      height: 36px;
+    }
+    .header-v8 .header-icon-btn svg { width: 18px; height: 18px; }
+
+    /* --- V9: Editorial Clean --- */
+    .header-v9 {
+      padding: 16px 20px 16px;
+      text-align: center;
+      position: relative;
+    }
+    .header-v9 .title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .header-v9 .date-line {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--textMuted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .header-v9 .left-icon {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .header-v9 .right-icons {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+    }
+    .header-v9 .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 -20px;
+      margin-top: 12px;
+    }
+
+    /* --- V10: Playful Rounded --- */
+    .header-v10 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px 12px;
+    }
+    .header-v10 .title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-v10 .app-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--accentSoft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .header-v10 .title {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .header-v10 .icons { display: flex; gap: 4px; }
+    .header-v10 .icon-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--tag);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* --- V11: Warm Gradient --- */
+    .header-v11 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 20px 16px;
+      background: linear-gradient(180deg, var(--coreBg) 0%, var(--bg) 100%);
+    }
+    .header-v11 .title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .header-v11 .icons { display: flex; gap: 0; }
+
+    /* --- V12: Journal Ruled --- */
+    .header-v12 {
+      padding: 8px 20px 0;
+    }
+    .header-v12 .content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+    }
+    .header-v12 .title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      font-style: italic;
+    }
+    .header-v12 .icons { display: flex; gap: 0; }
+    .header-v12 .ruled-lines {
+      height: 8px;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        var(--border) 3px,
+        var(--border) 4px
+      );
+      margin: 0 -20px;
+    }
+
+    /* --- V13: Accent Pill Title --- */
+    .header-v13 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 20px 12px;
+    }
+    .header-v13 .title-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accentSoft);
+      padding: 8px 16px;
+      border-radius: var(--radius-full);
+    }
+    .header-v13 .title-pill .title {
+      font-family: var(--serif);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .header-v13 .icons { display: flex; gap: 0; }
+
+    /* --- V14: Tabbed Header --- */
+    .header-v14 {
+      padding: 4px 20px 0;
+    }
+    .header-v14 .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .header-v14 .title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .header-v14 .icons { display: flex; gap: 0; }
+    .header-v14 .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin: 0 -20px;
+      padding: 0 20px;
+    }
+    .header-v14 .tab {
+      padding: 8px 16px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--textMuted);
+      position: relative;
+    }
+    .header-v14 .tab.active {
+      color: var(--accent);
+    }
+    .header-v14 .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 16px;
+      right: 16px;
+      height: 2.5px;
+      background: var(--accent);
+      border-radius: 2px 2px 0 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ Page Header ═══ -->
+<div class="page-header">
+  <h1>Header Explorer</h1>
+  <p>Click any variation to select it. Compare your favorites side by side.</p>
+</div>
+
+<!-- ═══ Toolbar ═══ -->
+<div class="toolbar">
+  <div class="toolbar-left">
+    <div class="selected-count"><span id="count">0</span> selected</div>
+    <button class="toolbar-btn btn-clear" onclick="clearAll()">Clear all</button>
+  </div>
+  <button class="toolbar-btn btn-compare" id="compareBtn" onclick="openCompare()">Compare selected</button>
+</div>
+
+<!-- ═══ Grid of Variations ═══ -->
+<div class="grid" id="grid">
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V1: Minimal Flat -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="1" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v1">
+        <div class="title">Core Memories</div>
+        <div class="icons">
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--heartEmpty)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Minimal Flat</h3><p>Clean baseline — no borders, no elevation, just title and icons</p></div>
+      <div class="card-number">#1</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V2: Floating Card -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="2" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v2-wrap">
+        <div class="header-v2">
+          <div class="title">Core Memories</div>
+          <div class="icons">
+            <div class="header-icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+            <div class="header-icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--heartEmpty)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+            <div class="header-icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Floating Card</h3><p>Raised header card with shadow — visually separated from content below</p></div>
+      <div class="card-number">#2</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V3: Centered Title -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="3" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v3">
+        <div class="back-area">
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+        </div>
+        <div class="title">Core Memories</div>
+        <div class="icon-row">
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--heartEmpty)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Centered Title</h3><p>Title takes center stage — search left, heart + settings right</p></div>
+      <div class="card-number">#3</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V4: Left Title + Pill Search -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="4" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v4">
+        <div class="top-row">
+          <div class="title">Core Memories</div>
+          <div class="icons">
+            <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--heartEmpty)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+            <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+          </div>
+        </div>
+        <div class="search-pill">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--textMuted)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+          <span>Search memories…</span>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Pill Search Bar</h3><p>Prominent search field below title — encourages discovery</p></div>
+      <div class="card-number">#4</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V5: Bottom Accent Line -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="5" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v5">
+        <div class="title">Core Memories</div>
+        <div class="icons">
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--heartEmpty)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Bottom Accent Line</h3><p>Warm terracotta underline grounds the header — subtle brand touch</p></div>
+      <div class="card-number">#5</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V6: Glassmorphism -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="6" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame gradient-bg">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v6-wrap">
+        <div class="header-v6">
+          <div class="title">Core Memories</div>
+          <div class="icons">
+            <div class="header-icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+            <div class="header-icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--heartEmpty)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+            <div class="header-icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Glassmorphism</h3><p>Frosted glass over warm gradient — airy, modern, layered depth</p></div>
+      <div class="card-number">#6</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V7: Split Level -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="7" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v7">
+        <div class="top-row">
+          <div class="title">Core Memories</div>
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+        </div>
+        <div class="subtitle-text">YOUR FAMILY JOURNAL</div>
+        <div class="bottom-row">
+          <div class="action-chip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg> Search</div>
+          <div class="action-chip"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> Favorites</div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Split Level</h3><p>Title + subtitle on top, action chips below — rich and navigable</p></div>
+      <div class="card-number">#7</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V8: Compact Dense -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="8" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v8">
+        <div class="title">Core Memories</div>
+        <div class="icons">
+          <div class="header-icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+          <div class="header-icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--heartEmpty)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+          <div class="header-icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#9BC49B"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Compact Dense</h3><p>Tight header with white bar — maximizes content space below</p></div>
+      <div class="card-number">#8</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V9: Editorial Clean -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="9" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v9">
+        <div class="left-icon">
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+        </div>
+        <div class="title">Core Memories</div>
+        <div class="date-line">FEBRUARY 2026</div>
+        <div class="right-icons">
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--heartEmpty)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+        </div>
+        <div class="divider"></div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Editorial Clean</h3><p>Magazine-style centered title with date subline — calm, literary feel</p></div>
+      <div class="card-number">#9</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V10: Playful Rounded -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="10" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v10">
+        <div class="title-group">
+          <div class="app-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          </div>
+          <div class="title">Core Memories</div>
+        </div>
+        <div class="icons">
+          <div class="icon-circle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--textSoft)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+          <div class="icon-circle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--textSoft)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Playful Rounded</h3><p>App icon + circular icon buttons — warm and approachable</p></div>
+      <div class="card-number">#10</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V11: Warm Gradient -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="11" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v11">
+        <div class="title">Core Memories</div>
+        <div class="icons">
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--heartEmpty)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Warm Gradient</h3><p>Subtle warm-to-cream gradient behind header — cozy, inviting top</p></div>
+      <div class="card-number">#11</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V12: Journal Ruled -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="12" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v12">
+        <div class="content">
+          <div class="title">Core Memories</div>
+          <div class="icons">
+            <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+            <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--heartEmpty)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+            <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+          </div>
+        </div>
+        <div class="ruled-lines"></div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Journal Ruled</h3><p>Italic serif + notebook ruled lines — leans into the journal metaphor</p></div>
+      <div class="card-number">#12</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V13: Accent Pill Title -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="13" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v13">
+        <div class="title-pill">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          <div class="title">Core Memories</div>
+        </div>
+        <div class="icons">
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+          <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Accent Pill Title</h3><p>Title in a warm tinted pill with heart icon — branded and distinctive</p></div>
+      <div class="card-number">#13</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- V14: Tabbed Header -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="variation" data-id="14" onclick="toggleSelect(this)">
+    <div class="select-badge">✓</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="time">9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 10h2v4H1zm4-3h2v7H5zm4-3h2v10H9zm4-3h2v13h-2z"/></svg>
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 12h12v2H2z M3 9h10v2H3z M5 6h6v2H5z"/></svg>
+        </div>
+      </div>
+      <div class="header-v14">
+        <div class="top-row">
+          <div class="title">Core Memories</div>
+          <div class="icons">
+            <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+            <div class="header-icon-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab active">All</div>
+          <div class="tab">Favorites</div>
+          <div class="tab">Recent</div>
+        </div>
+      </div>
+      <div class="fake-content">
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot"></div><div class="fake-line"></div></div><div class="fake-line"></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+        <div class="fake-card"><div class="fake-dot-row"><div class="fake-dot" style="background:#D4A07B"></div><div class="fake-line"></div></div><div class="fake-line medium"></div><div class="fake-line short"></div></div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="card-info"><h3>Tabbed Header</h3><p>Integrated tabs under title — combines navigation and header in one</p></div>
+      <div class="card-number">#14</div>
+    </div>
+  </div>
+
+</div><!-- /grid -->
+
+<!-- ═══ Compare Modal ═══ -->
+<div class="compare-overlay" id="compareOverlay" onclick="closeCompare(event)">
+  <div class="compare-panel" onclick="event.stopPropagation()" style="position:relative">
+    <button class="compare-close" onclick="closeCompare(event, true)">&times;</button>
+    <h2>Side by Side</h2>
+    <p class="subtitle">Your selected header variations</p>
+    <div class="compare-grid" id="compareGrid"></div>
+  </div>
+</div>
+
+<script>
+  // ═══ Selection State ═══
+  const selected = new Set();
+
+  function toggleSelect(el) {
+    const id = el.dataset.id;
+    if (selected.has(id)) {
+      selected.delete(id);
+      el.classList.remove('selected');
+    } else {
+      selected.add(id);
+      el.classList.add('selected');
+    }
+    updateCount();
+  }
+
+  function clearAll() {
+    selected.clear();
+    document.querySelectorAll('.variation.selected').forEach(el => el.classList.remove('selected'));
+    updateCount();
+  }
+
+  function updateCount() {
+    document.getElementById('count').textContent = selected.size;
+    const btn = document.getElementById('compareBtn');
+    if (selected.size >= 2) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  }
+
+  // ═══ Compare Modal ═══
+  function openCompare() {
+    if (selected.size < 2) return;
+    const grid = document.getElementById('compareGrid');
+    grid.innerHTML = '';
+
+    selected.forEach(id => {
+      const variation = document.querySelector(`.variation[data-id="${id}"]`);
+      const phone = variation.querySelector('.phone-frame');
+      const name = variation.querySelector('.card-info h3').textContent;
+
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.flexDirection = 'column';
+      wrapper.style.alignItems = 'center';
+
+      const clone = phone.cloneNode(true);
+      clone.style.margin = '0';
+      wrapper.appendChild(clone);
+
+      const label = document.createElement('div');
+      label.className = 'compare-label';
+      label.textContent = name;
+      wrapper.appendChild(label);
+
+      grid.appendChild(wrapper);
+    });
+
+    document.getElementById('compareOverlay').classList.add('visible');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeCompare(e, force) {
+    if (force || e.target === document.getElementById('compareOverlay')) {
+      document.getElementById('compareOverlay').classList.remove('visible');
+      document.body.style.overflow = '';
+    }
+  }
+
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeCompare(null, true);
+  });
+</script>
+
+</body>
+</html>

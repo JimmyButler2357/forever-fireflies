@@ -75,7 +75,7 @@ Everything outside of code and marketing that goes into running a consumer app a
 **GDPR** (if any EU users)
 - Requires: consent for data collection, right to deletion, right to data export, data processing agreements with vendors
 - Supabase, PostHog, and RevenueCat all offer GDPR-compliant configurations
-- Not urgent for a US-first, iOS-first launch — but bake in the ability to delete a user's data completely (Supabase RLS + cascade deletes make this straightforward)
+- Not urgent for a US-first launch — but bake in the ability to delete a user's data completely (Supabase RLS + cascade deletes make this straightforward)
 
 **CCPA** (California users)
 - Triggered at 50K+ users or $25M+ revenue

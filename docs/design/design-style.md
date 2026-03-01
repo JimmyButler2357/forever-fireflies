@@ -1,6 +1,6 @@
-# Core Memories — Design Style Guide (v2)
+# Core Memories — Design Style Guide (v3)
 
-Updated to reflect all wireframe iterations through v13. This document captures the visual language as built — not aspirational, but actual patterns extracted from the working wireframe. Save pixel-perfect specs for implementation; this guide ensures consistency across screens.
+Updated to merge the Design System Principles into a single source of truth. This document captures the visual language as built — not aspirational, but actual patterns extracted from the working wireframe. Every component, screen, and style must conform to this guide. When in doubt, reference this file.
 
 ---
 
@@ -21,21 +21,29 @@ Core Memories should feel like a personal journal, not a tech product. Warm, qui
 
 | Token | Hex | Usage |
 |---|---|---|
-| bg | `#FAF8F5` | Screen background (cream) |
+| bg | `#FAF8F5` | Page / screen background (cream) |
 | card | `#FFFFFF` | Card surfaces |
-| text | `#2C2420` | Primary text, dynamic island, phone frame |
+| text | `#2C2420` | Primary text, dark brown |
 | textSoft | `#8C7E74` | Secondary text, inactive icons, labels |
 | textMuted | `#B5AAA0` | Placeholder, tertiary text, timestamps, ages |
-| accent | `#E8724A` | Primary action (mic button, CTA, hearts, links) |
+| accent | `#E8724A` | Primary accent — mic button, CTA, hearts, links |
 | accentSoft | `#FFF0EB` | Accent tint backgrounds (banners, play buttons, picker highlights) |
+| accentPressed | `#D4613B` | Pressed/active state for accent buttons |
 | accentGlow | `rgba(232,114,74,0.12)` | Favorited card glow shadow |
-| border | `#EDE8E3` | Card borders, section dividers, input underlines |
+| heartFilled | `#E8724A` | Favorited heart (same as accent) |
+| heartEmpty | `#D9D2CB` | Unfavorited heart stroke |
+| border | `#EDE8E3` | Card borders, section dividers, input underlines, skeleton shimmer base |
 | tag | `#F3EDE8` | Tag pill background, neutral button background |
-| danger | `#D94F4F` | Delete actions, destructive text |
+| success | `#4CAF7C` | Positive feedback (saved, done) |
+| successSoft | `#E8F5EE` | Success tint background |
+| warning | `#E8A94A` | Warning states |
+| warningSoft | `#FFF5E6` | Warning tint background |
+| danger | `#D94F4F` | Destructive action (delete) |
 | overlay | `rgba(44,36,32,0.45)` | Modal/dialog backdrops |
 | general | `#B5AAA0` | "All" tab color (matches textMuted) |
+| cardPressed | `#F7F4F1` | Tappable card pressed state (slight darken from card white) |
 
-### Child Colors
+### Per-Child Colors
 
 Auto-assigned in order as children are added. These persist across the entire app for pills, tabs, dots, and card accents.
 
@@ -48,7 +56,7 @@ Auto-assigned in order as children are added. These persist across the entire ap
 | 5 | Teal | `#6BB5A8` | `#6BB5A820` |
 | 6 | Rose | `#D48B8B` | `#D48B8B20` |
 
-Use child color at full opacity for text, dots, and active borders. Use at ~12% opacity (`+ "20"` hex suffix) for pill backgrounds and tab fills.
+Use child color at full opacity for text, dots, and active borders. Use at ~12% opacity (`+ "20"` hex suffix) for pill backgrounds and tab fills. Use at ~25% opacity for active filter tab backgrounds.
 
 ### Screen-Specific Colors
 
@@ -58,6 +66,12 @@ Use child color at full opacity for text, dots, and active borders. Use at ~12% 
 | Notification background | `#F5F0EB` | Subtle warm gradient behind notification card |
 | Recording backdrop | `rgba(244,226,214,0.45)` | Radial gradient warmth for recording/onboarding |
 | First-entry banner | `linear-gradient(135deg, accentSoft, rgba(255,240,235,0.5))` | Celebration banner after first recording |
+
+### Color Rules
+
+- Never use raw hex in component code. Always pull from the theme object.
+- If a new semantic color is needed, add it to this table first, then implement.
+- Opacity variants of existing colors don't need new tokens — use runtime opacity.
 
 ---
 
@@ -72,25 +86,30 @@ Use child color at full opacity for text, dots, and active borders. Use at ~12% 
 
 ### Type Scale
 
-Extracted from the wireframe. Sizes cluster around a handful of values — keep it tight at implementation.
+Five named sizes for implementation. Map wireframe values to the nearest.
+
+| Name | Size | Weight | Line-height | Usage |
+|---|---|---|---|---|
+| title | 22px | 800 | 1.3 | App title ("Core Memories") |
+| heading | 16px | 700 | 1.4 | Screen headers, dialog titles, section headers |
+| body | 14px | 400 | 1.5 | Entry text, descriptions, form inputs, body copy |
+| label | 12px | 500–700 | 1.4 | Timestamps, section headers, labels, legal text |
+| caption | 11px | 500 | 1.3 | Tags, audio timestamps, tiny metadata, age lines, hints |
+
+### Extended Sizes (Wireframe Reference)
+
+The wireframe uses additional sizes for specific contexts. At implementation, map these to the named scale or use sparingly as documented.
 
 | Size | Weight | Usage |
 |---|---|---|
-| 28px | 800 | App title on Sign In (Georgia serif, tight letter-spacing -0.5) |
-| 22px | 800 | App title in top bar on Home/Empty/Recording screens (Georgia serif, -0.5 tracking) |
+| 28px | 800 | App title on Sign In only (Georgia serif, letter-spacing -0.5) |
 | 20px | 700 | Onboarding headings — Memory Saved, Paywall (Georgia serif) |
 | 18px | 700 | Section headings — Add Child, Mic Permission, Notifications (Georgia serif) |
 | 18px | 500 | Prompt card text (Georgia serif, 1.5 line-height) |
 | 17px | 700 | Core Memories screen title (Georgia serif, 0.3 tracking) |
-| 16px | 700 | Screen titles — Settings, Search (system sans) |
-| 16px | — | Child name input field (Georgia serif) |
-| 15px | 400-700 | Transcript body text (Georgia serif, 1.65 line-height), Core Memories card previews (Georgia, 1.6 line-height), onboarding tagline |
-| 14px-15px | 450-500 | Entry card preview text (system sans, 1.55 line-height), body copy |
-| 14px | 500-600 | Form labels, settings row text, filter chips |
-| 13px | 600-700 | Child pills, tab labels, button labels, banner text |
-| 12px | 500-600 | Timestamps, secondary labels, tag editor section headers, legal text |
-| 11px | 500-600 | Tags, captions, age lines, auto-detect hints, sublabels |
-| 10px | 600-700 | Date/time on cards, audio duration, flow map labels |
+| 15px | 400–700 | Transcript body text (Georgia serif, 1.65 line-height), Core Memories card previews (Georgia, 1.6 line-height), onboarding tagline |
+| 13px | 600–700 | Child pills, tab labels, button labels, banner text |
+| 10px | 600–700 | Date/time on cards, audio duration, flow map labels |
 
 ### Weight Scale
 
@@ -112,174 +131,207 @@ Extracted from the wireframe. Sizes cluster around a handful of values — keep 
 | 1.55 | Entry card previews on Home |
 | 1.5 | General body text, descriptions, prompt cards |
 | 1.4 | Compact body — notification text, headings with tight leading |
+| 1.3 | Title, captions — tightest leading |
+
+### Typography Rules
+
+- Never invent sizes outside the named scale without documenting them in the extended table.
+- Weight 500–600 is acceptable for labels; weight 700 is reserved for section headers and tiny-label uppercase treatments.
+- Uppercase + letter-spacing 0.8px is only used for tiny section headers at 12px.
 
 ---
 
-## Spacing & Layout
+## Spacing System
 
-### Border Radius Scale
+Prefer **4px grid** values (4, 8, 12, 16, 20, 24, 32, 48). In-between values like 6, 10, 14, 18 are acceptable for fine-tuning where the grid feels too coarse — the wireframe uses these throughout for optical balance. Avoid truly arbitrary values.
 
-| Radius | Usage |
+### Scale
+
+| Token | Value |
 |---|---|
-| 40px | Phone frame (wireframe only) |
-| 20px | Child tabs, child pills, notification card, search pill |
-| 16px | Large cards (first-entry glow card, Core Memories cards) |
-| 14px | Standard cards (entry cards, form cards, pickers, transcript area) |
-| 12px | Buttons (primary CTA, confirm/cancel), child pill in onboarding, settings rows |
-| 10px | Inner inputs, notification action buttons, birthday picker confirm, banner |
-| 8px | Tags, small badges, flow map elements |
+| xs | 4px |
+| sm | 8px |
+| md | 12px |
+| lg | 16px |
+| xl | 20px |
+| 2xl | 24px |
+| 3xl | 32px |
+| 4xl | 48px |
 
-### Common Padding Patterns
+### Common Assignments
 
-| Pattern | Pixels | Where |
+| Context | Value | Token |
 |---|---|---|
-| Screen padding | `0 20px` | Standard horizontal inset for content |
-| Card padding | `14px 16px` to `18px` | Entry cards, transcript area |
-| Prompt cards | `20px 24px` | Onboarding and recording prompt cards |
-| Pills (child tabs) | `7px 14px` | Child filter tabs |
-| Pills (metadata) | `5px 12px` | Child pills on Entry Detail |
-| Tags | `2px 8px` | Tag pills |
-| Buttons (full-width) | `15px 0` | Primary CTA buttons |
-| Settings rows | `13px 16px` | Settings list items |
+| Screen padding (horizontal) | 20px | xl |
+| Card padding | 16px | lg |
+| Section gap (between cards) | 12px | md |
+| Inner element gap | 8px | sm |
+| Tight spacing (pills, tags) | 4px | xs |
+| Prompt card padding | 24px | 2xl |
 
-### Touch Targets
+### Spacing Rules
 
-| Element | Size | Notes |
-|---|---|---|
-| Mic button (recording) | 96×96px | Largest element in the app. Pulsing glow animation. |
-| Mic button (home) | 68×68px | Prominent but secondary to the recording screen version |
-| Back/X/gear icons | ~20-22px | Icon size; tappable area should be padded to 44px minimum |
-| Child picker + button | 24×24px | Small; consider padding tappable area for implementation |
-| Play button (audio) | 36×36px (Detail), 26×26px (Core Memories card) | AccentSoft background circle |
+- Prefer scale values. When fine-tuning, stay close to the grid (e.g. 6 instead of 5, 10 instead of 9).
+- Margin-bottom between cards: `10–12px` (wireframe uses 10, grid says 12 — either is acceptable).
+- Padding inside cards: `14–16px` (wireframe uses 14px top / 16px sides on entry cards).
 
 ---
 
-## Component Patterns
+## Safe Area Insets
 
-### Entry Cards (Home)
+Modern phones have system UI that overlaps the screen edges — the status bar at the top and the home indicator at the bottom (iPhone X and later). Every screen must account for these.
 
-Standard entry cards on the Home screen and Search results. Consistent format across the app.
+### Setup
 
-- Background: `card` with `paperTex` overlay
-- Border: `1px solid border`
-- Border radius: 14px
-- Shadow: `0 1px 3px rgba(44,36,32,0.06)` (subtle, warm)
-- Content: child dot + name (colored), date, time, then 2-line transcript preview (system sans, 14.5px, 450 weight, `-webkit-line-clamp: 2`)
-- **Favorited variant:** Border becomes `1px solid accent25`, shadow adds accent glow (`0 0 0 1.5px accent30, 0 2px 8px accentGlow`), filled heart icon shown
+- The root `_layout.tsx` wraps the app in `<SafeAreaProvider>` — this makes inset values available everywhere.
+- Individual screens call `const insets = useSafeAreaInsets()` to read the device-specific values.
 
-### Entry Cards (Core Memories)
+### Top Inset (`insets.top`)
 
-Elevated treatment for the favorites screen. Should feel warmer and more expansive than Home cards.
+- **TopBar component** handles this automatically — it adds `paddingTop: insets.top + spacing(3)`.
+- Screens using TopBar don't need to handle the top inset themselves.
+- Screens with a custom top bar (e.g. Recording, Entry Detail, Paywall) must apply `paddingTop: insets.top + spacing(3)` manually.
+- Centered onboarding screens use `paddingTop: insets.top` on the container.
 
-- Border radius: 16px (larger than standard)
-- Shadow: `0 0 0 1.5px accent25, 0 3px 12px accent10` (warmer, more prominent)
-- Border: `1px solid accent20`
-- Transcript preview: **Georgia serif**, 15px, 400 weight, 1.6 line-height, **3 lines** (vs. Home's 2)
-- Includes inline audio play button at bottom of card (26px circle, accentSoft background, play triangle icon)
-- Play button area uses `stopPropagation` — tapping audio stays on Core Memories; tapping card text navigates to Detail
+### Bottom Inset (`insets.bottom`)
 
-### Child Pills
+Every screen with content near the bottom edge must include `insets.bottom` in its bottom padding. The pattern is:
 
-Used in metadata rows on Entry Detail and on entry cards.
+```tsx
+// Inline style override — adds device inset to the design spacing
+<View style={[styles.bottom, { paddingBottom: insets.bottom + spacing(12) }]}>
+```
 
-- Dot (8px circle, full child color) + name (13px, 700 weight, full child color)
-- Background: child color at 12% opacity
-- Border radius: 20px
-- On Detail: includes × for removal (11px, 60% opacity)
+| Screen type | Pattern |
+|---|---|
+| Absolute-positioned bottom bar (Home mic button) | `paddingBottom: insets.bottom + spacing(8)` on the bottom area |
+| ScrollView / FlatList | `contentContainerStyle` with `paddingBottom: insets.bottom + spacing(N)` |
+| Fixed bottom button area (onboarding) | `paddingBottom: insets.bottom + spacing(12)` on the bottom wrapper |
+| Floating elements (Search result count) | `bottom: insets.bottom + spacing(6)` |
 
-### Child Tabs
+### Rules
 
-Horizontal scrollable row on Home and Core Memories screens.
-
-- Padding: 7px 14px
-- Border radius: 20px
-- **Active:** `2px solid childColor`, background `childColor20`, text `childColor`, shadow `0 2px 8px childColor18`
-- **Inactive:** `2px solid transparent`, background `card`, text `textMuted`, shadow `0 1px 3px rgba(44,36,32,0.04)`
-- "All" tab uses `general` color (#B5AAA0)
-
-### Tags
-
-Uniform treatment for all tag types — no color-coding by tag type.
-
-- Background: `tag` (#F3EDE8)
-- Text: `textSoft`, 11px, 500 weight
-- Border radius: 8px
-- Padding: 2px 8px
-- × icon for removal (XSmall, textMuted color)
-
-### Primary Button (CTA)
-
-Full-width action buttons used in onboarding and modals.
-
-- Background: `accent` (or `border` when disabled)
-- Text: white (or `textMuted` when disabled)
-- Font: 15px, 700 weight, system sans
-- Padding: 15px 0
-- Border radius: 14px
-- No border
-- Cursor changes to default when disabled
-
-### Confirmation Dialog
-
-Overlay dialog for destructive actions (delete) and confirmations.
-
-- Backdrop: `overlay` (rgba(44,36,32,0.45))
-- Card: `card` background, 18px border radius, `0 12px 40px rgba(44,36,32,0.2)` shadow
-- Title: 16px, 700 weight
-- Body: 14px, textSoft, 1.5 line-height
-- Two buttons side by side: Cancel (tag background, textSoft) and action (accent or danger background, white text)
-
-### Inline Pickers (Child Picker, Tag Editor)
-
-Panels that expand inline below their trigger element. Consistent card treatment.
-
-- Background: `card`
-- Border: `1px solid border`
-- Border radius: 14px
-- Padding: 12px 16px
-- Entry animation: `fadeInUp 0.2s ease both`
-- Child picker: toggle pills for all children (selected = colored border + tinted background + checkmark; unselected = border color, card background, textMuted)
-- Tag editor: text input + "Your Frequent Tags" section with tappable pills
-- Both stay open for multi-select; dismiss by tapping outside (child picker) or selecting (tag editor)
-
-### Birthday Picker (Inline Scroll Wheels)
-
-Expands inline within the Add Child card when the birthday row is tapped.
-
-- Three columns: Month (35% width), Day (25%), Year (30%)
-- Column height: 120px with overflow hidden
-- Each row: 40px height, centered text
-- Selected row: Georgia serif 16px 700 weight, text color; highlighted by `accentSoft` band behind it (40px tall, 10px radius)
-- Unselected rows: 14px 400 weight, textMuted color
-- Fade edges: linear gradient from card → transparent at top and bottom of each column (36px fade height)
-- Confirm button: full-width "Set birthday" (accent background, white text, 10px radius)
-- Entry animation: `fadeInUp 0.2s ease both`
+- **Every new screen** must call `useSafeAreaInsets()` and apply both `insets.top` (unless TopBar handles it) and `insets.bottom`.
+- On devices without a home indicator, `insets.bottom` is 0 — the design spacing remains unchanged.
+- Never hardcode inset values (e.g., `paddingBottom: 34`). Always use `insets.bottom` so it adapts to every device.
+- Centered content screens (e.g., Empty State, First Recording) where nothing touches the bottom edge don't need `insets.bottom`.
 
 ---
 
-## Shadows
+## Border Radius
 
-All shadows use warm-tinted rgba based on the text color `(44,36,32,...)` — never pure black.
+Five tiers. Every border-radius in the codebase must use one of these values.
+
+| Tier | Value | Usage |
+|---|---|---|
+| sm | 8px | Tags, small badges, progress bars, flow map elements |
+| md | 12px | Child pills, inputs, notification action buttons, birthday picker confirm, banners |
+| card | 14px | Entry cards, form cards, transcript area, primary buttons, settings cards, pickers |
+| lg | 16px | Large cards (Core Memories, first-entry glow), modals, confirm dialogs |
+| full | 9999px | Filter chips, child tabs (20px rendered), circular elements |
+
+### Radius Rules
+
+- Every `border-radius` in the codebase must use one of these five values.
+- If a design shows a value between tiers, round to the nearest tier.
+- The phone frame uses radius 40 — this is the only exception (device bezel, not UI).
+
+---
+
+## Shadows & Elevation
+
+Three levels plus an accent glow. All shadows use warm brown `rgba(44,36,32,...)` as the base color — never pure black.
+
+### Shadow Levels
+
+| Level | Value | Usage |
+|---|---|---|
+| sm | `0 1px 3px rgba(44,36,32,0.06)` | Standard entry cards, default surfaces |
+| md | `0 4px 12px rgba(44,36,32,0.10)` | Raised elements, dropdowns, notification card |
+| lg | `0 12px 40px rgba(44,36,32,0.20)` | Modals, confirm dialogs |
+| accent glow | `0 4px 20px rgba(232,114,74,0.35)` | Primary CTA (mic button on Home) |
+
+### Extended Shadows (Wireframe Reference)
 
 | Shadow | Usage |
 |---|---|
 | `0 1px 3px rgba(44,36,32,0.04)` | Inactive tabs |
-| `0 1px 3px rgba(44,36,32,0.06)` | Standard entry cards |
 | `0 2px 8px childColor18` | Active child tabs (tinted to child color) |
 | `0 2px 12px rgba(44,36,32,0.06)` | Prompt cards |
 | `0 2px 12px rgba(232,114,74,0.2)` | Accent-tinted elements |
-| `0 4px 20px rgba(232,114,74,0.35)` | Mic button (Home) |
 | `0 4px 24px rgba(44,36,32,0.12)` | Notification card |
-| `0 8px 32px rgba(44,36,32,0.12)` | Phone frame (wireframe) |
-| `0 12px 40px rgba(44,36,32,0.2)` | Modal/dialog cards |
+| `0 8px 32px rgba(44,36,32,0.12)` | Phone frame (wireframe only) |
 | `0 0 20px/40px rgba(232,114,74,...)` | Pulsing mic button glow (animated) |
 | `0 0 0 1.5px accent30, 0 2px 8px accentGlow` | Favorited entry card glow |
 | `0 0 0 1.5px accent25, 0 3px 12px accent10` | Core Memories card glow |
 | `0 0 20px accent18, 0 2px 12px rgba(44,36,32,0.06)` | First-entry celebration card |
 
+### Shadow Rules
+
+- Never use black (`rgba(0,0,0,...)`) for shadows. Always use the warm brown base.
+- Cards always get `sm` shadow. Modals always get `lg`.
+- The accent glow is only for the primary floating action button.
+
 ---
 
-## Animations
+## Interactive States
+
+Every tappable element must meet accessibility standards and provide visible feedback.
+
+### Touch Targets
+
+- **Minimum hit area**: 44×44px (Apple HIG)
+- If the visual element is smaller (e.g., a 24px icon button), expand the tappable area with padding or an invisible hit-area wrapper.
+
+| Element | Visual Size | Notes |
+|---|---|---|
+| Mic button (recording) | 96×96px | Largest element in the app. Pulsing glow. |
+| Mic button (home) | 68×68px | Prominent but secondary to recording screen |
+| Back/X/gear icons | ~20–22px | Pad tappable area to 44px minimum |
+| Child picker + button | 24×24px | Pad tappable area to 44px minimum |
+| Play button (Detail) | 36×36px | AccentSoft background circle |
+| Play button (Core Memories card) | 26×26px | AccentSoft background circle |
+
+### Pressed States
+
+| Element type | Pressed feedback |
+|---|---|
+| Accent button | Background → `accentPressed` (#D4613B) |
+| Ghost button | Background → `accentSoft` (#FFF0EB) |
+| Card (tappable) | Background → `cardPressed` (#F7F4F1) |
+| Icon button | Opacity 0.6 |
+| Filter tab | Opacity 0.7 |
+
+### Focus Rings
+
+- Visible focus ring for keyboard/assistive navigation: `2px solid accent` with `2px offset`
+- Only visible on `:focus-visible`, not on tap/click
+
+---
+
+## Transitions & Animation
+
+Keep everything fast and purposeful. Motion should feel responsive, never sluggish.
+
+### Duration Table
+
+| Element | Duration | Easing |
+|---|---|---|
+| Button press | 100ms | ease-out |
+| Background/color change | 150ms | ease-in-out |
+| Card hover/press | 150ms | ease-in-out |
+| Modal enter | 200ms | ease-out |
+| Modal exit | 150ms | ease-in |
+| Screen transition | 250ms | ease-in-out |
+| Skeleton shimmer | 1500ms | linear (loop) |
+
+### Transition Rules
+
+- **Maximum duration**: 300ms for any user-initiated transition. Nothing should feel slow.
+- Skeleton/loading shimmer is the only exception (loops at 1500ms).
+- Always respect `prefers-reduced-motion: reduce` — disable all non-essential animation, keep only opacity fades at 0ms.
+
+### Named Animations
 
 | Name | Keyframes | Usage |
 |---|---|---|
@@ -298,6 +350,138 @@ All shadows use warm-tinted rgba based on the text color `(44,36,32,...)` — ne
 
 ---
 
+## Empty, Loading & Error States
+
+Every screen must handle all three states. Never show a blank screen.
+
+### Empty States
+
+- Centered layout with a relevant icon (muted color, 48px)
+- Warm, encouraging headline (heading size, 700 weight)
+- Supportive body text (body size, textSoft)
+- Primary action button when applicable ("Record your first memory")
+- Tone: warm, never clinical. "No memories yet" not "No data found"
+
+### Loading States
+
+- Use skeleton screens that mirror the final layout shape
+- Skeleton color: `border` (#EDE8E3) with shimmer animation (1500ms linear loop)
+- Never use spinners as the sole loading indicator
+- Skeleton cards should match card dimensions (radius, padding, height)
+
+### Error States
+
+- Friendly icon + warm message ("Something went wrong" not "Error 500")
+- Body text explaining what happened in plain language
+- "Try again" button as primary action
+- Optional secondary action ("Go back")
+- Use `danger` color sparingly — only for the icon or a subtle accent, not the entire message
+
+---
+
+## Component Patterns
+
+### Entry Cards (Home)
+
+Standard entry cards on the Home screen and Search results.
+
+- Background: `card` with `paperTex` overlay
+- Border: `1px solid border`
+- Border radius: `card` (14px)
+- Shadow: `sm`
+- Content: child dot + name (colored), date, time, then 2-line transcript preview (system sans, 14.5px, 450 weight, `-webkit-line-clamp: 2`)
+- **Favorited variant:** Border becomes `1px solid accent25`, shadow adds accent glow, filled heart icon shown
+
+### Entry Cards (Core Memories)
+
+Elevated treatment for the favorites screen. Should feel warmer and more expansive.
+
+- Border radius: `lg` (16px)
+- Shadow: `0 0 0 1.5px accent25, 0 3px 12px accent10` (warmer, more prominent)
+- Border: `1px solid accent20`
+- Transcript preview: **Georgia serif**, 15px, 400 weight, 1.6 line-height, **3 lines** (vs. Home's 2)
+- Includes inline audio play button at bottom of card (26px circle, accentSoft background)
+- Play button uses `stopPropagation` — tapping audio stays on Core Memories; tapping card navigates to Detail
+
+### Child Pills
+
+Used in metadata rows on Entry Detail and on entry cards.
+
+- Dot (8px circle, full child color) + name (13px, 700 weight, full child color)
+- Background: child color at 12% opacity
+- Border radius: `md` (12px)
+- On Detail: includes × for removal (11px, 60% opacity)
+- On entry cards (inline, not pill): 11px, 600 weight — smaller for compact card layout
+
+### Child Tabs
+
+Horizontal scrollable row on Home and Core Memories screens.
+
+- Padding: 7px 14px
+- Border radius: `full`
+- **Active:** `2px solid childColor`, background `childColor20`, text `childColor`, shadow `0 2px 8px childColor18`
+- **Inactive:** `2px solid transparent`, background `card`, text `textMuted`, shadow `sm` at 0.04 opacity
+- "All" tab uses `general` color (#B5AAA0)
+
+### Tags
+
+Uniform treatment for all tag types — no color-coding by tag type.
+
+- Background: `tag` (#F3EDE8)
+- Text: `textSoft`, caption size, 500 weight
+- Border radius: `sm` (8px)
+- Padding: 2px 8px
+- × icon for removal (textMuted color)
+
+### Primary Button (CTA)
+
+Full-width action buttons used in onboarding and modals.
+
+- Background: `accent` (or `border` when disabled)
+- Text: white (or `textMuted` when disabled)
+- Font: 15px, 700 weight, system sans
+- Padding: 15px 0
+- Border radius: `card` (14px)
+- Pressed: `accentPressed`
+- Cursor changes to default when disabled
+
+### Confirmation Dialog
+
+Overlay dialog for destructive actions (delete) and confirmations.
+
+- Backdrop: `overlay`
+- Card: `card` background, border radius `lg`, shadow `lg`
+- Title: heading size, 700 weight
+- Body: body size, textSoft, 1.5 line-height
+- Two buttons side by side: Cancel (tag background, textSoft) and action (accent or danger background, white text)
+
+### Inline Pickers (Child Picker, Tag Editor)
+
+Panels that expand inline below their trigger element.
+
+- Background: `card`
+- Border: `1px solid border`
+- Border radius: `lg` (16px)
+- Padding: 12px 16px
+- Entry animation: `fadeInUp` (200ms)
+- Child picker: toggle pills (selected = colored border + tinted background + checkmark; unselected = border, card bg, textMuted). Stays open for multi-select; dismiss by tapping outside. Zero-child protection prevents closing with no selection.
+- Tag editor: text input + "Your Frequent Tags" section with tappable pills
+
+### Birthday Picker (Inline Scroll Wheels)
+
+Expands inline within the Add Child card when the birthday row is tapped.
+
+- Three columns: Month (35% width), Day (25%), Year (30%)
+- Column height: 120px with overflow hidden
+- Each row: 40px height, centered text
+- Selected row: Georgia serif, heading size, 700 weight, text color; highlighted by `accentSoft` band behind it (40px tall, radius `sm`)
+- Unselected rows: body size, 400 weight, textMuted
+- Fade edges: linear gradient from card → transparent at top and bottom (36px fade)
+- Confirm button: full-width "Set birthday" (accent background, white text, radius `sm`)
+- Entry animation: `fadeInUp` (200ms)
+
+---
+
 ## Paper Texture
 
 Cards and transcript areas use a subtle SVG noise texture overlay for a journal feel. The texture is a fractal noise pattern at 2.5% opacity — visible on close inspection but never distracting.
@@ -307,7 +491,8 @@ feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="4"
 rect opacity="0.025"
 ```
 
-Applied via CSS `backgroundImage` on: entry cards, transcript text area, prompt cards, form cards (Add Child), and text entry areas. Not applied to: tabs, pills, buttons, settings rows, or UI chrome.
+Applied to: entry cards, transcript text area, prompt cards, form cards (Add Child), text entry areas.
+Not applied to: tabs, pills, buttons, settings rows, UI chrome.
 
 ---
 

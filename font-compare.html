@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Core Memories — Font Comparison</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #FAF8F5;
+      color: #2C2420;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 24px;
+    }
+
+    h1 {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #8C7E74;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 1200px;
+    }
+
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .font-card {
+      background: #FFFFFF;
+      border: 1px solid #EDE8E3;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(44,36,32,0.06);
+    }
+
+    .font-name {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #B5AAA0;
+      margin-bottom: 16px;
+    }
+
+    .font-name span {
+      color: #E8724A;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    /* ── App title sample ── */
+    .sample-title {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
+    /* ── Section heading sample ── */
+    .sample-heading {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    /* ── Prompt card sample ── */
+    .sample-prompt {
+      font-size: 18px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #8C7E74;
+      margin-bottom: 16px;
+      padding: 16px;
+      background: #FFFFFF;
+      border: 1px solid #EDE8E3;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(44,36,32,0.06);
+    }
+
+    /* ── Transcript body sample ── */
+    .sample-body {
+      font-size: 15px;
+      font-weight: 400;
+      line-height: 1.65;
+      margin-bottom: 16px;
+      color: #2C2420;
+    }
+
+    /* ── Card preview sample ── */
+    .sample-card {
+      background: #FFFFFF;
+      border: 1px solid #EDE8E3;
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(44,36,32,0.06);
+    }
+
+    .card-meta {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #B5AAA0;
+      margin-bottom: 6px;
+    }
+
+    .card-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 4px;
+      background: #7BAFD4;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+
+    .card-child {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #7BAFD4;
+      vertical-align: middle;
+    }
+
+    .card-preview {
+      font-size: 14.5px;
+      font-weight: 400;
+      line-height: 1.55;
+      color: #2C2420;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    /* ── Sans vs serif side-by-side ── */
+    .sans-serif-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .sans-serif-row .col {
+      flex: 1;
+    }
+
+    .sans-sample {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: #2C2420;
+      line-height: 1.5;
+    }
+
+    .serif-sample {
+      font-size: 14px;
+      font-weight: 400;
+      color: #2C2420;
+      line-height: 1.5;
+    }
+
+    .col-label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #B5AAA0;
+      margin-bottom: 4px;
+    }
+
+    .divider {
+      height: 1px;
+      background: #EDE8E3;
+      margin: 16px 0;
+    }
+
+    .label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #B5AAA0;
+      margin-bottom: 8px;
+    }
+
+    /* ── Font families ── */
+    .merriweather .sample-title,
+    .merriweather .sample-heading,
+    .merriweather .sample-prompt,
+    .merriweather .sample-body,
+    .merriweather .card-preview,
+    .merriweather .serif-sample { font-family: 'Merriweather', serif; }
+
+    .lora .sample-title,
+    .lora .sample-heading,
+    .lora .sample-prompt,
+    .lora .sample-body,
+    .lora .card-preview,
+    .lora .serif-sample { font-family: 'Lora', serif; }
+
+    .libre .sample-title,
+    .libre .sample-heading,
+    .libre .sample-prompt,
+    .libre .sample-body,
+    .libre .card-preview,
+    .libre .serif-sample { font-family: 'Libre Baskerville', serif; }
+
+    .crimson .sample-title,
+    .crimson .sample-heading,
+    .crimson .sample-prompt,
+    .crimson .sample-body,
+    .crimson .card-preview,
+    .crimson .serif-sample { font-family: 'Crimson Text', serif; }
+
+    .georgia .sample-title,
+    .georgia .sample-heading,
+    .georgia .sample-prompt,
+    .georgia .sample-body,
+    .georgia .card-preview,
+    .georgia .serif-sample { font-family: 'Georgia', serif; }
+  </style>
+</head>
+<body>
+  <h1>Font Comparison</h1>
+  <p class="subtitle">
+    The app uses two fonts. <strong>Serif</strong> (changes per card) is the "journal voice" — titles, transcripts, the parent's actual words.
+    <strong>Sans-serif</strong> (stays the same in every card) is the "app voice" — buttons, labels, child names, timestamps, tags, navigation.
+    On the entry cards below, the child name/date row is sans-serif and the preview text is serif.
+  </p>
+
+  <div class="grid">
+
+    <!-- Georgia (original) -->
+    <div class="font-card georgia">
+      <div class="font-name">0 — Georgia <span>(original)</span></div>
+
+      <div class="label">App Title</div>
+      <div class="sample-title">Core Memories</div>
+
+      <div class="label">Section Heading</div>
+      <div class="sample-heading">Add Your First Child</div>
+
+      <div class="label">Prompt Card</div>
+      <div class="sample-prompt">What made Emma smile today?</div>
+
+      <div class="label">Transcript Body</div>
+      <div class="sample-body">Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried. She's growing up so fast and I don't want to forget any of it.</div>
+
+      <div class="label">Sans vs Serif</div>
+      <div class="sans-serif-row">
+        <div class="col">
+          <div class="col-label">Sans-Serif (app voice)</div>
+          <div class="sans-sample">Sat, Feb 28 &middot; 8:42 PM</div>
+        </div>
+        <div class="col">
+          <div class="col-label">Serif (journal voice)</div>
+          <div class="serif-sample">Your voice, kept forever.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="label">Entry Card (Home) &mdash; meta row is sans-serif, preview text is serif</div>
+      <div class="sample-card">
+        <div class="card-meta">
+          <span class="card-dot"></span><span class="card-child">Emma</span>
+          &nbsp;&middot;&nbsp; Sat, Feb 28 &nbsp;&middot;&nbsp; 8:42 PM
+        </div>
+        <div class="card-preview">Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried.</div>
+      </div>
+    </div>
+
+    <!-- Merriweather -->
+    <div class="font-card merriweather">
+      <div class="font-name">A — Merriweather</div>
+
+      <div class="label">App Title</div>
+      <div class="sample-title">Core Memories</div>
+
+      <div class="label">Section Heading</div>
+      <div class="sample-heading">Add Your First Child</div>
+
+      <div class="label">Prompt Card</div>
+      <div class="sample-prompt">What made Emma smile today?</div>
+
+      <div class="label">Transcript Body</div>
+      <div class="sample-body">Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried. She's growing up so fast and I don't want to forget any of it.</div>
+
+      <div class="label">Sans vs Serif</div>
+      <div class="sans-serif-row">
+        <div class="col">
+          <div class="col-label">Sans-Serif (app voice)</div>
+          <div class="sans-sample">Sat, Feb 28 &middot; 8:42 PM</div>
+        </div>
+        <div class="col">
+          <div class="col-label">Serif (journal voice)</div>
+          <div class="serif-sample">Your voice, kept forever.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="label">Entry Card (Home) &mdash; meta row is sans-serif, preview text is serif</div>
+      <div class="sample-card">
+        <div class="card-meta">
+          <span class="card-dot"></span><span class="card-child">Emma</span>
+          &nbsp;&middot;&nbsp; Sat, Feb 28 &nbsp;&middot;&nbsp; 8:42 PM
+        </div>
+        <div class="card-preview">Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried.</div>
+      </div>
+    </div>
+
+    <!-- Lora -->
+    <div class="font-card lora">
+      <div class="font-name">B — Lora</div>
+
+      <div class="label">App Title</div>
+      <div class="sample-title">Core Memories</div>
+
+      <div class="label">Section Heading</div>
+      <div class="sample-heading">Add Your First Child</div>
+
+      <div class="label">Prompt Card</div>
+      <div class="sample-prompt">What made Emma smile today?</div>
+
+      <div class="label">Transcript Body</div>
+      <div class="sample-body">Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried. She's growing up so fast and I don't want to forget any of it.</div>
+
+      <div class="label">Sans vs Serif</div>
+      <div class="sans-serif-row">
+        <div class="col">
+          <div class="col-label">Sans-Serif (app voice)</div>
+          <div class="sans-sample">Sat, Feb 28 &middot; 8:42 PM</div>
+        </div>
+        <div class="col">
+          <div class="col-label">Serif (journal voice)</div>
+          <div class="serif-sample">Your voice, kept forever.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="label">Entry Card (Home) &mdash; meta row is sans-serif, preview text is serif</div>
+      <div class="sample-card">
+        <div class="card-meta">
+          <span class="card-dot"></span><span class="card-child">Emma</span>
+          &nbsp;&middot;&nbsp; Sat, Feb 28 &nbsp;&middot;&nbsp; 8:42 PM
+        </div>
+        <div class="card-preview">Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried.</div>
+      </div>
+    </div>
+
+    <!-- Libre Baskerville -->
+    <div class="font-card libre">
+      <div class="font-name">C — Libre Baskerville</div>
+
+      <div class="label">App Title</div>
+      <div class="sample-title">Core Memories</div>
+
+      <div class="label">Section Heading</div>
+      <div class="sample-heading">Add Your First Child</div>
+
+      <div class="label">Prompt Card</div>
+      <div class="sample-prompt">What made Emma smile today?</div>
+
+      <div class="label">Transcript Body</div>
+      <div class="sample-body">Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried. She's growing up so fast and I don't want to forget any of it.</div>
+
+      <div class="label">Sans vs Serif</div>
+      <div class="sans-serif-row">
+        <div class="col">
+          <div class="col-label">Sans-Serif (app voice)</div>
+          <div class="sans-sample">Sat, Feb 28 &middot; 8:42 PM</div>
+        </div>
+        <div class="col">
+          <div class="col-label">Serif (journal voice)</div>
+          <div class="serif-sample">Your voice, kept forever.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="label">Entry Card (Home) &mdash; meta row is sans-serif, preview text is serif</div>
+      <div class="sample-card">
+        <div class="card-meta">
+          <span class="card-dot"></span><span class="card-child">Emma</span>
+          &nbsp;&middot;&nbsp; Sat, Feb 28 &nbsp;&middot;&nbsp; 8:42 PM
+        </div>
+        <div class="card-preview">Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried.</div>
+      </div>
+    </div>
+
+    <!-- Crimson Text -->
+    <div class="font-card crimson">
+      <div class="font-name">D — Crimson Text</div>
+
+      <div class="label">App Title</div>
+      <div class="sample-title">Core Memories</div>
+
+      <div class="label">Section Heading</div>
+      <div class="sample-heading">Add Your First Child</div>
+
+      <div class="label">Prompt Card</div>
+      <div class="sample-prompt">What made Emma smile today?</div>
+
+      <div class="label">Transcript Body</div>
+      <div class="sample-body">Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried. She's growing up so fast and I don't want to forget any of it.</div>
+
+      <div class="label">Sans vs Serif</div>
+      <div class="sans-serif-row">
+        <div class="col">
+          <div class="col-label">Sans-Serif (app voice)</div>
+          <div class="sans-sample">Sat, Feb 28 &middot; 8:42 PM</div>
+        </div>
+        <div class="col">
+          <div class="col-label">Serif (journal voice)</div>
+          <div class="serif-sample">Your voice, kept forever.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="label">Entry Card (Home) &mdash; meta row is sans-serif, preview text is serif</div>
+      <div class="sample-card">
+        <div class="card-meta">
+          <span class="card-dot"></span><span class="card-child">Emma</span>
+          &nbsp;&middot;&nbsp; Sat, Feb 28 &nbsp;&middot;&nbsp; 8:42 PM
+        </div>
+        <div class="card-preview">Emma said her first full sentence today. She looked right at me and said "Mama, I want the big bear" and I almost cried.</div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
