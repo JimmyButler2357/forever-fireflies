@@ -28,6 +28,7 @@ import {
   shadows,
   childColors,
   childColorWithOpacity,
+  hitSlop,
 } from '@/constants/theme';
 import { useChildrenStore, mapSupabaseChild, type Child } from '@/stores/childrenStore';
 import { useEntriesStore, mapSupabaseEntry } from '@/stores/entriesStore';
@@ -35,7 +36,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
 import { childrenService } from '@/services/children.service';
 import { entriesService } from '@/services/entries.service';
-import { useSearchFilter, collectTags } from '@/hooks/useSearchFilter';
+import { useSearchFilter, collectTags, collectLocations } from '@/hooks/useSearchFilter';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { getAge } from '@/lib/dateUtils';
 import { buildChildMap, entryToCard, draftToCard } from '@/lib/entryHelpers';
@@ -86,6 +87,7 @@ export default function HomeScreen() {
 
   // Search state
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const searchBarRef = useRef<TextInput>(null);
   const searchFilter = useSearchFilter();
 
@@ -190,10 +192,11 @@ export default function HomeScreen() {
   const displayedEntries = useMemo(() => {
     if (!isSearchActive) return childFiltered;
     return searchFilter.filterEntries(childFiltered);
-  }, [childFiltered, isSearchActive, searchFilter.filterEntries, searchFilter.query, searchFilter.selectedTags, searchFilter.dateRangeIndex]);
+  }, [childFiltered, isSearchActive, searchFilter.filterEntries, searchFilter.query, searchFilter.selectedTags, searchFilter.selectedLocations, searchFilter.dateRangeIndex]);
 
   // Unique tags from all entries (for filter chips)
   const allTags = useMemo(() => collectTags(entries), [entries]);
+  const allLocations = useMemo(() => collectLocations(entries), [entries]);
 
   const isMultiChild = children.length >= 2;
   const isSingleChild = children.length === 1;
@@ -253,18 +256,14 @@ export default function HomeScreen() {
       <TopBar
         title="Forever Fireflies"
         titleStyle="serif"
-        rightIcons={
-          isFirstEntry
-            ? [{ icon: 'settings-outline' as const, onPress: () => router.push('/(main)/settings') }]
-            : [
-                {
-                  icon: (isSearchActive ? 'close-outline' : 'search-outline') as keyof typeof Ionicons.glyphMap,
-                  onPress: toggleSearchMode,
-                },
-                { icon: 'heart-outline' as const, onPress: () => router.push('/(main)/core-memories') },
-                { icon: 'settings-outline' as const, onPress: () => router.push('/(main)/settings') },
-              ]
-        }
+        rightIcons={[
+          {
+            icon: (isSearchActive ? 'close-outline' : 'search-outline') as keyof typeof Ionicons.glyphMap,
+            onPress: toggleSearchMode,
+          },
+          { icon: 'heart-outline' as const, onPress: () => router.push('/(main)/core-memories') },
+          { icon: 'settings-outline' as const, onPress: () => router.push('/(main)/settings') },
+        ]}
       />
 
       {/* Collapsible search area */}
@@ -279,6 +278,9 @@ export default function HomeScreen() {
           allTags={allTags}
           selectedTags={searchFilter.selectedTags}
           onToggleTag={searchFilter.toggleTag}
+          allLocations={allLocations}
+          selectedLocations={searchFilter.selectedLocations}
+          onToggleLocation={searchFilter.toggleLocation}
           dateRangeIndex={searchFilter.dateRangeIndex}
           onToggleDatePicker={() => searchFilter.setShowDatePicker(!searchFilter.showDatePicker)}
           hasActiveFilters={searchFilter.hasActiveFilters}
@@ -293,8 +295,18 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* First-entry celebration banner */}
-      {isFirstEntry && (
+      {isFirstEntry && !bannerDismissed && (
         <View style={styles.banner}>
+          <Pressable
+            onPress={() => setBannerDismissed(true)}
+            hitSlop={hitSlop.icon}
+            style={({ pressed }) => [
+              styles.bannerClose,
+              pressed && { opacity: 0.6 },
+            ]}
+          >
+            <Ionicons name="close" size={16} color={colors.textMuted} />
+          </Pressable>
           <Text style={styles.bannerEmoji}>✨</Text>
           <Text style={styles.bannerTitle}>Your first memory is saved</Text>
           <Text style={styles.bannerBody}>
@@ -304,7 +316,7 @@ export default function HomeScreen() {
       )}
 
       {/* Child tabs — multi-child only */}
-      {isMultiChild && !isFirstEntry && (
+      {isMultiChild && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -331,7 +343,7 @@ export default function HomeScreen() {
       )}
 
       {/* Single child info pill — pill has dot + name; age + count sit outside */}
-      {isSingleChild && !isFirstEntry && (
+      {isSingleChild && (
         <View style={styles.singleChildRow}>
           <View
             style={[
@@ -508,6 +520,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: childColorWithOpacity(colors.accent, 0.15),
     alignItems: 'center',
+  },
+  bannerClose: {
+    position: 'absolute',
+    top: spacing(2),
+    right: spacing(2),
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   bannerEmoji: {
     fontSize: 24,

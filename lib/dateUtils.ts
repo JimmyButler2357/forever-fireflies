@@ -40,8 +40,11 @@ export function formatDuration(value: number, ms = false): string {
  * Returns a compact string like "2y 3m", "8m", or "1y".
  */
 export function getAge(birthday: string, referenceDate?: string): string {
-  const b = new Date(birthday);
-  const d = referenceDate ? new Date(referenceDate) : new Date();
+  const [by, bm, bd] = birthday.split('-').map(Number);
+  const b = new Date(by, bm - 1, bd);
+  const d = referenceDate
+    ? (() => { const [ry, rm, rd] = referenceDate.split('-').map(Number); return new Date(ry, rm - 1, rd); })()
+    : new Date();
   let years = d.getFullYear() - b.getFullYear();
   let months = d.getMonth() - b.getMonth();
   if (months < 0) {
@@ -97,7 +100,8 @@ export function daysAgo(iso: string): number {
  * Calculate a child's age in months (for prompt filtering).
  */
 export function ageInMonths(birthday: string): number {
-  const b = new Date(birthday);
+  const [by, bm] = birthday.split('-').map(Number);
+  const b = new Date(by, bm - 1, 1);
   const now = new Date();
   return (now.getFullYear() - b.getFullYear()) * 12 + (now.getMonth() - b.getMonth());
 }

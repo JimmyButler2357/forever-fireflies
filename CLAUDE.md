@@ -59,3 +59,4 @@ Common mistakes to watch for — learned from the Phase 4-5 code review.
 
 Detailed rules auto-load from `.claude/rules/` when working on matching file paths:
 - **Supabase & backend**: `supabase.md` — RLS patterns, service layer, schema, storage
+- **Builds & native packages**: `docs/development/build-guide.md` — build profiles, when to rebuild, package rules

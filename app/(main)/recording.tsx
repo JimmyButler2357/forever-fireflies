@@ -12,12 +12,13 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   colors,
+  fonts,
   typography,
   spacing,
   radii,
-  shadows,
   hitSlop,
   minTouchTarget,
 } from '@/constants/theme';
@@ -33,19 +34,17 @@ import { ageInMonths, formatDuration } from '@/lib/dateUtils';
 import { useLocation } from '@/hooks/useLocation';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import ErrorState from '@/components/ErrorState';
-import PaperTexture from '@/components/PaperTexture';
 import WarmGlow from '@/components/WarmGlow';
 
-// ─── Fallback Prompts ─────────────────────────────────────
-//
-// Used when we can't reach Supabase (offline, first launch,
-// loading delay). Once real prompts load, these are replaced.
+// ─── Constants ──────────────────────────────────────────
 
 const FALLBACK_PROMPTS = [
   "What's something they said today that made you smile?",
   "What made them laugh the hardest today?",
   "What's something small you don't want to forget?",
 ];
+
+const PROMPTS_ENABLED_KEY = 'prompts_enabled';
 
 // ─── Recording Screen ─────────────────────────────────────
 
@@ -66,16 +65,15 @@ export default function RecordingScreen() {
   const speech = useSpeechRecognition();
 
   // Check mic permission on mount so we can show the denied
-  // screen immediately instead of waiting for them to tap record.
+  // screen immediately instead of waiting for auto-start.
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'checking'>('checking');
 
-  const [state, setState] = useState<'prompts' | 'recording'>('prompts');
   const [seconds, setSeconds] = useState(0);
-  const [prompts, setPrompts] = useState<string[] | null>(null);
+  const [activePrompt, setActivePrompt] = useState<string | null>(null);
+  const [promptsEnabled, setPromptsEnabled] = useState(true);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Tracks when we've called stop() but speech hasn't finalized yet.
-  // Once isRecording goes false, the transcript is ready to use.
   const [isStopping, setIsStopping] = useState(false);
 
   // Shows a brief "too short" message when user stops immediately
@@ -85,7 +83,6 @@ export default function RecordingScreen() {
   const breatheAnim = useRef(new Animated.Value(1)).current;
   const ringAnim = useRef(new Animated.Value(1)).current;
   const ringOpacity = useRef(new Animated.Value(0.12)).current;
-  const promptOpacity = useRef(new Animated.Value(1)).current;
 
   const { locationText } = useLocation();
 
@@ -99,11 +96,14 @@ export default function RecordingScreen() {
   locationTextRef.current = locationText;
   const reduceMotion = useReduceMotion();
 
+  // Prevents auto-start from firing more than once
+  const hasAutoStarted = useRef(false);
+
   // ─── Permission Check ──────────────────────────────────
   //
   // On mount, ask the OS whether mic access was already
   // granted or permanently denied. If "canAskAgain" is true,
-  // we let the hook request permission when they tap record.
+  // we let the hook request permission when auto-start fires.
 
   useEffect(() => {
     ExpoSpeechRecognitionModule.getPermissionsAsync()
@@ -114,7 +114,7 @@ export default function RecordingScreen() {
           // Permanently denied — show the "open settings" screen
           setMicPermission('denied');
         } else {
-          // Not yet decided — the hook will prompt when they tap record
+          // Not yet decided — the hook will prompt when auto-start fires
           setMicPermission('granted');
         }
       })
@@ -122,6 +122,28 @@ export default function RecordingScreen() {
         // Can't check? Assume ok — hook will handle errors
         setMicPermission('granted');
       });
+  }, []);
+
+  // ─── Load Prompt Toggle Preference ────────────────────
+  //
+  // Read the user's saved preference from AsyncStorage on mount.
+  // Default is true (prompts visible). Think of it like a light
+  // switch — it remembers its last position.
+
+  useEffect(() => {
+    AsyncStorage.getItem(PROMPTS_ENABLED_KEY)
+      .then((val) => {
+        if (val !== null) setPromptsEnabled(val === 'true');
+      })
+      .catch(() => {});
+  }, []);
+
+  const togglePrompts = useCallback(() => {
+    setPromptsEnabled((prev) => {
+      const next = !prev;
+      AsyncStorage.setItem(PROMPTS_ENABLED_KEY, String(next)).catch(() => {});
+      return next;
+    });
   }, []);
 
   // ─── Load Daily Prompts ────────────────────────────────
@@ -133,7 +155,17 @@ export default function RecordingScreen() {
   // renames take effect immediately without clearing the cache.
 
   useEffect(() => {
-    if (!profile?.id || onboarding === 'true') return;
+    if (!profile?.id) return;
+
+    // Special cases: use a custom single prompt instead of fetching
+    if (isReRecord) {
+      setActivePrompt('Take your time and re-record this memory');
+      return;
+    }
+    if (onboarding === 'true') {
+      setActivePrompt('Tell us about a moment you never want to forget');
+      return;
+    }
 
     let cancelled = false;
     const childAge = children.length > 0
@@ -151,47 +183,46 @@ export default function RecordingScreen() {
             children.length > 0 ? children[i % children.length].name : 'your child',
           )
         );
-        setPrompts(texts);
+        // Pick one random prompt — keeps the screen calm and focused
+        setActivePrompt(texts[Math.floor(Math.random() * texts.length)]);
       } catch {
-        if (!cancelled) setPrompts(FALLBACK_PROMPTS);
+        if (!cancelled) {
+          const fallback = FALLBACK_PROMPTS[Math.floor(Math.random() * FALLBACK_PROMPTS.length)];
+          setActivePrompt(fallback);
+        }
       }
     })();
 
     return () => { cancelled = true; };
   }, [profile?.id]);
 
-  // ─── Sync UI State with Speech Hook ────────────────────
+  // ─── Auto-Start Recording on Mount ────────────────────
   //
-  // Instead of manually tracking isRecording ourselves, we
-  // watch the hook's isRecording flag. When the speech engine
-  // fires its "start" event, we switch to recording mode.
+  // Once mic permission resolves to 'granted', we immediately
+  // begin recording. No extra tap needed — like a voice recorder
+  // app where pressing the button starts it rolling.
 
   useEffect(() => {
-    if (speech.isRecording && state !== 'recording') {
-      setState('recording');
-    }
-  }, [speech.isRecording]);
+    if (micPermission !== 'granted' || hasAutoStarted.current) return;
+    hasAutoStarted.current = true;
+    handleStart();
+  }, [micPermission]);
 
   // If the hook reports a permission error, show the denied screen
   useEffect(() => {
     if (speech.error) {
-      setState('prompts');
       if (speech.error.toLowerCase().includes('permission')) {
         setMicPermission('denied');
       }
     }
   }, [speech.error]);
 
-  // Start breathing animation
+  // Start breathing animation when recording begins
   useEffect(() => {
-    if (state === 'recording') {
-      if (reduceMotion) {
-        // Skip decorative animations — jump to final states
-        promptOpacity.setValue(0);
-        return;
-      }
+    if (speech.isRecording) {
+      if (reduceMotion) return;
 
-      // Breathe: scale 1 → 1.15 → 1
+      // Breathe: scale 1 -> 1.15 -> 1
       Animated.loop(
         Animated.sequence([
           Animated.timing(breatheAnim, {
@@ -207,7 +238,7 @@ export default function RecordingScreen() {
         ]),
       ).start();
 
-      // Ring pulse: scale 1 → 1.7, opacity 0.12 → 0
+      // Ring pulse: scale 1 -> 1.7, opacity 0.12 -> 0
       Animated.loop(
         Animated.parallel([
           Animated.timing(ringAnim, {
@@ -222,19 +253,63 @@ export default function RecordingScreen() {
           }),
         ]),
       ).start();
-
-      // Fade out prompts
-      Animated.timing(promptOpacity, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
     }
-  }, [state]);
+  }, [speech.isRecording]);
 
-  // Timer
+  // Freeze/resume animations when paused.
+  // When paused, we stop all animations and snap to resting values
+  // so the visual "breathing" effect halts — like holding your breath.
+  // When unpaused, we restart the loops.
   useEffect(() => {
-    if (state === 'recording') {
+    if (!speech.isRecording || reduceMotion) return;
+
+    if (speech.isPaused) {
+      // Freeze: stop animations and snap to resting state
+      breatheAnim.stopAnimation();
+      ringAnim.stopAnimation();
+      ringOpacity.stopAnimation();
+      breatheAnim.setValue(1);
+      ringAnim.setValue(1);
+      ringOpacity.setValue(0);
+    } else {
+      // Resume: restart the breathing + ring animations
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(breatheAnim, {
+            toValue: 1.15,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(breatheAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
+
+      Animated.loop(
+        Animated.parallel([
+          Animated.timing(ringAnim, {
+            toValue: 1.7,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(ringOpacity, {
+            toValue: 0,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
+    }
+  }, [speech.isPaused]);
+
+  // Timer — only ticks when actively recording (not paused).
+  // When paused, the interval is cleared so the user keeps
+  // their full 60 seconds of speaking time.
+  useEffect(() => {
+    if (speech.isRecording && !speech.isPaused) {
       timerRef.current = setInterval(() => {
         setSeconds((s) => s + 1);
       }, 1000);
@@ -242,7 +317,7 @@ export default function RecordingScreen() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [state]);
+  }, [speech.isRecording, speech.isPaused]);
 
   // Auto-stop at 60 seconds
   useEffect(() => {
@@ -263,23 +338,27 @@ export default function RecordingScreen() {
     if (!isStopping || speech.isRecording) return;
 
     // Read latest values from refs to avoid stale closures.
-    // The effect only depends on [isStopping, speech.isRecording]
-    // so it fires at the right time, but reads fresh data via refs.
     const s = speechRef.current;
     const secs = secondsRef.current;
     const loc = locationTextRef.current;
 
+    // If we have a transcript but no audio yet, concatenation is
+    // still in progress — wait for audioUri to be set.
+    if (!s.audioUri && !s.transcript) return;
+
     // ── Edge case: Empty recording ──
     //
-    // If the user tapped record then immediately stopped (less
-    // than 2 seconds), there's nothing useful to save. Show a
-    // brief message instead of creating a blank entry.
+    // If the user tapped stop immediately (less than 2 seconds),
+    // there's nothing useful to save. Show a brief message then
+    // auto-restart so they can try again without navigating.
     if (secs < 2 && !s.transcript) {
       setIsStopping(false);
-      setState('prompts');
       setSeconds(0);
       setTooShortMessage(true);
-      setTimeout(() => setTooShortMessage(false), 3000);
+      setTimeout(() => {
+        setTooShortMessage(false);
+        handleStart();
+      }, 3000);
       return;
     }
 
@@ -326,7 +405,7 @@ export default function RecordingScreen() {
     }
 
     setIsStopping(false);
-  }, [isStopping, speech.isRecording]);
+  }, [isStopping, speech.isRecording, speech.audioUri]);
 
   // ─── Start / Stop Handlers ─────────────────────────────
 
@@ -334,8 +413,7 @@ export default function RecordingScreen() {
     setSeconds(0);
     speech.reset(); // Clear any previous error or transcript
     await speech.start();
-    // The hook fires a 'start' event → speech.isRecording = true
-    // → our useEffect above switches state to 'recording'.
+    // The hook fires a 'start' event -> speech.isRecording = true.
     // If permission is denied, speech.error gets set instead.
   }, [speech]);
 
@@ -382,7 +460,7 @@ export default function RecordingScreen() {
       {/* Warm radial gradient backdrop */}
       <WarmGlow />
 
-      {/* Top bar: just an X */}
+      {/* Top bar: X on left, prompt toggle on right */}
       <View style={[styles.topBar, { paddingTop: insets.top + spacing(3) }]}>
         <Pressable
           onPress={() => router.back()}
@@ -394,60 +472,54 @@ export default function RecordingScreen() {
         >
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
+
+        <View style={{ flex: 1 }} />
+
+        {/* Prompt toggle chip */}
+        <Pressable
+          onPress={togglePrompts}
+          hitSlop={hitSlop.icon}
+          style={({ pressed }) => [
+            styles.promptToggle,
+            promptsEnabled ? styles.promptToggleOn : styles.promptToggleOff,
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Ionicons
+            name="bulb-outline"
+            size={14}
+            color={promptsEnabled ? colors.accent : colors.textMuted}
+          />
+          <Text style={[
+            styles.promptToggleText,
+            { color: promptsEnabled ? colors.accent : colors.textMuted },
+          ]}>
+            {promptsEnabled ? 'Prompts' : 'Prompts off'}
+          </Text>
+        </Pressable>
       </View>
 
-      {/* Prompt cards — fade out during recording */}
-      <Animated.View style={[styles.promptArea, { opacity: promptOpacity }]}>
-        {state === 'prompts' && (
-          isReRecord ? (
-            <View style={styles.promptScroll}>
-              <View style={styles.promptCard}>
-                <PaperTexture radius={radii.card} />
-                <Ionicons name="refresh-outline" size={20} color={colors.accent} style={{ marginBottom: spacing(2) }} />
-                <Text style={styles.promptText}>Take your time and re-record this memory</Text>
-              </View>
-            </View>
-          ) : onboarding === 'true' ? (
-            <View style={styles.promptScroll}>
-              <View style={styles.promptCard}>
-                <PaperTexture radius={radii.card} />
-                <Text style={styles.promptText}>Tap the mic and tell us about a moment you never want to forget</Text>
-              </View>
-            </View>
-          ) : prompts === null ? (
-            /* Skeleton cards while cache loads (~10ms, barely visible) */
-            <View style={styles.promptScroll}>
-              {[0, 1, 2].map((i) => (
-                <View key={i} style={[styles.promptCard, { opacity: 0.4 }]}>
-                  <View style={styles.skeletonLine} />
-                  <View style={[styles.skeletonLine, styles.skeletonLineShort]} />
-                </View>
-              ))}
-            </View>
-          ) : (
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.promptScroll}
-            >
-              {prompts.map((prompt, i) => (
-                <View key={i} style={styles.promptCard}>
-                  <PaperTexture radius={radii.card} />
-                  <Text style={styles.promptText}>{prompt}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          )
-        )}
-      </Animated.View>
+      {/* Single prompt — a gentle nudge, not a menu */}
+      {promptsEnabled && activePrompt && (
+        <View style={styles.promptList}>
+          <Text style={styles.promptHint} numberOfLines={2}>
+            {activePrompt}
+          </Text>
+        </View>
+      )}
 
       {/* Recording area */}
       <View style={[styles.recordingArea, { paddingBottom: insets.bottom + spacing(12) }]}>
-        {state === 'recording' && (
+        {speech.isRecording && (
           <>
             {/* Timer */}
             <Text style={styles.timer}>{formatDuration(seconds)}</Text>
             <Text style={styles.timerHint}>
-              {seconds < 5 ? 'Recording...' : `${60 - seconds}s remaining`}
+              {speech.isPaused
+                ? 'Paused'
+                : seconds < 5
+                  ? 'Recording...'
+                  : `${60 - seconds}s remaining`}
             </Text>
 
             {/* Live transcript — updates in real-time as you speak */}
@@ -465,7 +537,7 @@ export default function RecordingScreen() {
 
         {/* Breathing circle + ring pulse (recording only) */}
         <View style={styles.micWrapper}>
-          {state === 'recording' && (
+          {speech.isRecording && (
             <>
               {/* Expanding ring */}
               <Animated.View
@@ -487,33 +559,46 @@ export default function RecordingScreen() {
             </>
           )}
 
-          {/* Mic button (prompts mode) / Stop button (recording mode) */}
-          {state === 'prompts' ? (
-            <Pressable
-              onPress={handleStart}
-              style={({ pressed }) => [
-                styles.micButton,
-                pressed && { opacity: 0.85 },
-              ]}
-            >
-              <Ionicons name="mic" size={42} color={colors.card} />
-            </Pressable>
-          ) : (
-            <Pressable
-              onPress={handleStop}
-              style={({ pressed }) => [
-                styles.stopButton,
-                pressed && { opacity: 0.85 },
-              ]}
-            >
-              <View style={styles.stopIcon} />
-            </Pressable>
+          {/* Stop + Pause buttons (visible while recording) */}
+          {speech.isRecording && (
+            <View style={styles.recordingButtons}>
+              {/* Small side button — Pause (when recording) or Stop (when paused) */}
+              <Pressable
+                onPress={speech.isPaused ? handleStop : speech.pause}
+                style={({ pressed }) => [
+                  styles.pauseButton,
+                  pressed && { opacity: 0.6 },
+                ]}
+              >
+                <Ionicons
+                  name={speech.isPaused ? 'square' : 'pause'}
+                  size={speech.isPaused ? 16 : 22}
+                  color={colors.text}
+                />
+              </Pressable>
+
+              {/* Big center button — Stop (when recording) or Resume (when paused) */}
+              <Pressable
+                onPress={speech.isPaused ? speech.resume : handleStop}
+                style={({ pressed }) => [
+                  styles.stopButton,
+                  speech.isPaused && styles.resumeButton,
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                {speech.isPaused ? (
+                  <Ionicons name="play" size={32} color={colors.card} />
+                ) : (
+                  <View style={styles.stopIcon} />
+                )}
+              </Pressable>
+
+              {/* Ghost spacer — same width as pause button to keep stop centered */}
+              <View style={styles.pauseButtonSpacer} />
+            </View>
           )}
         </View>
 
-        {state === 'prompts' && !tooShortMessage && !speech.error && (
-          <Text style={styles.micHint}>Tap to start recording</Text>
-        )}
         {tooShortMessage && (
           <Text style={styles.errorHint}>Recording too short — try again</Text>
         )}
@@ -533,6 +618,7 @@ const styles = StyleSheet.create({
   // ─── Top Bar ────────────────────────
   topBar: {
     flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing(5),
   },
   closeBtn: {
@@ -541,43 +627,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // ─── Prompts ────────────────────────
-  promptArea: {
-    flex: 1,
+  // ─── Prompt Toggle ────────────────────
+  promptToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1),
+    paddingVertical: spacing(2),
+    paddingHorizontal: spacing(3),
+    borderRadius: radii.full,
+    minHeight: minTouchTarget,
+  },
+  promptToggleOn: {
+    backgroundColor: colors.accentSoft,
+  },
+  promptToggleOff: {
+    backgroundColor: colors.tag,
+  },
+  promptToggleText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  // ─── Prompt Hint ────────────────────
+  promptList: {
+    alignItems: 'center',
     paddingHorizontal: spacing(5),
+    paddingVertical: spacing(3),
   },
-  promptScroll: {
-    paddingTop: spacing(4),
-    gap: spacing(3),
-    paddingBottom: spacing(4),
-  },
-  promptCard: {
-    backgroundColor: colors.card,
-    borderRadius: radii.card,
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    ...shadows.promptCard,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  promptText: {
-    ...typography.promptCard,
-    color: colors.text,
-  },
-  skeletonLine: {
-    height: 16,
-    backgroundColor: colors.border,
-    borderRadius: radii.sm,
-    width: '80%',
-  },
-  skeletonLineShort: {
-    width: '55%',
-    marginTop: spacing(2),
+  promptHint: {
+    fontFamily: fonts.serif,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: spacing(4),
   },
   // ─── Recording Area ─────────────────
   recordingArea: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingBottom: spacing(12),
     gap: spacing(4),
   },
@@ -613,20 +701,6 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     backgroundColor: colors.accentGlow,
   },
-  micButton: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 4,
-    zIndex: 1,
-  },
   stopButton: {
     width: 80,
     height: 80,
@@ -641,15 +715,35 @@ const styles = StyleSheet.create({
     elevation: 3,
     zIndex: 1,
   },
+  resumeButton: {
+    borderRadius: radii.full,
+  },
   stopIcon: {
     width: 24,
     height: 24,
     borderRadius: 3,
     backgroundColor: colors.card,
   },
-  micHint: {
-    ...typography.caption,
-    color: colors.textMuted,
+  recordingButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing(5),
+    zIndex: 1,
+  },
+  pauseButton: {
+    width: 48,
+    height: 48,
+    borderRadius: radii.full,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pauseButtonSpacer: {
+    width: 48,
+    height: 48,
   },
   errorHint: {
     ...typography.caption,

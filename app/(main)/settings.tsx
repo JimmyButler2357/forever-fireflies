@@ -40,7 +40,7 @@ import { storageService } from '@/services/storage.service';
 import TopBar from '@/components/TopBar';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import PrimaryButton from '@/components/PrimaryButton';
-import BirthdayPicker from '@/components/BirthdayPicker';
+import BirthdayPicker, { formatBirthdayDisplay } from '@/components/BirthdayPicker';
 import ColorPicker from '@/components/ColorPicker';
 import { useLocationPermission } from '@/hooks/useLocation';
 import { formatDate, to24Hour, from24Hour, daysAgo } from '@/lib/dateUtils';
@@ -48,15 +48,6 @@ import { profilesService } from '@/services/profiles.service';
 import TimePicker from '@/components/TimePicker';
 
 // ─── Helpers ──────────────────────────────────────────────
-
-function formatBirthday(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
 
 // ─── Settings Screen ──────────────────────────────────────
 
@@ -392,7 +383,7 @@ export default function SettingsScreen() {
                     <Text style={styles.rowLabel}>{child.name}</Text>
                   </View>
                   <Text style={styles.rowSublabel}>
-                    Born {formatBirthday(child.birthday)}
+                    Born {formatBirthdayDisplay(child.birthday)}
                   </Text>
                 </View>
                 <Ionicons

@@ -19,7 +19,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export interface Entry {
   id: string;
   text: string;
-  date: string; // ISO date string
+  date: string; // ISO date string (date only, from entry_date)
+  createdAt?: string; // Full ISO timestamp (from created_at)
   childIds: string[];
   tags: string[]; // Tag slugs (e.g. "funny", "milestone")
   isFavorited: boolean;
@@ -55,6 +56,7 @@ interface SupabaseTimelineRow {
   id: string;
   transcript: string | null;
   entry_date: string;
+  created_at: string;
   is_favorited: boolean;
   is_deleted: boolean;
   deleted_at: string | null;
@@ -73,6 +75,7 @@ export function mapSupabaseEntry(row: SupabaseTimelineRow): Entry {
     id: row.id,
     text: row.transcript ?? '',
     date: row.entry_date,
+    createdAt: row.created_at,
     childIds: row.entry_children.map((ec) => ec.child_id),
     tags: row.entry_tags
       .map((et) => et.tags?.slug)

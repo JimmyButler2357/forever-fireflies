@@ -8,6 +8,7 @@ import {
   radii,
   shadows,
   spacing,
+  hitSlop,
   childColorWithOpacity,
 } from '@/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -116,12 +117,15 @@ interface EntryCardEntry {
   tags: string[];
   isFavorited: boolean;
   hasAudio: boolean;
+  audioStoragePath?: string;
 }
 
 interface EntryCardProps {
   entry: EntryCardEntry;
   onPress: () => void;
   onPlayAudio?: () => void;
+  /** Whether this card's audio is currently playing (managed by parent). */
+  isPlaying?: boolean;
   variant?: 'home' | 'coreMemory';
   index?: number;
   highlightQuery?: string;
@@ -144,6 +148,7 @@ export default function EntryCard({
   entry,
   onPress,
   onPlayAudio,
+  isPlaying = false,
   variant = 'home',
   index = 0,
   highlightQuery,
@@ -310,9 +315,17 @@ export default function EntryCard({
                     e.stopPropagation?.();
                     onPlayAudio?.();
                   }}
-                  style={styles.playButton}
+                  hitSlop={hitSlop.icon}
+                  style={({ pressed }) => [
+                    styles.playButton,
+                    pressed && styles.playButtonPressed,
+                  ]}
                 >
-                  <Ionicons name="play" size={12} color={colors.accent} />
+                  <Ionicons
+                    name={isPlaying ? 'pause' : 'play'}
+                    size={12}
+                    color={colors.card}
+                  />
                 </Pressable>
               )}
             </View>
@@ -439,12 +452,15 @@ const styles = StyleSheet.create({
     gap: spacing(2),
   },
   playButton: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: colors.accentSoft,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(232,114,74,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  playButtonPressed: {
+    backgroundColor: 'rgba(232,114,74,0.35)',
   },
   heartRow: {
     flexDirection: 'row',

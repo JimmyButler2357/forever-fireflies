@@ -4,36 +4,24 @@
 // green (online) means data can flow to Supabase, red (offline)
 // means we need to save things locally until it turns green again.
 //
-// Uses NetInfo under the hood, which listens for OS-level
-// connectivity changes (WiFi on/off, airplane mode, etc.).
+// Uses expo-network's useNetworkState() hook, which subscribes to
+// OS-level connectivity changes (WiFi on/off, airplane mode, etc.)
+// and re-renders automatically when the state changes.
 
-import { useState, useEffect } from 'react';
-import NetInfo from '@react-native-community/netinfo';
+import { useNetworkState } from 'expo-network';
 
 export function useNetworkStatus() {
-  // Start optimistic — assume online until we hear otherwise.
-  // On startup, NetInfo's `isInternetReachable` can be null
-  // (meaning "I don't know yet"), so treating that as online
-  // prevents the app from acting offline during the first second.
-  const [isOnline, setIsOnline] = useState(true);
+  // useNetworkState() returns { isConnected, isInternetReachable, type }.
+  // It handles all the listener setup/cleanup internally — like
+  // a doorbell that installs itself and tells you when someone rings.
+  const networkState = useNetworkState();
 
-  useEffect(() => {
-    // Subscribe to connectivity changes. NetInfo calls this
-    // callback immediately with the current state, then again
-    // whenever it changes (like a doorbell that also rings
-    // when you first install it to tell you it's working).
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      // `isInternetReachable` is the most reliable signal.
-      // `isConnected` only means "attached to a network" (you
-      // could be on WiFi with no actual internet). But if
-      // `isInternetReachable` is null (startup), we fall back
-      // to `isConnected`, then default to true (optimistic).
-      const reachable = state.isInternetReachable ?? state.isConnected ?? true;
-      setIsOnline(reachable);
-    });
-
-    return unsubscribe;
-  }, []);
+  // `isInternetReachable` is the most reliable signal.
+  // `isConnected` only means "attached to a network" (you could be
+  // on WiFi with no actual internet). If `isInternetReachable` is
+  // null (startup / unknown), fall back to `isConnected`, then
+  // default to true (optimistic — assume online until proven otherwise).
+  const isOnline = networkState.isInternetReachable ?? networkState.isConnected ?? true;
 
   return { isOnline };
 }

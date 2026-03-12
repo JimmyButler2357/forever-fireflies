@@ -30,12 +30,13 @@ export function entryToCard(
     childNames,
     childColors: entryChildColors,
     date: formatDate(entry.date, dateWeekday),
-    time: formatTime(entry.date),
+    time: formatTime(entry.createdAt ?? entry.date),
     title: entry.title,
     preview: entry.text,
     tags: entry.tags,
     isFavorited: entry.isFavorited,
     hasAudio: entry.hasAudio,
+    audioStoragePath: entry.audioStoragePath,
   };
 }
 

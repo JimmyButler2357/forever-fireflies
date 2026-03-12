@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,8 @@ import ChildTab from '@/components/ChildTab';
 import EntryCard from '@/components/EntryCard';
 import PrimaryButton from '@/components/PrimaryButton';
 import FloatingFireflies from '@/components/FloatingFireflies';
+import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { storageService } from '@/services/storage.service';
 
 // ─── Core Memories Screen ─────────────────────────────────
 
@@ -35,6 +37,38 @@ export default function CoreMemoriesScreen() {
   const entries = useEntriesStore((s) => s.entries);
 
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  // ─── Single shared audio player ─────────────────────────
+  // Like a boombox shared by the whole class — only one card
+  // can play at a time. Tapping play on a different card
+  // automatically stops the current one.
+  const player = useAudioPlayer();
+  const [playingEntryId, setPlayingEntryId] = useState<string | null>(null);
+
+  const handlePlayAudio = useCallback(async (entryId: string, audioStoragePath?: string) => {
+    if (!audioStoragePath) return;
+
+    // Same entry — toggle play/pause
+    if (playingEntryId === entryId) {
+      if (player.isPlaying) {
+        player.pause();
+      } else {
+        player.play();
+      }
+      return;
+    }
+
+    // Different entry — load new audio (player.load auto-unloads the old one)
+    try {
+      setPlayingEntryId(entryId);
+      const url = await storageService.getPlaybackUrl(audioStoragePath);
+      await player.load(url);
+      await player.play();
+    } catch (err) {
+      console.warn('Failed to play audio:', err);
+      setPlayingEntryId(null);
+    }
+  }, [playingEntryId, player]);
 
   // Build child lookup
   const childMap = useMemo(() => buildChildMap(children), [children]);
@@ -68,7 +102,7 @@ export default function CoreMemoriesScreen() {
       </View>
 
       {/* Top bar — serif title, no right icons */}
-      <TopBar title="Firefly Jar" titleStyle="serif" showBack />
+      <TopBar title="Firefly Jar (favorites)" titleStyle="serif" showBack />
 
       {/* Memory count */}
       <View style={styles.countRow}>
@@ -118,9 +152,8 @@ export default function CoreMemoriesScreen() {
             variant="coreMemory"
             index={index}
             onPress={() => router.push({ pathname: '/(main)/entry-detail', params: { entryId: item.id } })}
-            onPlayAudio={() => {
-              // Visual only for MVP — no actual playback
-            }}
+            isPlaying={playingEntryId === item.id && player.isPlaying}
+            onPlayAudio={() => handlePlayAudio(item.id, item.audioStoragePath)}
           />
         )}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}

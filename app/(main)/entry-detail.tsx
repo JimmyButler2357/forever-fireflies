@@ -207,6 +207,7 @@ export default function EntryDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const titleWasImmediate = useRef(false);
 
   // Location — lightweight check for UI visibility decisions
   const { granted: permissionGranted } = useLocationPermission();
@@ -232,7 +233,7 @@ export default function EntryDetailScreen() {
   const [showReRecordDialog, setShowReRecordDialog] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [saveIndicator, setSaveIndicator] = useState(false);
-  const [showBanner, setShowBanner] = useState(true);
+  const [showBanner, setShowBanner] = useState(!!params.audioUri);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Banner auto-dismiss (built-in Animated, not Reanimated)
@@ -428,6 +429,11 @@ export default function EntryDetailScreen() {
           setTranscript(mapped.text);
           setLocationInput(mapped.locationText ?? '');
 
+          // If AI was fast and title is already here, skip the fade-in animation
+          if (mapped.title) {
+            titleWasImmediate.current = true;
+          }
+
           // Also add to local cache so Home shows it immediately
           addEntryLocal(mapped);
 
@@ -442,7 +448,8 @@ export default function EntryDetailScreen() {
           // (If it already finished, getEntry above caught the title.)
           if (!mapped.title) {
             aiPromise.then((result) => {
-              if (cancelled || !result?.title) return;
+              if (cancelled) return;
+              if (!result?.title) return;
               setEntry((prev) => prev ? { ...prev, title: result.title } : prev);
               updateEntryLocal(row.id, { title: result.title });
             });
@@ -741,6 +748,29 @@ export default function EntryDetailScreen() {
 
   // ─── Handlers ──────────────────────────────────────────
 
+  // Debounced title save — same pattern as transcript below.
+  // Updates local state instantly, saves to Supabase after 800ms idle.
+  // Keeps empty string (not undefined) so the TextInput stays visible
+  // when the user clears the title. Character limit is on the TextInput
+  // (maxLength), and we strip newlines here so it stays single-line.
+  const handleTitleChange = (text: string) => {
+    const cleaned = text.replace(/\n/g, ' ');
+
+    setEntry((prev) => prev ? { ...prev, title: cleaned } : prev);
+    updateEntryLocal(entry.id, { title: cleaned || undefined });
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        await entriesService.update(entry.id, { title: cleaned || null });
+        setSaveIndicator(true);
+        setTimeout(() => setSaveIndicator(false), 2000);
+      } catch (err) {
+        console.warn('Failed to save title:', err);
+      }
+    }, 800);
+  };
+
   // Debounced transcript save — updates local state immediately
   // (so typing feels instant) but waits 800ms before sending
   // the change to Supabase. If you keep typing, the timer
@@ -974,13 +1004,26 @@ export default function EntryDetailScreen() {
           </Animated.View>
         )}
 
+        {/* Title — shows immediately if AI already returned one,
+             otherwise shows "Add a title..." placeholder */}
+        <FadeInUp skip={reduceMotion || titleWasImmediate.current}>
+          <TextInput
+            style={styles.titleText}
+            value={entry.title ?? ''}
+            onChangeText={handleTitleChange}
+            placeholder="Add a title..."
+            placeholderTextColor={colors.textMuted}
+            maxLength={60}
+          />
+        </FadeInUp>
+
         {/* Line 1: Date + time — tap to change date */}
         <Pressable
           onPress={() => setShowDatePicker(true)}
           style={styles.dateLine}
         >
           <Text style={styles.dateText}>{formatDate(entry.date, 'long')}</Text>
-          <Text style={styles.timeText}>{formatTime(entry.date)}</Text>
+          <Text style={styles.timeText}>{formatTime(entry.createdAt ?? entry.date)}</Text>
           <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
         </Pressable>
 
@@ -1409,6 +1452,14 @@ const styles = StyleSheet.create({
     ...typography.formLabel,
     color: colors.accent,
     fontWeight: '600',
+  },
+  // ─── Title ─────────────────────────
+  titleText: {
+    ...typography.onboardingHeading, // Merriweather Bold, 20px
+    color: colors.text,
+    lineHeight: 26,
+    textAlign: 'left',
+    marginBottom: spacing(2),
   },
   // ─── Metadata ───────────────────────
   dateLine: {

@@ -23,22 +23,40 @@ export function collectTags(entries: Entry[]): string[] {
   return Array.from(tagSet).sort();
 }
 
+/** Collect unique non-empty locationText values from non-deleted entries, sorted */
+export function collectLocations(entries: Entry[]): string[] {
+  const locSet = new Set<string>();
+  entries.forEach((e) => {
+    if (!e.isDeleted && e.locationText) {
+      locSet.add(e.locationText);
+    }
+  });
+  return Array.from(locSet).sort();
+}
+
 // ─── Hook ────────────────────────────────────────────────
 
 export function useSearchFilter() {
   const [query, setQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [dateRangeIndex, setDateRangeIndex] = useState<number | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const hasActiveFilters = useMemo(
-    () => query.trim().length > 0 || selectedTags.length > 0 || dateRangeIndex !== null,
-    [query, selectedTags, dateRangeIndex],
+    () => query.trim().length > 0 || selectedTags.length > 0 || selectedLocations.length > 0 || dateRangeIndex !== null,
+    [query, selectedTags, selectedLocations, dateRangeIndex],
   );
 
   const toggleTag = useCallback((tag: string) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  }, []);
+
+  const toggleLocation = useCallback((location: string) => {
+    setSelectedLocations((prev) =>
+      prev.includes(location) ? prev.filter((l) => l !== location) : [...prev, location],
     );
   }, []);
 
@@ -50,6 +68,7 @@ export function useSearchFilter() {
   const clearAll = useCallback(() => {
     setQuery('');
     setSelectedTags([]);
+    setSelectedLocations([]);
     setDateRangeIndex(null);
     setShowDatePicker(false);
   }, []);
@@ -66,6 +85,13 @@ export function useSearchFilter() {
         );
       }
 
+      // Filter by selected locations (OR logic)
+      if (selectedLocations.length > 0) {
+        filtered = filtered.filter((e) =>
+          e.locationText != null && selectedLocations.includes(e.locationText),
+        );
+      }
+
       // Filter by date range
       if (dateRangeIndex !== null) {
         const range = DATE_RANGES[dateRangeIndex];
@@ -76,18 +102,19 @@ export function useSearchFilter() {
         }
       }
 
-      // Filter by text query (case-insensitive substring, searches title + transcript)
+      // Filter by text query (case-insensitive substring, searches title + transcript + location)
       const trimmed = query.trim().toLowerCase();
       if (trimmed) {
         filtered = filtered.filter((e) =>
           e.text.toLowerCase().includes(trimmed) ||
-          (e.title?.toLowerCase().includes(trimmed) ?? false),
+          (e.title?.toLowerCase().includes(trimmed) ?? false) ||
+          (e.locationText?.toLowerCase().includes(trimmed) ?? false),
         );
       }
 
       return filtered;
     },
-    [selectedTags, dateRangeIndex, query],
+    [selectedTags, selectedLocations, dateRangeIndex, query],
   );
 
   return {
@@ -95,6 +122,8 @@ export function useSearchFilter() {
     setQuery,
     selectedTags,
     toggleTag,
+    selectedLocations,
+    toggleLocation,
     dateRangeIndex,
     toggleDateRange,
     showDatePicker,

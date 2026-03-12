@@ -19,6 +19,9 @@ interface FilterChipsProps {
   allTags: string[];
   selectedTags: string[];
   onToggleTag: (tag: string) => void;
+  allLocations?: string[];
+  selectedLocations?: string[];
+  onToggleLocation?: (location: string) => void;
   dateRangeIndex: number | null;
   onToggleDatePicker: () => void;
   hasActiveFilters: boolean;
@@ -29,6 +32,9 @@ export default function FilterChips({
   allTags,
   selectedTags,
   onToggleTag,
+  allLocations = [],
+  selectedLocations = [],
+  onToggleLocation,
   dateRangeIndex,
   onToggleDatePicker,
   hasActiveFilters,
@@ -65,8 +71,40 @@ export default function FilterChips({
         );
       })}
 
+      {/* Divider between tags and locations */}
+      {allTags.length > 0 && allLocations.length > 0 && <View style={styles.divider} />}
+
+      {/* Location chips */}
+      {allLocations.map((location) => {
+        const isActive = selectedLocations.includes(location);
+        return (
+          <Pressable
+            key={`loc-${location}`}
+            onPress={() => onToggleLocation?.(location)}
+            style={[
+              styles.chip,
+              isActive ? styles.chipActiveTag : styles.chipInactive,
+            ]}
+          >
+            <Ionicons
+              name="location-outline"
+              size={13}
+              color={isActive ? colors.accent : colors.textMuted}
+            />
+            <Text
+              style={[
+                styles.chipLabel,
+                { color: isActive ? colors.accent : colors.textMuted },
+              ]}
+            >
+              {location}
+            </Text>
+          </Pressable>
+        );
+      })}
+
       {/* Divider before date chip */}
-      {allTags.length > 0 && <View style={styles.divider} />}
+      {(allTags.length > 0 || allLocations.length > 0) && <View style={styles.divider} />}
 
       {/* Date range chip */}
       <Pressable
