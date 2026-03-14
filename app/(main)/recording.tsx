@@ -21,48 +21,34 @@ import {
   hitSlop,
   minTouchTarget,
 } from '@/constants/theme';
-import { useChildrenStore } from '@/stores/childrenStore';
 import { useEntriesStore } from '@/stores/entriesStore';
-import { useAuthStore } from '@/stores/authStore';
 import { entriesService } from '@/services/entries.service';
 import { storageService } from '@/services/storage.service';
 import { audioCleanupService } from '@/services/audioCleanup.service';
-import { promptsService } from '@/services/prompts.service';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
-import { ageInMonths, formatDuration } from '@/lib/dateUtils';
+import { formatDuration } from '@/lib/dateUtils';
 import { useLocation } from '@/hooks/useLocation';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { concatWavFiles, getWavDurationSeconds } from '@/lib/audioConcat';
 import ErrorState from '@/components/ErrorState';
 import WarmGlow from '@/components/WarmGlow';
 
-// ─── Constants ──────────────────────────────────────────
-
-const FALLBACK_PROMPTS = [
-  "What's something they said today that made you smile?",
-  "What made them laugh the hardest today?",
-  "What's something small you don't want to forget?",
-];
-
 // ─── Recording Screen ─────────────────────────────────────
 
 export default function RecordingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { reRecordEntryId, appendEntryId, appendStoragePath, appendTranscript, onboarding, promptText } = useLocalSearchParams<{
+  const { reRecordEntryId, appendEntryId, appendStoragePath, appendTranscript, onboarding } = useLocalSearchParams<{
     reRecordEntryId?: string;
     appendEntryId?: string;
     appendStoragePath?: string;
     appendTranscript?: string;
     onboarding?: string;
-    promptText?: string;
   }>();
   const isReRecord = !!reRecordEntryId;
   const isAppend = !!appendEntryId;
 
-  const children = useChildrenStore((s) => s.children);
   const updateEntryLocal = useEntriesStore((s) => s.updateEntryLocal);
-  const profile = useAuthStore((s) => s.profile);
 
   // Real speech recognition — captures audio + live transcript
   const speech = useSpeechRecognition();
@@ -72,7 +58,6 @@ export default function RecordingScreen() {
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'checking'>('checking');
 
   const [seconds, setSeconds] = useState(0);
-  const [activePrompt, setActivePrompt] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const transcriptScrollRef = useRef<ScrollView>(null);
 
@@ -143,66 +128,6 @@ export default function RecordingScreen() {
         setMicPermission('granted');
       });
   }, []);
-
-  // ─── Load Daily Prompts ────────────────────────────────
-  //
-  // Fetches 3 prompts per day from Supabase, then caches them
-  // in AsyncStorage. First open today = network fetch (~200ms).
-  // Every open after that = instant from local cache (~10ms).
-  // Child names are substituted at render time (not cached) so
-  // renames take effect immediately without clearing the cache.
-
-  useEffect(() => {
-    // If a promptText was passed from the Prompts screen, use it directly
-    if (promptText) {
-      setActivePrompt(promptText);
-      return;
-    }
-
-    if (!profile?.id) return;
-
-    // Special cases: use a custom single prompt instead of fetching
-    if (isAppend) {
-      setActivePrompt('Pick up where you left off');
-      return;
-    }
-    if (isReRecord) {
-      setActivePrompt('Try this one again');
-      return;
-    }
-    if (onboarding === 'true') {
-      setActivePrompt('Tell us about a moment you never want to forget');
-      return;
-    }
-
-    let cancelled = false;
-    const childAge = children.length > 0
-      ? ageInMonths(children[0].birthday)
-      : undefined;
-
-    (async () => {
-      try {
-        const daily = await promptsService.getDailyPrompts(profile.id, 3, childAge);
-        if (cancelled) return;
-
-        const texts = daily.map((p, i) =>
-          p.text.replace(
-            /\{child_name\}/gi,
-            children.length > 0 ? children[i % children.length].name : 'your child',
-          )
-        );
-        // Pick one random prompt — keeps the screen calm and focused
-        setActivePrompt(texts[Math.floor(Math.random() * texts.length)]);
-      } catch {
-        if (!cancelled) {
-          const fallback = FALLBACK_PROMPTS[Math.floor(Math.random() * FALLBACK_PROMPTS.length)];
-          setActivePrompt(fallback);
-        }
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [profile?.id]);
 
   // ─── Auto-Start Recording on Mount ────────────────────
   //
@@ -540,15 +465,6 @@ export default function RecordingScreen() {
 
       </View>
 
-      {/* Single prompt — a gentle nudge, not a menu */}
-      {activePrompt && (
-        <View style={styles.promptList}>
-          <Text style={styles.promptHint} numberOfLines={2}>
-            {activePrompt}
-          </Text>
-        </View>
-      )}
-
       {/* Recording area */}
       <View style={[styles.recordingArea, { paddingBottom: insets.bottom + spacing(12) }]}>
         {speech.isRecording && (
@@ -671,20 +587,6 @@ const styles = StyleSheet.create({
     minHeight: minTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  // ─── Prompt Hint ────────────────────
-  promptList: {
-    alignItems: 'center',
-    paddingHorizontal: spacing(5),
-    paddingVertical: spacing(3),
-  },
-  promptHint: {
-    fontFamily: fonts.serif,
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.textMuted,
-    textAlign: 'center',
-    paddingHorizontal: spacing(4),
   },
   // ─── Recording Area ─────────────────
   recordingArea: {
