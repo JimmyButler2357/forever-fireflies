@@ -1,4 +1,4 @@
-import { View, Pressable, Text, StyleSheet } from 'react-native';
+import { View, Pressable, Text, StyleSheet, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   colors,
@@ -22,7 +22,7 @@ export default function ColorPicker({ selectedIndex, onSelect }: ColorPickerProp
         return (
           <Pressable
             key={color.name}
-            onPress={() => onSelect(i)}
+            onPress={() => { Keyboard.dismiss(); onSelect(i); }}
             style={styles.touchTarget}
           >
             <View

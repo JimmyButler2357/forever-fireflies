@@ -4,6 +4,7 @@ import {
   Text,
   Pressable,
   StyleSheet,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -68,7 +69,7 @@ export default function BirthdayPicker({ value, onChange }: BirthdayPickerProps)
 
   if (hasValue && !showPicker) {
     return (
-      <Pressable onPress={() => setShowPicker(true)} style={styles.birthdayRow}>
+      <Pressable onPress={() => { Keyboard.dismiss(); setShowPicker(true); }} style={styles.birthdayRow}>
         <Ionicons name="checkmark-circle" size={18} color={colors.accent} />
         <Text style={styles.birthdayValue}>{formatBirthdayDisplay(value!)}</Text>
         <Text style={styles.changeLink}>change</Text>
@@ -78,7 +79,7 @@ export default function BirthdayPicker({ value, onChange }: BirthdayPickerProps)
 
   if (!showPicker) {
     return (
-      <Pressable onPress={() => setShowPicker(true)}>
+      <Pressable onPress={() => { Keyboard.dismiss(); setShowPicker(true); }}>
         <Text style={styles.birthdayPlaceholder}>Tap to set birthday</Text>
       </Pressable>
     );
