@@ -256,7 +256,7 @@ export default function EntryCard({
               <Ionicons
                 name="heart"
                 size={14}
-                color={colors.glow}
+                color={colors.heartFilled}
               />
             </View>
           ) : null}

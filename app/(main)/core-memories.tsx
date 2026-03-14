@@ -106,7 +106,7 @@ export default function CoreMemoriesScreen() {
 
       {/* Memory count */}
       <View style={styles.countRow}>
-        <Ionicons name="heart" size={14} color={colors.glow} />
+        <Ionicons name="heart" size={14} color={colors.heartFilled} />
         <Text style={styles.countText}>
           {coreMemories.length}{' '}
           {coreMemories.length === 1 ? 'memory' : 'memories'} saved
@@ -159,7 +159,7 @@ export default function CoreMemoriesScreen() {
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="heart-outline" size={48} color={colors.textMuted} />
+            <Ionicons name="heart-outline" size={48} color={colors.heartEmpty} />
             <Text style={styles.emptyHeading}>No fireflies yet</Text>
             <Text style={styles.emptyBody}>
               Tap the heart on any entry to catch it in your Firefly Jar.
