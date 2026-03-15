@@ -1022,7 +1022,7 @@ export default function EntryDetailScreen() {
             <Ionicons
               name={entry.isFavorited ? 'heart' : 'heart-outline'}
               size={22}
-              color={entry.isFavorited ? colors.heartFilled : colors.text}
+              color={entry.isFavorited ? colors.heartFilled : colors.heartEmpty}
             />
           </Pressable>
           <Pressable
