@@ -197,6 +197,8 @@ App Store ready.
 - [ ] COPPA compliance review *(see Product Spec §8)*
 - [ ] App Store listing (Lifestyle category — NOT Kids)
 - [ ] Data export endpoint — edge function or RPC to export all user entries + audio as downloadable archive
+- [ ] Welcome email series configured and tested (see marketing-plan.md — Email Strategy)
+- [ ] Email marketing tool integrated with auth flow (trigger welcome sequence on account creation)
 - [ ] TestFlight beta with 15-25 real parents → feedback → fixes → submission
 
 ### Milestones
@@ -234,7 +236,7 @@ Make the app smarter, more useful, and harder to leave. Focus on AI features and
 | **Help / menu section** | Expandable menu with FAQ, "Ways to Use Your Memories" articles (link to website), Contact Us, mission/about |
 | **Shareable memory cards** | Tap "Share" on any entry card → generates a branded quote-card image (child's words, name + age, date, subtle Forever Fireflies watermark). Static image works everywhere — iMessage, Instagram Stories, Facebook, etc. Uses native share sheet. Replaces plain-link sharing |
 | **Memory of the Day** | Daily featured memory banner at the top of Home screen. Pulls a past entry (random or "on this day" if available). Includes a one-tap "Share" button that generates the branded quote card. Low-friction daily touchpoint that drives sharing + re-engagement |
-| Family recap emails | Weekly text digest + monthly audio highlight reel |
+| Family recap emails | Weekly text digest + monthly audio highlight reel. Requires email marketing infrastructure set up at launch (see marketing-plan.md — Email Strategy) |
 | **In-app contact form** | Replace mailto link with a native form inside the app (subject dropdown: bug / feature request / question / other + text area). Submissions saved to a `feedback` Supabase table with user ID, device info, and app version auto-attached. More polished than mailto and captures structured data |
 | **AI feedback triage** | Edge function (similar to `process-entry`) classifies each submission via Claude Haiku as bug / feature-request / question / praise. Auto-drafts an email reply for review, and auto-creates GitHub issues (with labels) for bugs and feature requests via GitHub API. Human-in-the-loop: drafts queue for approval before sending |
 | Cloud transcription fallback | For entries where on-device transcription has low confidence, offer cloud upgrade |

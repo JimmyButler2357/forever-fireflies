@@ -331,6 +331,7 @@ If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial a
 - **Paywall behavior:** Entries recorded during trial become visible but locked (see dates, child names, first few words — but cannot play audio or read full text). This creates loss aversion and is the highest-converting approach for emotional data. Locked entry card design to be specced during Phase 6 (Subscription & Paywall implementation).
 - **Paywall placement:** After the first recording in onboarding (step 8), after the parent has experienced core value. Visible dismiss button — no dark patterns. "Already subscribed? Restore purchase" link at bottom.
 - **Win-back email:** "You recorded [X] memories about [child name] during your trial. They're waiting for you."
+- For the full email strategy (welcome series, waitlist sequence, lifecycle triggers, and tooling), see [`docs/marketing/marketing-plan.md`](../marketing/marketing-plan.md) — Email Strategy section.
 
 ### 5.2 Keepsake Books (V2+ Revenue)
 - Print-on-demand physical books compiled from entries

@@ -107,7 +107,8 @@ Key question: **at what point can this replace a salary?**
 | Website hosting (Framer) | Free tier |
 | Privacy policy (Termly) | $10/mo |
 | Email (Google Workspace) | $7/mo |
-| **Total** | **~$55/mo** |
+| Email marketing tool | $0-49/mo (free tier covers early phase — see marketing-plan.md) |
+| **Total** | **~$55-104/mo** |
 
 ### Revenue Math
 
@@ -357,6 +358,14 @@ At ~$305K/year revenue, you can afford to hire. Prioritize in this order:
 - [ ] RevenueCat configured with trial + subscription products
 - [ ] TestFlight beta tested with 10+ real parents
 
+### Email Marketing
+- [ ] Email marketing tool selected and account created (see marketing-plan.md — Email Strategy for options)
+- [ ] Waitlist auto-responder configured on coming-soon page
+- [ ] Welcome email series (5 emails) written and loaded
+- [ ] Trial-ending and win-back emails written and loaded
+- [ ] CAN-SPAM compliance: unsubscribe link + physical address in every email footer
+- [ ] Test all email sequences with a personal account before launch
+
 ### Financial
 - [ ] Accounting software set up (Wave — free)
 - [ ] Tax reserve savings account opened (25-30% of revenue)
@@ -375,5 +384,6 @@ At ~$305K/year revenue, you can afford to hire. Prioritize in this order:
 | App Store assets | **Rotato** | $0-49 | 3D device mockups for screenshots |
 | Trademark search | **USPTO TESS** | Free | Search before you commit to a name |
 | Trademark filing | **USPTO TEAS** | $250-350 | DIY filing when name is locked |
+| Email marketing | **TBD** (Loops, Resend, Kit, or Buttondown) | Free–$49/mo | Welcome series, lifecycle emails, event-triggered flows. See marketing-plan.md for comparison |
 | Error tracking | **Sentry** | Free (5K errors/mo) | Add at 10K+ users |
 | Uptime monitoring | **BetterStack** / **UptimeRobot** | Free tier | Add at 10K+ users |

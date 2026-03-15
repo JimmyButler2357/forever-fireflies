@@ -167,6 +167,80 @@ By now you know which channels produce retained, paying users. Double down on th
 
 ---
 
+## Email Strategy
+
+Your coming-soon page captures emails, but there's no plan for what happens after someone gives you their email. This section fills that gap — from pre-launch waitlist nurturing through post-signup onboarding to lifecycle triggers that keep users engaged.
+
+### Pre-Launch Waitlist Sequence (Phase 0-1)
+
+These are for people who sign up on the coming-soon page before the app exists. The goal: keep them warm and convert them to downloads on launch day. Four emails total, then done.
+
+| # | Timing | Subject Idea | What It Does |
+|---|--------|-------------|--------------|
+| 1 | Immediately after signup | "You're on the list" | Brief confirmation. From "Jimmy." Sets the expectation: "I'll email you a few times before launch — behind-the-scenes stuff, not spam." Think of this as a handshake — the reader gave you their email, and you're acknowledging that with warmth, not a sales pitch |
+| 2 | 1 week later | The "why" story | Why you're building this. The dad-who-kept-forgetting moment. Personal, emotional, short. No features, no screenshots — just the human reason this app exists. This is the email that makes someone *care* about the app before they've ever seen it |
+| 3 | 2-3 weeks later | Sneak peek | One screenshot or GIF of the app. "Here's what it looks like so far." Build anticipation. Keep it to one visual — a crowded preview feels like a pitch deck, not a personal update |
+| 4 | Launch day | "It's live" | App Store link. One sentence about what it does. That's the entire email. After weeks of warmth and story, this email earns its CTA because the reader already feels connected to the product |
+
+After email 4, the waitlist sequence stops. They either download or they don't — no ongoing drip for non-users.
+
+### Welcome Email Series (Post-Signup, Phase 2+)
+
+Think of this like the Dwell Bible app's onboarding emails — each one walks through a single feature, from a real person, with a screenshot and a pro tip. The trigger is account creation (not download — when they actually sign up). Five emails, then stops.
+
+| # | Timing | Subject | Focus | Key Element | CTA |
+|---|--------|---------|-------|-------------|-----|
+| 1 | Immediately after signup | "Welcome to Forever Fireflies" | Record your first memory | The 60-second time limit framed as a feature, not a constraint. "It takes 60 seconds. That's it. No setup, no organizing, no pressure." | "Open the app" |
+| 2 | Day 2 | "A quick tip about recording" | Auto child name detection | Screenshot of child pills being auto-tagged. Pro tip: say your child's name naturally in the recording and the app picks it up automatically | "Try it tonight" |
+| 3 | Day 5 | "Your memories, organized" | Firefly Jar (favorites) | Screenshot of the Firefly Jar. Heart a memory and it goes to a special place — your favorites, always one tap away | "Open Firefly Jar" |
+| 4 | Day 10 | "The search trick nobody expects" | Full-text search | "Type 'cheese' and find every time your kid talked about cheese." Screenshot of search results with highlighted matches. Pro tip: search works on the actual words your child said, not just your notes | "Try searching" |
+| 5 | Day 14 | "One last thing" | Personal note — no feature | Not a feature email. "I built this because I kept forgetting the good stuff. If it's helping you remember, that's all I hoped for." Soft trial-ending reminder if applicable. No hard sell | None (or soft: "Keep going") |
+
+**Why this works:** Each email teaches one thing. The reader never feels overwhelmed because they're learning the app one feature at a time, spaced out over two weeks. By email 5 they've used the core features and formed a habit — or they haven't, and no amount of emails will change that.
+
+**Key principles (borrowed from the Dwell pattern):**
+- **From "Jimmy"** — first name only, matching the beta email convention from BRAND_VOICE.md
+- **One feature per email** — never a feature dump. If you can't explain it in one paragraph, it's too much for one email
+- **100-200 words max** — shorter than beta emails (which allow 150-300). New users need less context, not more
+- **Include a screenshot** in emails 2-4 — show the feature, don't just describe it. Real app screenshots only, no mockups
+- **Educational framing** — "did you know..." rather than "buy now." The email is a gift (a useful tip), not an ask
+- **CAN-SPAM footer** — every email must include an unsubscribe link and a physical mailing address (LLC registered address or PO Box). This is a legal requirement, not optional
+
+### Lifecycle Email Triggers (Phase 3+)
+
+These are event-triggered, not time-based. Think of them as emails that respond to what the user *does* (or doesn't do), rather than emails on a fixed schedule. Each trigger fires once at most — no one ever gets the same lifecycle email twice.
+
+| Trigger | Email | When It Fires | What It Says |
+|---------|-------|---------------|-------------|
+| Trial ending (day 5 of 7) | "Your trial wraps up [day]" | Day 5 of the 7-day trial | Not guilt-based. Mention how many memories they've recorded and which children. "These are yours to keep." The locked-memories paywall already creates loss aversion — the email just reminds them gently |
+| Trial expired, didn't convert | Win-back | 3 days after trial ends | "You recorded [X] memories about [child name]. They're waiting for you." Already in the product spec (§5.1) — this formalizes it as part of the email strategy |
+| 7 days inactive (subscribed user) | Gentle re-engagement | After 7 days with no app open | "It's been a quiet week. Anything worth remembering?" Matches the in-app "Quiet Week" prompt tone from the product spec |
+| Subscription anniversary | Thank-you with stats | 1 year after subscribing | "You've been recording memories for a year." Include stats: total memories, number of children, most-used tags. Celebrate the commitment |
+| Family recap (V1.5) | Weekly/monthly digest | See product spec §4 | Already specced as a product feature — weekly text digest + monthly audio highlight reel. No changes needed here, just noting it as part of the lifecycle |
+| Yearly recap (V2) | Year in Memories | See product spec §V2 | Already specced — curated audio, growth stats, year-end letter prompt. Timed near subscription renewal |
+
+### Email Tool Selection
+
+An email marketing tool is needed to manage sequences, handle event triggers, and comply with CAN-SPAM. Decision on which tool to use is deferred until closer to launch — here are the leading options to evaluate:
+
+| Tool | Cost | Best For | Trade-Off |
+|------|------|----------|-----------|
+| **Loops** | Free (1K contacts), $49/mo (5K) | Purpose-built for app onboarding. Visual sequence builder. Event-triggered flows. API-first — integrates well with Supabase edge functions | More expensive than DIY, but saves significant development time |
+| **Resend** | $20/mo (50K emails) | Developer-first sending infrastructure. Great API. You'd build sequence logic yourself in Supabase edge functions | Cheapest option, but requires building your own timing/state machine for sequences |
+| **ConvertKit (Kit)** | Free (1K subs), $29/mo (1K+) | Strong for newsletters and creator-style email | Designed for creators, not app onboarding. Mental model mismatch |
+| **Buttondown** | Free (100 subs), $9/mo (1K) | Clean, simple newsletters | Lacks event-triggered sequences — can't fire emails based on app behavior |
+
+**Integration pattern** (regardless of tool):
+1. User creates account → Supabase auth triggers a Supabase edge function
+2. Edge function calls the email tool's API to create a contact and start the welcome sequence
+3. Email tool handles all timing, sequencing, and unsubscribe management
+4. For trial-ending emails: RevenueCat webhook → edge function → email tool trigger
+5. For inactivity emails: Scheduled edge function (daily cron) checks for 7+ days inactive → triggers re-engagement flow
+
+This keeps email logic out of the app entirely — all orchestration happens server-side through webhooks and edge functions.
+
+---
+
 ## The Viral Loop Already in Your Roadmap
 
 Your V1.5 shared entry feature (share a memory via link → recipient sees Forever Fireflies branding + "Capture your family's memories" CTA) is a built-in growth engine. Every shared memory is a free, highly-targeted ad to another parent. Consider prioritizing this feature if early users ask for sharing.
@@ -188,12 +262,15 @@ Your V1.5 shared entry feature (share a memory via link → recipient sees Forev
 ### While Building (Now)
 - [ ] Create Instagram account
 - [ ] Put up "coming soon" page with email capture (Framer)
+- [ ] Choose email marketing tool (see Email Strategy section above)
+- [ ] Set up waitlist auto-responder on coming-soon page (Email 1: "You're on the list")
 - [ ] Have marketing chat with sister-in-law
 - [ ] Have wife + sister review mockup
 
 ### Before TestFlight
 - [ ] 15-25 beta testers identified
 - [ ] Feedback script ready (what to ask testers)
+- [ ] Waitlist email sequence drafted and loaded (4 emails — see Email Strategy)
 
 ### Launch Week
 - [ ] Personal outreach to all parent contacts
@@ -201,12 +278,16 @@ Your V1.5 shared entry feature (share a memory via link → recipient sees Forev
 - [ ] Facebook group posts (wife/sister help here)
 - [ ] Product Hunt submission
 - [ ] Hacker News Show HN (if appropriate)
+- [ ] Welcome email series live (5 emails, auto-triggered on account creation)
+- [ ] Send launch email to waitlist ("It's live" — Email 4 of waitlist sequence)
 
 ### First 3 Months
 - [ ] ASO keywords researched and subtitle optimized
 - [ ] App Store review prompt added (after 10+ entries)
 - [ ] 5-10 micro-influencer DMs sent
 - [ ] Respond to all App Store reviews
+- [ ] Trial-ending and win-back emails live (see Email Strategy — Lifecycle Triggers)
+- [ ] Review welcome email open rates and adjust timing if needed
 - [ ] Collect permission from 3-5 users for spotlight videos/testimonials
 - [ ] Post first user spotlight video (Instagram Reels / TikTok)
 - [ ] Add "Stories" / testimonials section to website

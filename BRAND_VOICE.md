@@ -123,6 +123,8 @@ AI-generated writing has recognizable patterns. Forever Fireflies copy must neve
 | Twitter/X post | 1–2 |
 | Beta email subject | 1 |
 | Beta email body | 2–3 total |
+| Welcome/lifecycle email subject | 1 |
+| Welcome/lifecycle email body | 1–2 total |
 | In-app copy | 0 |
 
 ### Brand-Fit Emoji
@@ -173,6 +175,50 @@ These match the Forever Fireflies aesthetic — warm, natural, understated:
 > Just reply to this email. One sentence is plenty.
 >
 > Jimmy
+
+---
+
+### Welcome & Lifecycle Emails
+
+**Tone:** Helpful friend who just handed you a gift. Not selling, not teaching — sharing something useful because they genuinely want you to get value from it. Even warmer and more personal than beta emails, because the reader chose to sign up and is actively using the app.
+
+**Format rules:**
+- **Subject line:** Under 40 characters. One emoji max (from the brand-fit set). No fake urgency, no ALL CAPS words
+- **Body:** 100-200 words. Shorter than beta emails. One idea per email — if you need to explain two features, that's two emails
+- **Sign off:** First name only ("Jimmy"). Same as beta emails
+- **CTA:** One per email. Soft language — "Try it tonight" not "Click here." Button-styled CTA link, not a text hyperlink
+- **Visuals:** One screenshot or product image per email (welcome emails 2-4). No stock photos. Real app screenshots only
+- **Footer:** CAN-SPAM compliant unsubscribe link. Physical mailing address (required by law — use LLC registered address or a PO Box)
+
+**Example 1 — Welcome email (first email after signup):**
+> **Subject:** Welcome to Forever Fireflies
+>
+> Hey [name],
+>
+> Thanks for signing up. Here's the one thing I'd suggest tonight: record your first memory.
+>
+> It takes 60 seconds. Tap the mic, say what happened today, and the app saves your voice and your words.
+>
+> That's it. No setup, no organizing, no pressure. One memory, kept forever.
+>
+> Talk soon,
+>
+> Jimmy
+
+**Example 2 — Trial ending email:**
+> **Subject:** Your trial wraps up Friday
+>
+> Hey [name],
+>
+> You've recorded [X] memories about [child name] so far. Those are real moments you would have forgotten.
+>
+> Your free trial ends on [date]. After that, your memories are still there — you just won't be able to play the audio or read the full text until you subscribe.
+>
+> No rush. They'll wait for you.
+>
+> Jimmy
+
+For the full email strategy (sequences, timing, lifecycle triggers, and tooling), see [`docs/marketing/marketing-plan.md`](docs/marketing/marketing-plan.md) — Email Strategy section.
 
 ---
 
