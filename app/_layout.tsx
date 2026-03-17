@@ -15,6 +15,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useDraftStore } from '@/stores/draftStore';
 import { authService } from '@/services/auth.service';
 import { audioCleanupService } from '@/services/audioCleanup.service';
+import { useNotifications } from '@/hooks/useNotifications';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/constants/theme';
 
@@ -29,6 +30,11 @@ export default function RootLayout() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const initialize = useAuthStore((s) => s.initialize);
   const handleAuthChange = useAuthStore((s) => s.handleAuthChange);
+
+  // Register push token and set up notification tap listeners.
+  // This hook silently does nothing if the user isn't authenticated
+  // or hasn't granted notification permissions.
+  useNotifications();
 
   // On mount: check for an existing Supabase session.
   // Think of this as the app "waking up" and checking if someone

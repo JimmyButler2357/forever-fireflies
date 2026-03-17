@@ -46,4 +46,47 @@ export const notificationsService = {
 
     if (error) throw new Error(`Failed to deactivate device: ${error.message}`, { cause: error });
   },
+
+  // ─── Notification Log ───────────────────────────────────
+
+  /** Mark a notification as tapped by the user.
+   *  Called from the tap listener when the user interacts with
+   *  a notification. The `logId` comes from the notification's
+   *  data payload (set by the Edge Function when it sent the push). */
+  async markTapped(logId: string) {
+    const { error } = await supabase
+      .from('notification_log')
+      .update({ tapped: true, tapped_at: new Date().toISOString() })
+      .eq('id', logId);
+
+    if (error) throw new Error(`Failed to mark notification tapped: ${error.message}`, { cause: error });
+  },
+
+  /** Mark that a notification tap led to a saved entry.
+   *  Called from the recording screen when the user finishes
+   *  recording after opening the app via a notification. */
+  async markResultedInEntry(logId: string) {
+    const { error } = await supabase
+      .from('notification_log')
+      .update({ resulted_in_entry: true })
+      .eq('id', logId);
+
+    if (error) throw new Error(`Failed to mark notification result: ${error.message}`, { cause: error });
+  },
+
+  /** Get the most recent notification log ID for a user.
+   *  Fallback for when the notification's data payload is missing
+   *  (e.g. on older versions or edge cases). */
+  async getLatestLogId(profileId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('notification_log')
+      .select('id')
+      .eq('profile_id', profileId)
+      .order('sent_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw new Error(`Failed to get latest notification log: ${error.message}`, { cause: error });
+    return data?.id ?? null;
+  },
 };

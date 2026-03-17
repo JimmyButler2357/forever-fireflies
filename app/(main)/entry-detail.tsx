@@ -50,6 +50,7 @@ import { formatDate, formatTime, formatDuration, getAge } from '@/lib/dateUtils'
 import { tagsService } from '@/services/tags.service';
 import { useDraftStore } from '@/stores/draftStore';
 import { audioCleanupService } from '@/services/audioCleanup.service';
+import { notificationsService } from '@/services/notifications.service';
 
 // ─── FadeInUp Wrapper ────────────────────────────────────
 
@@ -182,6 +183,7 @@ export default function EntryDetailScreen() {
     audioUri?: string;
     locationText?: string;
     onboarding?: 'true';
+    fromNotification?: string;
   }>();
 
   const allChildren = useChildrenStore((s) => s.children);
@@ -473,6 +475,17 @@ export default function EntryDetailScreen() {
 
           // Also add to local cache so Home shows it immediately
           addEntryLocal(mapped);
+
+          // If this entry was created from a notification tap, mark it
+          // in notification_log so we can track conversion (fire-and-forget).
+          if (params.fromNotification && params.fromNotification !== '') {
+            const logId = params.fromNotification === 'true' ? null : params.fromNotification;
+            if (logId) {
+              notificationsService.markResultedInEntry(logId).catch(
+                (err) => console.warn('Failed to mark notification result:', err)
+              );
+            }
+          }
 
           // Onboarding: redirect to memory-saved — don't stay on entry-detail
           if (isOnboarding) {
@@ -1265,6 +1278,7 @@ export default function EntryDetailScreen() {
                 if (audioHasError || audioMissing || audioIsLoading) return;
                 player.isPlaying ? player.pause() : player.play();
               }}
+              hitSlop={hitSlop.icon}
               style={styles.playBtn}
               disabled={!player.isLoaded}
             >
@@ -1901,7 +1915,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    minWidth: minTouchTarget,
-    minHeight: minTouchTarget,
   },
 });

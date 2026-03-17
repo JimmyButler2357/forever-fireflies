@@ -44,6 +44,10 @@ import ColorPicker from '@/components/ColorPicker';
 import { useLocationPermission } from '@/hooks/useLocation';
 import { formatDate, to24Hour, from24Hour, daysAgo } from '@/lib/dateUtils';
 import { profilesService } from '@/services/profiles.service';
+import { notificationsService } from '@/services/notifications.service';
+import { requestPermissions, getExpoPushToken } from '@/lib/notifications';
+import { getStoredPushToken } from '@/hooks/useNotifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import TimePicker from '@/components/TimePicker';
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -128,14 +132,68 @@ export default function SettingsScreen() {
     }
   }, []);
 
-  const handleToggleReminder = useCallback((enabled: boolean) => {
+  const handleToggleReminder = useCallback(async (enabled: boolean) => {
     setReminderEnabled(enabled);
     saveReminderPrefs(enabled, reminderTime);
+
+    if (enabled) {
+      // Turning ON — make sure we have permission and a registered token.
+      // Think of it like re-subscribing to a newsletter: we need to
+      // check we still have a valid mailing address (push token).
+      const { granted } = await requestPermissions();
+      if (!granted) {
+        // User denied the OS prompt — show a helpful alert
+        Alert.alert(
+          'Notifications Disabled',
+          'To receive reminders, enable notifications in your device settings.',
+          [
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+            { text: 'Not Now', style: 'cancel' },
+          ],
+        );
+        // Revert toggle since we can't actually send notifications
+        setReminderEnabled(false);
+        saveReminderPrefs(false, reminderTime);
+        return;
+      }
+
+      // Register push token if we don't have one stored
+      const existingToken = await getStoredPushToken();
+      if (!existingToken) {
+        const token = await getExpoPushToken();
+        if (token) {
+          const userId = useAuthStore.getState().session?.user?.id;
+          if (userId) {
+            const platform = Platform.OS as 'ios' | 'android';
+            notificationsService.registerDevice(userId, token, platform).catch(
+              (err) => console.warn('Failed to register device:', err)
+            );
+            AsyncStorage.setItem('ff_push_token', token).catch(() => {});
+          }
+        }
+      }
+    } else {
+      // Turning OFF — deactivate the device so the server stops sending.
+      const token = await getStoredPushToken();
+      if (token) {
+        notificationsService.deactivateDevice(token).catch(
+          (err) => console.warn('Failed to deactivate device:', err)
+        );
+      }
+    }
   }, [reminderTime, saveReminderPrefs]);
 
   const handleTimeChange = useCallback((time: string) => {
     setReminderTime(time);
     saveReminderPrefs(reminderEnabled, time);
+
+    // Recompute the UTC equivalent so the server sends at the new time.
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) {
+      profilesService.syncTimezone(tz, to24Hour(time)).catch(
+        (err) => console.warn('Failed to sync timezone after time change:', err)
+      );
+    }
   }, [reminderEnabled, saveReminderPrefs]);
 
   // Recently deleted entries — fetched from Supabase when the

@@ -38,12 +38,13 @@ import WarmGlow from '@/components/WarmGlow';
 export default function RecordingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { reRecordEntryId, appendEntryId, appendStoragePath, appendTranscript, onboarding } = useLocalSearchParams<{
+  const { reRecordEntryId, appendEntryId, appendStoragePath, appendTranscript, onboarding, fromNotification } = useLocalSearchParams<{
     reRecordEntryId?: string;
     appendEntryId?: string;
     appendStoragePath?: string;
     appendTranscript?: string;
     onboarding?: string;
+    fromNotification?: string;
   }>();
   const isReRecord = !!reRecordEntryId;
   const isAppend = !!appendEntryId;
@@ -386,6 +387,7 @@ export default function RecordingScreen() {
           audioUri: s.audioUri ?? '',
           locationText: loc ?? '',
           onboarding: onboarding ?? '',
+          fromNotification: fromNotification ?? '',
         },
       });
     }
@@ -656,6 +658,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   recordingButtons: {
+    ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

@@ -20,6 +20,7 @@ import type { Database } from '@/lib/database.types';
 import { authService } from '@/services/auth.service';
 import { profilesService } from '@/services/profiles.service';
 import { familiesService } from '@/services/families.service';
+import { notificationsService } from '@/services/notifications.service';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -161,6 +162,20 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signOut: async () => {
+        // Deactivate the push token so the server stops sending
+        // notifications to this device. Fire-and-forget — don't
+        // block sign-out if this fails.
+        try {
+          const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+          const pushToken = await AsyncStorage.getItem('ff_push_token');
+          if (pushToken) {
+            await notificationsService.deactivateDevice(pushToken);
+            await AsyncStorage.removeItem('ff_push_token');
+          }
+        } catch (err) {
+          console.warn('Failed to deactivate device on sign-out:', err);
+        }
+
         await authService.signOut();
         set({
           session: null,

@@ -1,11 +1,15 @@
 import { useState, useRef, useCallback } from 'react';
-import { View, Text, Pressable, FlatList, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, FlatList, StyleSheet, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii } from '@/constants/theme';
 import { profilesService } from '@/services/profiles.service';
+import { notificationsService } from '@/services/notifications.service';
+import { useAuthStore } from '@/stores/authStore';
+import { requestPermissions, getExpoPushToken } from '@/lib/notifications';
 import { to24Hour } from '@/lib/dateUtils';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import PrimaryButton from '@/components/PrimaryButton';
 
 // Generate all 48 half-hour slots across 24 hours (12:00 AM → 11:30 PM).
@@ -57,24 +61,65 @@ export default function NotificationsScreen() {
     }
   }, []);
 
-  // Save the selected time to the user's profile in Supabase,
-  // then move on. If the save fails, we still navigate forward —
-  // they can change this later in Settings.
+  // Save the selected time, request OS permission, and register the
+  // device's push token so the server knows where to send notifications.
+  // If anything fails, we still navigate forward — they can fix it
+  // later in Settings.
   const handleSetReminder = async () => {
     setIsLoading(true);
     try {
+      // Save time preference to Supabase
+      const time24 = to24Hour(selectedTime);
       await profilesService.updateNotificationPrefs({
         notification_enabled: true,
-        notification_time: to24Hour(selectedTime),
+        notification_time: time24,
       });
+
+      // Also sync timezone + compute UTC equivalent so the server
+      // knows when to send. Fire-and-forget — don't block navigation.
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz) {
+        profilesService.syncTimezone(tz, time24).catch(
+          (err) => console.warn('Failed to sync timezone:', err)
+        );
+      }
+
+      // Request OS notification permission (shows the system dialog).
+      // Think of it like asking "can I knock on your door each evening?"
+      const { granted } = await requestPermissions();
+
+      if (granted) {
+        // Get the device's push token — the "address" the server sends to
+        const token = await getExpoPushToken();
+        if (token) {
+          const userId = useAuthStore.getState().session?.user?.id;
+          if (userId) {
+            // Register with Supabase (fire-and-forget — don't block navigation)
+            const platform = Platform.OS as 'ios' | 'android';
+            notificationsService.registerDevice(userId, token, platform).catch(
+              (err) => console.warn('Failed to register device:', err)
+            );
+            // Store locally for logout deactivation
+            AsyncStorage.setItem('ff_push_token', token).catch(() => {});
+          }
+        }
+      }
     } catch (error) {
       // Non-blocking — the user can set this later in Settings.
-      // We just log it and move on.
       console.warn('Failed to save notification prefs:', error);
     } finally {
       setIsLoading(false);
       goNext();
     }
+  };
+
+  // User tapped "Not now" — save that they declined so the server
+  // won't try to send notifications to this user.
+  const handleSkip = async () => {
+    profilesService.updateNotificationPrefs({
+      notification_enabled: false,
+    }).catch((err) => console.warn('Failed to save skip preference:', err));
+    goNext();
   };
 
   return (
@@ -127,7 +172,7 @@ export default function NotificationsScreen() {
           onPress={handleSetReminder}
           disabled={isLoading}
         />
-        <Pressable onPress={goNext} disabled={isLoading}>
+        <Pressable onPress={handleSkip} disabled={isLoading}>
           <Text style={styles.skipLink}>Not now</Text>
         </Pressable>
       </View>
