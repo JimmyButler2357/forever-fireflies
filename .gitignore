@@ -32,3 +32,23 @@ nul
 
 # Terminal Paste Image folder
 .cp-images/
+
+# Firebase credentials (contains API keys — never commit)
+google-services.json
+GoogleService-Info.plist
+
+# Test & coverage output
+coverage/
+__mocks__/
+**/__tests__/
+
+# Jest config (local dev tooling)
+jest.config.js
+jest.setup.ts
+
+# Test summaries & image galleries (local artifacts)
+TEST_SUMMARY.md
+gallery/
+
+# Claude Code plans (session-specific)
+.claude/plans/
