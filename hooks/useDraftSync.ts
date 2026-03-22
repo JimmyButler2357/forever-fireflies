@@ -19,6 +19,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { entriesService } from '@/services/entries.service';
 import { storageService } from '@/services/storage.service';
 import { audioCleanupService } from '@/services/audioCleanup.service';
+import { startTrialIfNeeded } from '@/lib/subscriptionHelpers';
 
 const MAX_RETRIES = 3;
 
@@ -95,7 +96,10 @@ export function useDraftSync() {
       const mapped = mapSupabaseEntry(fullRow);
       addEntryLocal(mapped);
 
-      // Step 6: Remove the draft — it's fully synced!
+      // Step 6: Start the free trial if this is the user's first entry.
+      await startTrialIfNeeded();
+
+      // Step 7: Remove the draft — it's fully synced!
       removeDraft(draft.localId);
       return true;
     } catch (err) {

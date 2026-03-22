@@ -29,6 +29,7 @@ import {
   childColors,
   childColorWithOpacity,
   hitSlop,
+  minTouchTarget,
 } from '@/constants/theme';
 import { useChildrenStore, mapSupabaseChild, type Child } from '@/stores/childrenStore';
 import { useEntriesStore, mapSupabaseEntry } from '@/stores/entriesStore';
@@ -51,6 +52,8 @@ import DropdownMenu from '@/components/DropdownMenu';
 import SearchBar from '@/components/SearchBar';
 import FilterChips from '@/components/FilterChips';
 import DateRangePicker from '@/components/DateRangePicker';
+import PostTrialPaywall from '@/components/PostTrialPaywall';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // ─── Animation duration ──────────────────────────────────
 
@@ -76,6 +79,12 @@ export default function HomeScreen() {
 
   // Dropdown menu state
   const [menuVisible, setMenuVisible] = useState(false);
+
+  // Subscription state — controls what features are available.
+  // When hasAccess is false (trial expired, no subscription), we hide
+  // the mic button, write link, and Firefly Jar icon.
+  const { hasAccess } = useSubscription();
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // Draft sync — watches connectivity and auto-syncs offline drafts
   const { retryDraft } = useDraftSync();
@@ -314,7 +323,11 @@ export default function HomeScreen() {
             icon: (isSearchActive ? 'close-outline' : 'search-outline') as keyof typeof Ionicons.glyphMap,
             onPress: toggleSearchMode,
           },
-          { icon: 'heart-outline' as const, onPress: () => router.push('/(main)/core-memories') },
+          // Only show Firefly Jar heart when user has access (trial active or subscribed).
+          // When expired, we hide it so lapsed users aren't tempted by a locked screen.
+          ...(hasAccess
+            ? [{ icon: 'heart-outline' as keyof typeof Ionicons.glyphMap, onPress: () => router.push('/(main)/core-memories') }]
+            : []),
           { icon: 'menu-outline' as const, onPress: () => setMenuVisible(true) },
         ]}
       />
@@ -521,19 +534,34 @@ export default function HomeScreen() {
           style={styles.bottomFade}
           pointerEvents="none"
         />
-        <View style={[styles.bottomArea, { paddingBottom: insets.bottom + spacing(5) }]}>
-          <MicButton
-            size="home"
-            onPress={() => router.push('/(main)/recording')}
-          />
-          <Pressable
-            onPress={() => router.push({ pathname: '/(main)/entry-detail', params: { transcript: '' } })}
-            style={styles.writeLink}
-          >
-            <Ionicons name="pencil-outline" size={12} color={colors.textSoft} />
-            <Text style={styles.writeLinkText}>or write instead</Text>
-          </Pressable>
-        </View>
+        {hasAccess ? (
+          // Full access — show mic button + write link
+          <View style={[styles.bottomArea, { paddingBottom: insets.bottom + spacing(5) }]}>
+            <MicButton
+              size="home"
+              onPress={() => router.push('/(main)/recording')}
+            />
+            <Pressable
+              onPress={() => router.push({ pathname: '/(main)/entry-detail', params: { transcript: '' } })}
+              style={styles.writeLink}
+            >
+              <Ionicons name="pencil-outline" size={12} color={colors.textSoft} />
+              <Text style={styles.writeLinkText}>or write instead</Text>
+            </Pressable>
+          </View>
+        ) : (
+          // Lapsed — show subscribe banner instead of mic button.
+          // The banner opens the post-trial paywall modal.
+          <View style={[styles.bottomArea, { paddingBottom: insets.bottom + spacing(5) }]}>
+            <Pressable
+              onPress={() => setShowPaywall(true)}
+              style={({ pressed }) => [styles.subscribeBanner, pressed && { opacity: 0.9 }]}
+            >
+              <Ionicons name="sparkles" size={18} color={colors.accent} />
+              <Text style={styles.subscribeBannerText}>Subscribe to keep recording</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
 
       {/* Dropdown menu — anchored below the menu icon */}
@@ -543,6 +571,9 @@ export default function HomeScreen() {
         onNavigate={handleMenuNavigate}
         onSignOut={handleSignOut}
       />
+
+      {/* Post-trial paywall — shown when user taps the subscribe banner */}
+      <PostTrialPaywall visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </View>
   );
 }
@@ -728,5 +759,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: colors.textSoft,
+  },
+  // ─── Subscribe Banner (lapsed state) ──────
+  subscribeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing(2),
+    backgroundColor: colors.accentSoft,
+    paddingVertical: spacing(4),
+    paddingHorizontal: spacing(6),
+    borderRadius: radii.lg,
+    minHeight: minTouchTarget,
+    ...shadows.sm,
+  },
+  subscribeBannerText: {
+    ...typography.formLabel,
+    color: colors.accent,
   },
 });

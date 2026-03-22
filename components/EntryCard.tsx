@@ -455,12 +455,12 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(232,114,74,0.25)',
+    backgroundColor: childColorWithOpacity(colors.accent, 0.25),
     alignItems: 'center',
     justifyContent: 'center',
   },
   playButtonPressed: {
-    backgroundColor: 'rgba(232,114,74,0.35)',
+    backgroundColor: childColorWithOpacity(colors.accent, 0.35),
   },
   heartRow: {
     flexDirection: 'row',

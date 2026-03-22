@@ -18,5 +18,5 @@
 -- handle daylight saving time shifts automatically.
 
 ALTER TABLE profiles
-  ADD COLUMN timezone text NOT NULL DEFAULT 'UTC',
-  ADD COLUMN notification_time_utc time DEFAULT '20:30';
+  ADD COLUMN IF NOT EXISTS timezone text NOT NULL DEFAULT 'UTC',
+  ADD COLUMN IF NOT EXISTS notification_time_utc time DEFAULT '20:30';

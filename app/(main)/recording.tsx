@@ -32,12 +32,21 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { concatWavFiles, getWavDurationSeconds } from '@/lib/audioConcat';
 import ErrorState from '@/components/ErrorState';
 import WarmGlow from '@/components/WarmGlow';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // ─── Recording Screen ─────────────────────────────────────
 
 export default function RecordingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  // Defense-in-depth: if the user somehow reaches this screen without access
+  // (e.g. deep link, bookmark, or back-nav), send them back to Home.
+  // The mic button is already hidden on Home, but this is a safety net.
+  // NOTE: This hook must be called here (not after a conditional return)
+  // because React requires hooks to run in the same order every render.
+  const { hasAccess } = useSubscription();
+
   const { reRecordEntryId, appendEntryId, appendStoragePath, appendTranscript, onboarding, fromNotification } = useLocalSearchParams<{
     reRecordEntryId?: string;
     appendEntryId?: string;
@@ -104,6 +113,16 @@ export default function RecordingScreen() {
 
   // Prevents auto-start from firing more than once
   const hasAutoStarted = useRef(false);
+
+  // Redirect to Home if the user doesn't have access.
+  // Placed AFTER all hooks to satisfy React's rules of hooks.
+  useEffect(() => {
+    if (!hasAccess) {
+      router.replace('/(main)/home');
+    }
+  }, [hasAccess]);
+
+  if (!hasAccess) return null;
 
   // ─── Permission Check ──────────────────────────────────
   //
@@ -658,7 +677,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   recordingButtons: {
-    ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

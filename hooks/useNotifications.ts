@@ -51,12 +51,17 @@ export function useNotifications() {
   const routerRef = useRef(router);
   routerRef.current = router;
 
+  // Notifications aren't available on web — expo-notifications is a
+  // native-only module. Skip all registration and listeners on web.
+  const isWeb = Platform.OS === 'web';
+
   const sessionRef = useRef(session);
   sessionRef.current = session;
 
   // ─── Device registration (runs once when user is authenticated) ──
 
   useEffect(() => {
+    if (isWeb) return;
     if (!session?.user?.id || !profile) return;
 
     let cancelled = false;
@@ -102,7 +107,6 @@ export function useNotifications() {
           token,
           platform,
         );
-
         // Update last-active timestamp (helps the server know which
         // devices are still in use vs abandoned)
         await notificationsService.updateDeviceActivity(token);

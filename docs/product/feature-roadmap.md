@@ -27,6 +27,13 @@ The app runs entirely on local Zustand stores with seed data — no backend requ
 - **Once auth is wired up:** Supabase sessions persist via AsyncStorage. You sign in once and stay signed in across app restarts — no re-login on every test run
 - **Mock vs. real data:** Seed data (`constants/seedData.ts`) stays available for development. A `__DEV__` flag can toggle between local mock data and real Supabase calls, so you can always test UI without a network connection
 
+### Beta Testing
+
+- **Dev builds** (`development` profile): Used by the developer. Includes hot reload, shake menu, and dev tools. Built as APK via `npx eas build --profile development --platform android`
+- **Preview builds** (`preview` profile): Used by 3 beta testers. Production-like APK without dev tools. Built via `npx eas build --profile preview --platform android`
+- **Distribution**: APKs shared directly with beta testers (sideloaded, not via Play Store)
+- **Firebase**: Android push notifications require FCM — `google-services.json` in project root, referenced in `app.json`
+
 ### Phase 1: Scaffolding ✅
 
 App launches, builds on device, navigation between all screens.
@@ -57,10 +64,10 @@ Every wireframed screen is a real component with hardcoded data. Tappable protot
 - [x] Location field on Entry Detail — display and edit `locationText` in metadata block
 - [x] Serif font decision — using Merriweather; design spec updated to match
 - [x] Settings "Add Child" birthday picker — scroll-wheel picker matching onboarding style
-- [ ] Design cleanup (3 items):
-  - [ ] **EntryCard.tsx hardcoded colors** — `shadowColor: '#E8724A'` (line ~352), `borderColor: 'rgba(180,160,140,0.35)'` (line ~343), and highlight `backgroundColor: 'rgba(232,114,74,0.20)'` (line ~60) all use raw hex/rgba instead of theme tokens (`colors.accent`, `colors.accentGlow`, etc.)
-  - [ ] **NotificationPreview.tsx touch targets** — action buttons have `paddingVertical: 9` (line ~126), giving ~30px total height — well below the 44×44px minimum. Use `minTouchTarget` from theme
-  - [ ] **entry-detail.tsx audio bar** — `playBtn` hardcoded 36×36 (lines ~1263-64), `scrubTrack` height hardcoded 4px (line ~1272), `reRecordBtn` hardcoded 28×28 with conflicting `minWidth/minHeight: minTouchTarget` (lines ~1286-87). Use spacing tokens and ensure all interactive elements meet 44px minimum
+- [x] Design cleanup (3 items):
+  - [x] **EntryCard.tsx hardcoded colors** — border/shadow colors now use theme tokens; play button accent backgrounds updated to use `childColorWithOpacity(colors.accent, ...)`
+  - [x] **NotificationPreview.tsx touch targets** — action buttons now use `minHeight: minTouchTarget` (44px) with proper spacing tokens
+  - [x] **entry-detail.tsx audio bar** — `playBtn` gets `hitSlop` for 44px touch compliance; `reRecordBtn` contradiction resolved (36px visual + hitSlop)
 
 Every screen handles empty, loading, and error states.
 
@@ -113,7 +120,7 @@ Record → transcribe → save → view works end-to-end. The core product loop.
 - [x] Auto-purge cron job — Supabase edge function or pg_cron to hard-delete entries where `deleted_at < now() - 30 days`
 - [x] Edge cases: mic denied, empty audio, transcription failure
 
-### Phase 6: Search & Favorites (7/8 done)
+### Phase 6: Search & Favorites ✅
 
 Browse, search, and curate entries with real data.
 
@@ -122,7 +129,7 @@ Browse, search, and curate entries with real data.
 - [x] Date range presets (Last 7 days, Last month, Last 3 months, All time)
 - [x] Highlighted search matches in result cards
 - [x] Firefly Jar screen pulls real favorited entries
-- [ ] Inline audio play on Firefly Jar cards (stopPropagation)
+- [x] Inline audio play on Firefly Jar cards (stopPropagation)
 - [x] Heart toggle syncs to Supabase
 - [x] Empty states for no results and no favorites
 
@@ -130,13 +137,13 @@ Browse, search, and curate entries with real data.
 
 Daily habit loop drives nightly recording.
 
-- [ ] Local scheduled notifications via Expo Notifications
-- [ ] Personalized prompt with child name + age (e.g., "What made Emma smile today?")
-- [ ] "Record" action → Recording screen; "Remind Me Later" → 30-minute snooze
-- [ ] Tapping notification body → Home screen
+- [x] Server-sent push notifications via Expo Push API + FCM (Android) — replaces local scheduling
+- [x] Personalized prompt with child name + age (e.g., "What made Emma smile today?")
+- [x] "Record" action → Recording screen; "Remind Me Later" → 30-minute snooze
+- [x] Tapping notification body → Home screen
 - [ ] Prompt cards on Recording screen shuffled by child age range
-- [ ] Notification time configurable in Settings
-- [ ] Notification backoff logic — if `notification_log` shows 5+ ignored days, reduce frequency (edge function or client-side)
+- [x] Notification time configurable in Settings
+- [x] Notification backoff logic — if `notification_log` shows 5+ ignored days, reduce frequency (edge function)
 - [ ] "No memories yet" nudge — if a child has zero entries by day 2-3 after being added, send a gentle notification (e.g., "Emma doesn't have any memories yet — capture your first one tonight!")
 
 ### Phase 8: Subscription & Paywall
@@ -168,9 +175,9 @@ App Store ready.
 
 - [ ] **Rebrand cleanup — remove all "Core Memories" references**
   - [ ] **Critical (affects functionality):**
-    - [ ] Update deep link scheme from `core-memories://` to `forever-fireflies://` in `app.json`
-    - [ ] Update iOS bundle ID from `com.corememories.app` in `app.json`
-    - [ ] Update Android package from `com.corememories.app` in `app.json`
+    - [x] Update deep link scheme from `core-memories://` to `forever-fireflies://` in `app.json`
+    - [x] Update iOS bundle ID from `com.corememories.app` → `com.foreverfireflies.app` in `app.json`
+    - [x] Update Android package from `com.corememories.app` → `com.foreverfireflies.app` in `app.json`
     - [ ] Update OAuth redirects in `services/auth.service.ts` (Apple, Google, password reset)
     - [ ] Update Supabase redirect allowlist in `supabase/config.toml`
     - [ ] Push updated Supabase config to remote project
@@ -210,7 +217,7 @@ App Store ready.
 | M3 | Auth works | Sign in, create child, see empty Home | 4 ✅ |
 | M4 | Can record | Voice recording, breathing circle, 60s auto-stop, transcript | 5 ✅ |
 | M5 | Core loop | Record → auto-detect child → save → browse → search → playback | 5–6 ✅ |
-| M6 | Favorites | Firefly Jar with elevated cards, inline audio play | 6 |
+| M6 | Favorites | Firefly Jar with elevated cards, inline audio play | 6 ✅ |
 | M7 | Habit loop | Personalized notifications drive daily recording | 7 |
 | M8 | Money works | Trial → paywall → subscribe via RevenueCat | 8 |
 | M9 | Beta | TestFlight in real parents' hands | 10 |

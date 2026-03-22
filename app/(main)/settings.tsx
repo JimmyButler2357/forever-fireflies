@@ -48,6 +48,8 @@ import { notificationsService } from '@/services/notifications.service';
 import { requestPermissions, getExpoPushToken } from '@/lib/notifications';
 import { getStoredPushToken } from '@/hooks/useNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSubscription } from '@/hooks/useSubscription';
+import PostTrialPaywall from '@/components/PostTrialPaywall';
 import TimePicker from '@/components/TimePicker';
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -69,6 +71,8 @@ export default function SettingsScreen() {
   const clearChildren = useChildrenStore((s) => s.clearChildren);
   const clearEntries = useEntriesStore((s) => s.clearEntries);
   const { status: locationStatus } = useLocationPermission();
+  const { hasAccess, status: subStatus, trialDaysRemaining } = useSubscription();
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // Local state
   const [reminderEnabled, setReminderEnabled] = useState(true);
@@ -138,11 +142,8 @@ export default function SettingsScreen() {
 
     if (enabled) {
       // Turning ON — make sure we have permission and a registered token.
-      // Think of it like re-subscribing to a newsletter: we need to
-      // check we still have a valid mailing address (push token).
       const { granted } = await requestPermissions();
       if (!granted) {
-        // User denied the OS prompt — show a helpful alert
         Alert.alert(
           'Notifications Disabled',
           'To receive reminders, enable notifications in your device settings.',
@@ -151,7 +152,6 @@ export default function SettingsScreen() {
             { text: 'Not Now', style: 'cancel' },
           ],
         );
-        // Revert toggle since we can't actually send notifications
         setReminderEnabled(false);
         saveReminderPrefs(false, reminderTime);
         return;
@@ -486,7 +486,13 @@ export default function SettingsScreen() {
           <View style={styles.card}>
             <Pressable
               onPress={() => {
-                // No-op for MVP
+                if (subStatus === 'expired') {
+                  // Open the paywall so they can subscribe
+                  setShowPaywall(true);
+                } else if (subStatus === 'active') {
+                  // Open the platform's native subscription management page
+                  Linking.openURL('https://play.google.com/store/account/subscriptions');
+                }
               }}
               style={({ pressed }) => [
                 styles.row,
@@ -496,14 +502,19 @@ export default function SettingsScreen() {
               <View style={styles.rowContent}>
                 <Text style={styles.rowLabel}>Plan</Text>
                 <Text style={styles.rowSublabel}>
-                  Free Trial — 7 days remaining
+                  {subStatus === 'trial' && `Free Trial — ${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''} remaining`}
+                  {subStatus === 'active' && 'Active subscription'}
+                  {subStatus === 'expired' && 'Expired — tap to subscribe'}
+                  {subStatus === 'loading' && 'Loading...'}
                 </Text>
               </View>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={colors.textMuted}
-              />
+              {(subStatus === 'expired' || subStatus === 'active') && (
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.textMuted}
+                />
+              )}
             </Pressable>
           </View>
         </View>
@@ -1146,6 +1157,9 @@ export default function SettingsScreen() {
         onConfirm={handleDeleteAccount}
         onCancel={() => setShowDeleteAccountDialog(false)}
       />
+
+      {/* Post-trial paywall — shown when user taps the expired subscription row */}
+      <PostTrialPaywall visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </View>
   );
 }

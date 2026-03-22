@@ -613,7 +613,7 @@ These are the performance, security, and quality targets that apply at MVP. More
 - **Audio format:** AAC (.m4a) — native iOS support, ~100KB per 60-second entry, ~300KB per 3-minute entry. Best balance of quality, file size, and compatibility. At 1,000 users × 5 entries/week (assuming average 60s entries), that's ~2GB/month new storage. Note: `expo-speech-recognition` persists audio as WAV/PCM (larger). For MVP, upload WAV directly (~5MB/min); optimize to .m4a transcoding when storage costs become meaningful (post-1,000 users).
 
 ### Notifications
-- **Local scheduled notifications** via Expo Notifications for MVP. Set once on device at user's chosen time, fires daily. Prompt text drawn from a static pool bundled in the app, personalized with child name and age at runtime. Upgrade to server-sent push for dynamic content in V1.5+.
+- **Server-sent push notifications** via Expo Push API + Firebase Cloud Messaging (Android) / APNs (iOS). A Supabase Edge Function (`send-notifications`) runs on a 5-minute cron, queries profiles whose `notification_time_utc` matches the current window, and sends personalized prompts with the child's name and age. Action buttons: "Record" (opens Recording screen) + "Remind Me Later" (30-min local snooze). Backoff: skips users who ignored 5+ consecutive notifications. Device tokens registered in `user_devices` table on app open; deactivated on sign-out.
 
 ### Payments
 - **RevenueCat** — wraps Apple/Google in-app purchases with unified API. Handles receipt validation, trial management, subscription lifecycle, and basic analytics. Free tier covers up to $2,500/mo in MTR.

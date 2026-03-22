@@ -63,6 +63,52 @@ Common mistakes to watch for — learned from the Phase 4-5 code review.
 - **Parallelize independent async calls with `Promise.all()`.** If two operations don't depend on each other (e.g. uploading audio and detecting child names), run them at the same time instead of one after the other. Saves time for the user.
 - **Remove dead code.** Unused imports, unused state variables, and functions that nothing calls should be deleted — not left around "just in case." Dead code is confusing because future readers assume it's there for a reason.
 
+## Push Notification Workflow
+
+The notification system has several moving parts. Here's how they connect:
+
+### How It Works (End to End)
+
+1. **User picks a time** in Settings (e.g. 8:30 PM). The app stores this as `notification_time` (local) on their profile.
+2. **App converts to UTC** on every launch: `notification_time` + device timezone → `notification_time_utc` (e.g. 8:30 PM Central = 01:30 UTC). This handles daylight saving changes automatically.
+3. **pg_cron runs every minute** and calls the `send-notifications` Edge Function via `net.http_post()`.
+4. **Edge Function** queries profiles whose `notification_time_utc` falls within ±2 minutes of the current UTC time, picks a personalized prompt with their child's name, and sends it via the **Expo Push API**.
+5. **Expo Push API** routes the notification to the device via **FCM** (Android) or **APNs** (iOS).
+
+### Key Components
+
+| Component | Location | Role |
+|-----------|----------|------|
+| Settings UI | `app/(main)/settings.tsx` | User picks notification time (5-minute increments) |
+| Timezone sync | `hooks/useNotifications.ts` | Converts local time → UTC on every app open |
+| Profiles service | `services/profiles.service.ts` | Writes `notification_time_utc` and `timezone` to DB |
+| Edge Function | `supabase/functions/send-notifications/index.ts` | Finds eligible users, picks prompts, calls Expo Push API |
+| pg_cron job | Migration `20260301000037_fix_cron_vault.sql` | Triggers the Edge Function every minute |
+| Vault secrets | `vault.secrets` table (manual, not in git) | Stores `supabase_url` and `service_role_key` for pg_cron |
+| Device tokens | `user_devices` table | Expo push tokens registered on app launch |
+| Notification log | `notification_log` table | Tracks every send for backoff + tap tracking |
+
+### pg_cron + Supabase Vault
+
+pg_cron runs as a separate background worker in PostgreSQL — it does NOT have access to `current_setting('app.settings.supabase_url')` or other GUC config values. To give pg_cron the URL and service role key it needs for `net.http_post()`, we store them in **Supabase Vault** (`vault.secrets`). The cron job reads from `vault.decrypted_secrets` at runtime.
+
+- **Vault secrets are inserted manually** via the SQL Editor (never committed to git)
+- **The cron schedule migration** only contains the `cron.schedule()` call with vault lookups
+- The Edge Function has `verify_jwt = false` so pg_cron can call it without a JWT
+
+### Safeguards
+
+- **Backoff**: If a user ignores 5 consecutive notifications (none tapped), stop sending until they tap one
+- **Day-of-week filter**: Users can choose which days to receive notifications (`notification_days` array)
+- **Time window**: Only matches ±2 minutes around the user's set time — prevents spam even though cron runs every minute
+
+### Testing Tips
+
+- Call the function manually: `curl -X POST https://xutoxnpttbwdiycbzwbp.supabase.co/functions/v1/send-notifications`
+- The response JSON includes a `debug` object showing which gates passed/failed
+- Check detailed logs in Supabase Dashboard → Edge Functions → send-notifications → Logs
+- If notifications aren't arriving, check: (1) push token exists in `user_devices`, (2) `notification_time_utc` matches current UTC, (3) Expo Push API response in logs
+
 ## Topic-Specific Rules
 
 Detailed rules auto-load from `.claude/rules/` when working on matching file paths:

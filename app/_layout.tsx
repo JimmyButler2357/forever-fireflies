@@ -17,8 +17,16 @@ import { authService } from '@/services/auth.service';
 import { audioCleanupService } from '@/services/audioCleanup.service';
 import { useNotifications } from '@/hooks/useNotifications';
 import { supabase } from '@/lib/supabase';
+import { initRevenueCat } from '@/lib/revenueCat';
 import { colors } from '@/constants/theme';
 import * as Sentry from '@sentry/react-native';
+import { initSentry } from '@/lib/sentry';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+
+// Initialize Sentry before any component renders so it catches
+// errors from the very first render. Like arming an alarm before
+// opening the door.
+initSentry();
 
 function RootLayout() {
   const router = useRouter();
@@ -43,6 +51,11 @@ function RootLayout() {
   // keycard is still active).
   useEffect(() => {
     initialize();
+
+    // Configure RevenueCat — fire-and-forget since it's just a configure call.
+    // Think of this as "registering" with RevenueCat's servers so they know
+    // which app is talking to them. No user data is sent yet.
+    initRevenueCat();
 
     // Reset any drafts stuck in 'syncing' (app was killed mid-sync).
     // Think of it like checking a conveyor belt after a power outage —
@@ -145,12 +158,14 @@ function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(onboarding)" />
-        <Stack.Screen name="(main)" />
-      </Stack>
+      <ErrorBoundary>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(onboarding)" />
+          <Stack.Screen name="(main)" />
+        </Stack>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }

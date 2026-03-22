@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import EntryCard from '@/components/EntryCard';
 import PrimaryButton from '@/components/PrimaryButton';
 import FloatingFireflies from '@/components/FloatingFireflies';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { useSubscription } from '@/hooks/useSubscription';
 import { storageService } from '@/services/storage.service';
 
 // ─── Core Memories Screen ─────────────────────────────────
@@ -35,6 +36,12 @@ export default function CoreMemoriesScreen() {
   const insets = useSafeAreaInsets();
   const children = useChildrenStore((s) => s.children);
   const entries = useEntriesStore((s) => s.entries);
+
+  // Defense-in-depth: if the user somehow reaches this screen without access
+  // (e.g. deep link or back navigation), send them back to Home.
+  // NOTE: All hooks must be called before the early return below —
+  // React requires hooks to run in the same order every render.
+  const { hasAccess } = useSubscription();
 
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
@@ -86,6 +93,15 @@ export default function CoreMemoriesScreen() {
   }, [coreMemories, activeFilter]);
 
   const isMultiChild = children.length >= 2;
+
+  // Redirect to Home if access is revoked — placed after all hooks.
+  useEffect(() => {
+    if (!hasAccess) {
+      router.replace('/(main)/home');
+    }
+  }, [hasAccess]);
+
+  if (!hasAccess) return null;
 
   return (
     <View style={styles.container}>

@@ -5,6 +5,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Alert,
   StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -23,6 +24,7 @@ import { useChildrenStore } from '@/stores/childrenStore';
 import { promptsService } from '@/services/prompts.service';
 import { ageInMonths } from '@/lib/dateUtils';
 import TopBar from '@/components/TopBar';
+import { useSubscription } from '@/hooks/useSubscription';
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -53,6 +55,7 @@ export default function PromptsScreen() {
   const insets = useSafeAreaInsets();
   const profile = useAuthStore((s) => s.profile);
   const children = useChildrenStore((s) => s.children);
+  const { hasAccess } = useSubscription();
 
   const [allPrompts, setAllPrompts] = useState<PromptItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -150,6 +153,15 @@ export default function PromptsScreen() {
   }, []);
 
   const handleSelectPrompt = (promptText: string) => {
+    // When the user's trial has expired, show an alert instead of
+    // navigating to the recording screen.
+    if (!hasAccess) {
+      Alert.alert(
+        'Subscribe to record',
+        'Subscribe to record new memories. Your existing memories are always safe.',
+      );
+      return;
+    }
     const substituted = substituteChildName(promptText);
     router.push({
       pathname: '/(main)/recording',

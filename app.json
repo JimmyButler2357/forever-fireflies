@@ -77,7 +77,8 @@
           "organization": "foreverfireflies",
           "project": "forever-fireflies"
         }
-      ]
+      ],
+      "react-native-purchases"
     ],
     "platforms": [
       "ios",

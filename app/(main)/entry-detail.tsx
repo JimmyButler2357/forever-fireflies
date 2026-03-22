@@ -49,8 +49,10 @@ import { detectChildren, detectTags } from '@/lib/autoDetect';
 import { formatDate, formatTime, formatDuration, getAge } from '@/lib/dateUtils';
 import { tagsService } from '@/services/tags.service';
 import { useDraftStore } from '@/stores/draftStore';
+import { useSubscription } from '@/hooks/useSubscription';
 import { audioCleanupService } from '@/services/audioCleanup.service';
 import { notificationsService } from '@/services/notifications.service';
+import { startTrialIfNeeded } from '@/lib/subscriptionHelpers';
 
 // ─── FadeInUp Wrapper ────────────────────────────────────
 
@@ -189,6 +191,11 @@ export default function EntryDetailScreen() {
   const allChildren = useChildrenStore((s) => s.children);
   const familyId = useAuthStore((s) => s.familyId);
   const session = useAuthStore((s) => s.session);
+
+  // Subscription check — when the user doesn't have access (trial expired,
+  // no subscription), we hide edit controls and audio playback.
+  // They can still VIEW their memories and DELETE entries (data management right).
+  const { hasAccess } = useSubscription();
 
   // Local store methods — update the cache after Supabase writes
   const addEntryLocal = useEntriesStore((s) => s.addEntryLocal);
@@ -475,6 +482,10 @@ export default function EntryDetailScreen() {
 
           // Also add to local cache so Home shows it immediately
           addEntryLocal(mapped);
+
+          // Start the free trial when the first entry is saved.
+          // Idempotent — safe to call even if trial already started.
+          await startTrialIfNeeded();
 
           // If this entry was created from a notification tap, mark it
           // in notification_log so we can track conversion (fire-and-forget).
@@ -1027,17 +1038,20 @@ export default function EntryDetailScreen() {
           <Ionicons name="chevron-back" size={22} color={colors.text} />
         </Pressable>
         <View style={styles.topBarRight}>
-          <Pressable
-            onPress={handleToggleFavorite}
-            hitSlop={hitSlop.icon}
-            style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.6 }]}
-          >
-            <Ionicons
-              name={entry.isFavorited ? 'heart' : 'heart-outline'}
-              size={22}
-              color={entry.isFavorited ? colors.heartFilled : colors.heartEmpty}
-            />
-          </Pressable>
+          {/* Favorite toggle — hidden when user doesn't have access */}
+          {hasAccess && (
+            <Pressable
+              onPress={handleToggleFavorite}
+              hitSlop={hitSlop.icon}
+              style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.6 }]}
+            >
+              <Ionicons
+                name={entry.isFavorited ? 'heart' : 'heart-outline'}
+                size={22}
+                color={entry.isFavorited ? colors.heartFilled : colors.heartEmpty}
+              />
+            </Pressable>
+          )}
           <Pressable
             onPress={() => setShowDeleteDialog(true)}
             hitSlop={hitSlop.icon}
@@ -1072,6 +1086,7 @@ export default function EntryDetailScreen() {
             maxLength={60}
             multiline
             blurOnSubmit
+            editable={hasAccess}
           />
         </FadeInUp>
 
@@ -1102,16 +1117,18 @@ export default function EntryDetailScreen() {
                 <View style={[styles.miniPillDot, { backgroundColor: hex }]} />
                 <Text style={[styles.miniPillName, { color: hex }]}>{child.name}</Text>
                 <Text style={[styles.miniPillAge, { color: childColorWithOpacity(hex, 0.6) }]}>{age}</Text>
-                <Pressable
-                  onPress={() => handleRemoveChildFromEntry(child.id)}
-                  hitSlop={hitSlop.icon}
-                >
-                  <Text style={[styles.miniPillRemove, { color: hex }]}>×</Text>
-                </Pressable>
+                {hasAccess && (
+                  <Pressable
+                    onPress={() => handleRemoveChildFromEntry(child.id)}
+                    hitSlop={hitSlop.icon}
+                  >
+                    <Text style={[styles.miniPillRemove, { color: hex }]}>×</Text>
+                  </Pressable>
+                )}
               </View>
             );
           })}
-          {!allChildrenTagged && (
+          {hasAccess && !allChildrenTagged && (
             <Pressable
               onPress={() => setShowChildPicker(!showChildPicker)}
               hitSlop={hitSlop.icon}
@@ -1124,16 +1141,16 @@ export default function EntryDetailScreen() {
 
         {/* ── 4. Metadata line — date · time · location (inline) ── */}
         <View style={styles.metaLine}>
-          <Pressable onPress={() => setShowDatePicker(true)}>
+          <Pressable onPress={() => hasAccess && setShowDatePicker(true)} disabled={!hasAccess}>
             <Text style={styles.metaText}>
               {formatDate(entry.date, 'long')} · {formatTime(entry.createdAt ?? entry.date)}
             </Text>
           </Pressable>
           {entry.locationText ? (
-            <Pressable onPress={() => setEditingLocation(true)}>
+            <Pressable onPress={() => hasAccess && setEditingLocation(true)} disabled={!hasAccess}>
               <Text style={styles.metaText}> · {entry.locationText}</Text>
             </Pressable>
-          ) : permissionGranted && !editingLocation ? (
+          ) : hasAccess && permissionGranted && !editingLocation ? (
             <Pressable onPress={() => setEditingLocation(true)}>
               <Text style={styles.metaLocationAdd}> · + Add location</Text>
             </Pressable>
@@ -1263,6 +1280,7 @@ export default function EntryDetailScreen() {
             multiline
             textAlignVertical="top"
             scrollEnabled
+            editable={hasAccess}
           />
         </View>
         {saveIndicator && (
@@ -1270,7 +1288,16 @@ export default function EntryDetailScreen() {
         )}
 
         {/* ── 6. Audio Playback Bar — prominent, below transcript ── */}
-        {isVoiceEntry && (
+        {/* When the user doesn't have access (lapsed trial), show a locked
+            message instead of the audio player. They can still see the
+            transcript — we just lock audio playback behind the paywall. */}
+        {isVoiceEntry && !hasAccess && (
+          <View style={styles.audioLocked}>
+            <Ionicons name="lock-closed-outline" size={16} color={colors.textMuted} />
+            <Text style={styles.audioLockedText}>Subscribe to play audio</Text>
+          </View>
+        )}
+        {isVoiceEntry && hasAccess && (
           <View style={styles.audioBar}>
             {/* Play button / Loading spinner / Error icon */}
             <Pressable
@@ -1278,7 +1305,6 @@ export default function EntryDetailScreen() {
                 if (audioHasError || audioMissing || audioIsLoading) return;
                 player.isPlaying ? player.pause() : player.play();
               }}
-              hitSlop={hitSlop.icon}
               style={styles.playBtn}
               disabled={!player.isLoaded}
             >
@@ -1393,15 +1419,17 @@ export default function EntryDetailScreen() {
               key={tag}
               label={tag}
               variant="muted"
-              onRemove={() => handleRemoveTag(tag)}
+              onRemove={hasAccess ? () => handleRemoveTag(tag) : undefined}
             />
           ))}
-          <Pressable
-            onPress={() => setShowTagEditor(!showTagEditor)}
-            style={styles.addTagPill}
-          >
-            <Text style={styles.addTagPillText}>+ add tag</Text>
-          </Pressable>
+          {hasAccess && (
+            <Pressable
+              onPress={() => setShowTagEditor(!showTagEditor)}
+              style={styles.addTagPill}
+            >
+              <Text style={styles.addTagPillText}>+ add tag</Text>
+            </Pressable>
+          )}
         </View>
 
         {/* Tag Editor */}
@@ -1854,6 +1882,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing(4),
   },
   // ─── Audio Bar ──────────────────────
+  // Shown when user's trial has expired — locked audio indicator
+  audioLocked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing(2),
+    paddingVertical: spacing(4),
+  },
+  audioLockedText: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
   audioBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1915,5 +1955,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
+    minWidth: minTouchTarget,
+    minHeight: minTouchTarget,
   },
 });

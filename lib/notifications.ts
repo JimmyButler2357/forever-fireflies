@@ -6,6 +6,14 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
+// ─── Platform guard ───────────────────────────────────────
+// expo-notifications is native-only — every function below returns a
+// safe no-op value on web so callers don't need their own guards.
+const isWeb = Platform.OS === 'web';
+
+// Dummy subscription returned on web so callers can still call .remove()
+const NOOP_SUBSCRIPTION = { remove: () => {} };
+
 // ─── Constants ────────────────────────────────────────────
 
 const EAS_PROJECT_ID = '28237d21-d29f-4e56-a83d-002d9d20739f';
@@ -21,6 +29,7 @@ const CATEGORY_ID = 'daily-reminder';
  *  previously). On iOS this shows the system dialog; on Android 13+ it
  *  shows a runtime permission prompt. */
 export async function requestPermissions(): Promise<{ granted: boolean }> {
+  if (isWeb) return { granted: false };
   const { status } = await Notifications.requestPermissionsAsync();
   return { granted: status === 'granted' };
 }
@@ -28,6 +37,7 @@ export async function requestPermissions(): Promise<{ granted: boolean }> {
 /** Check current permission status WITHOUT prompting the user.
  *  Useful on app launch to silently skip registration if they said no. */
 export async function getPermissionStatus(): Promise<{ granted: boolean }> {
+  if (isWeb) return { granted: false };
   const { status } = await Notifications.getPermissionsAsync();
   return { granted: status === 'granted' };
 }
@@ -39,6 +49,7 @@ export async function getPermissionStatus(): Promise<{ granted: boolean }> {
  *  Returns `null` on iOS simulator (which can't get tokens) or if
  *  anything goes wrong — callers should handle null gracefully. */
 export async function getExpoPushToken(): Promise<string | null> {
+  if (isWeb) return null;
   try {
     const { data } = await Notifications.getExpoPushTokenAsync({
       projectId: EAS_PROJECT_ID,
@@ -58,6 +69,7 @@ export async function getExpoPushToken(): Promise<string | null> {
  *  Used when the user taps "Remind me later" on the daily reminder.
  *  Think of it like hitting the snooze button on an alarm clock. */
 export async function scheduleSnooze(title: string, body: string): Promise<void> {
+  if (isWeb) return;
   await Notifications.scheduleNotificationAsync({
     content: {
       title,
@@ -77,6 +89,7 @@ export async function scheduleSnooze(title: string, body: string): Promise<void>
  *  Think of a category like a template — it tells the OS "when you show
  *  a notification with this category ID, also show these buttons." */
 export async function setupNotificationCategory(): Promise<void> {
+  if (isWeb) return;
   await Notifications.setNotificationCategoryAsync(CATEGORY_ID, [
     {
       identifier: 'record',
@@ -117,6 +130,7 @@ export async function setupAndroidChannel(): Promise<void> {
 export function addResponseListener(
   callback: (response: Notifications.NotificationResponse) => void,
 ): Notifications.Subscription {
+  if (isWeb) return NOOP_SUBSCRIPTION as Notifications.Subscription;
   return Notifications.addNotificationResponseReceivedListener(callback);
 }
 
@@ -125,11 +139,13 @@ export function addResponseListener(
 export function addReceivedListener(
   callback: (notification: Notifications.Notification) => void,
 ): Notifications.Subscription {
+  if (isWeb) return NOOP_SUBSCRIPTION as Notifications.Subscription;
   return Notifications.addNotificationReceivedListener(callback);
 }
 
 /** Get the notification response that launched the app (cold start).
  *  Returns null if the app wasn't opened via a notification tap. */
 export async function getLastNotificationResponse(): Promise<Notifications.NotificationResponse | null> {
+  if (isWeb) return null;
   return Notifications.getLastNotificationResponseAsync();
 }

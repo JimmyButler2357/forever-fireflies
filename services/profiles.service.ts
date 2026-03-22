@@ -49,6 +49,19 @@ export const profilesService = {
     return this.updateProfile({ onboarding_completed: true });
   },
 
+  /** Start the 7-day free trial. Called once when the user saves their first entry.
+   *  Uses an RPC (database function) because the guard trigger blocks direct
+   *  client-side writes to trial_started_at. The RPC is idempotent — calling
+   *  it twice has no effect because it only sets the value if it's currently NULL.
+   *
+   *  Think of it like a "stamp your hand" booth at a theme park — you only get
+   *  stamped the first time you walk through. If you come back, the attendant
+   *  sees the stamp and waves you along. */
+  async startTrial() {
+    const { error } = await supabase.rpc('start_trial');
+    if (error) throw new Error('Failed to start trial: ' + error.message, { cause: error });
+  },
+
   /** Update notification preferences */
   async updateNotificationPrefs(prefs: {
     notification_enabled?: boolean;

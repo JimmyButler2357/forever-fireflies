@@ -22,6 +22,8 @@ import { profilesService } from '@/services/profiles.service';
 import { familiesService } from '@/services/families.service';
 import { notificationsService } from '@/services/notifications.service';
 import { setSentryUser, clearSentryUser } from '@/lib/sentry';
+import { useSubscriptionStore } from '@/stores/subscriptionStore';
+import { identifyUser } from '@/lib/revenueCat';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -141,6 +143,17 @@ export const useAuthStore = create<AuthState>()(
 
           // Update Sentry context with familyId now that we know it
           setSentryUser(session.user.id, familyId);
+
+          // Initialize subscription state from profile + RevenueCat.
+          // This figures out if the user is on trial, has a paid plan,
+          // or their trial has expired — and sets hasAccess accordingly.
+          await useSubscriptionStore.getState().initialize(profile);
+
+          // Link this user to RevenueCat so their subscription follows
+          // them across devices (like logging into Netflix on a new TV).
+          identifyUser(session.user.id).catch(() => {
+            // RevenueCat may not be configured yet — that's fine
+          });
         } catch (error) {
           const message = (error as Error)?.message ?? '';
           if (message.includes('Not authenticated')) {
@@ -196,6 +209,12 @@ export const useAuthStore = create<AuthState>()(
           profile: null,
           familyId: null,
           hasCompletedOnboarding: false,
+        });
+        // Reset subscription state so the next user starts fresh.
+        useSubscriptionStore.setState({
+          hasAccess: false,
+          status: 'loading',
+          trialDaysRemaining: 0,
         });
       },
 

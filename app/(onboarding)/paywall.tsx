@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,28 +14,10 @@ import {
   minTouchTarget,
 } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
+import { useSubscriptionStore } from '@/stores/subscriptionStore';
 import { profilesService } from '@/services/profiles.service';
 import PrimaryButton from '@/components/PrimaryButton';
-
-/**
- * Paywall — "gift" framing inspired by Dwell.
- *
- * Instead of showing pricing cards and plan selection, we present
- * the free trial as a gift: "7 days of Forever Fireflies — on us."
- *
- * The celebratory illustration is built with styled Views + Ionicons
- * (golden glow circle with sparkle icons), not external images.
- *
- * No plan selection here — annual is pre-selected. RevenueCat's
- * native purchase sheet handles the actual pricing when the user
- * subscribes after the trial.
- */
-
-const VALUE_PROPS = [
-  { icon: 'mic' as const, text: 'Unlimited voice & text memories' },
-  { icon: 'cloud-done' as const, text: 'Recordings saved and searchable forever' },
-  { icon: 'pricetag' as const, text: 'Organized by child, tag, or date' },
-];
+import { PAYWALL_PAYWALL_VALUE_PROPS } from '@/lib/subscriptionHelpers';
 
 export default function PaywallScreen() {
   const router = useRouter();
@@ -115,7 +97,7 @@ export default function PaywallScreen() {
 
         {/* ─── Value props ───────────────────────────── */}
         <View style={styles.valueProps}>
-          {VALUE_PROPS.map((prop) => (
+          {PAYWALL_VALUE_PROPS.map((prop) => (
             <View key={prop.text} style={styles.valuePropRow}>
               <View style={styles.valuePropIcon}>
                 <Ionicons name={prop.icon} size={20} color={colors.accent} />
@@ -136,7 +118,27 @@ export default function PaywallScreen() {
         <Text style={styles.finePrint}>
           $5.99/month  |  $49.99/year
         </Text>
-        <Pressable onPress={handleContinue}>
+        <Pressable onPress={async () => {
+          // Try to restore a previous purchase from Apple/Google.
+          // If found, skip straight to the home screen with full access.
+          setIsLoading(true);
+          try {
+            const restored = await useSubscriptionStore.getState().restorePurchases();
+            if (restored) {
+              // Purchase found — continue to home with full access
+              await handleContinue();
+            } else {
+              Alert.alert(
+                'No subscription found',
+                'We couldn\'t find an existing subscription for this account.',
+              );
+            }
+          } catch {
+            Alert.alert('Restore failed', 'Please try again later.');
+          } finally {
+            setIsLoading(false);
+          }
+        }}>
           <Text style={styles.restoreLink}>Already subscribed? Restore purchase</Text>
         </Pressable>
       </View>
@@ -205,7 +207,7 @@ const styles = StyleSheet.create({
   // ─── Heading ──────────────────────────────────────
   heading: {
     fontFamily: fonts.serifBold,
-    fontSize: 20,
+    fontSize: 22,
     fontStyle: 'italic',
     color: colors.text,
     textAlign: 'center',
@@ -213,8 +215,7 @@ const styles = StyleSheet.create({
   },
   // ─── Body ─────────────────────────────────────────
   body: {
-    fontSize: 15,
-    fontWeight: '400',
+    ...typography.formLabel,
     color: colors.textSoft,
     textAlign: 'center',
     lineHeight: 22,

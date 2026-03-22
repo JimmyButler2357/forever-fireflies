@@ -365,6 +365,12 @@ allow_dynamic_registration = false
 # key for DB access instead — no auth.uid() context needed.
 verify_jwt = false
 
+[functions.send-notifications]
+# Called by pg_cron which can't send a JWT. The function uses
+# SUPABASE_SERVICE_ROLE_KEY internally for DB access and doesn't
+# accept any user input — safe to call without auth.
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

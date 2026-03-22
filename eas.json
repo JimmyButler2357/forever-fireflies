@@ -9,6 +9,9 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_BYPASS_PAYWALL": "true"
       }
     },
     "preview": {
@@ -16,6 +19,9 @@
       "channel": "preview",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_BYPASS_PAYWALL": "true"
       }
     },
     "production": {
