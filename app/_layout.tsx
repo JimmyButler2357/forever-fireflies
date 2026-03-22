@@ -18,8 +18,9 @@ import { audioCleanupService } from '@/services/audioCleanup.service';
 import { useNotifications } from '@/hooks/useNotifications';
 import { supabase } from '@/lib/supabase';
 import { colors } from '@/constants/theme';
+import * as Sentry from '@sentry/react-native';
 
-export default function RootLayout() {
+function RootLayout() {
   const router = useRouter();
   const [fontsLoaded] = useFonts({
     Merriweather_400Regular,
@@ -162,3 +163,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
 });
+
+// In production, Sentry.wrap() adds a top-level error boundary and hooks
+// into React Navigation for automatic screen-visit breadcrumbs.
+// In dev, skip the wrapper entirely to avoid loading the Sentry SDK overhead.
+export default __DEV__ ? RootLayout : Sentry.wrap(RootLayout);

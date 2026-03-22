@@ -70,7 +70,14 @@
           "locationWhenInUsePermission": "Forever Fireflies tags where your memories happen so you can look back on them later."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "foreverfireflies",
+          "project": "forever-fireflies"
+        }
+      ]
     ],
     "platforms": [
       "ios",

@@ -21,6 +21,7 @@ import { authService } from '@/services/auth.service';
 import { profilesService } from '@/services/profiles.service';
 import { familiesService } from '@/services/families.service';
 import { notificationsService } from '@/services/notifications.service';
+import { setSentryUser, clearSentryUser } from '@/lib/sentry';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -93,6 +94,7 @@ export const useAuthStore = create<AuthState>()(
           const message = error?.message ?? '';
           if (message.includes('Refresh Token') || message.includes('Invalid')) {
             console.warn('Stale session detected, signing out:', message);
+            clearSentryUser();
             try { await authService.signOut(); } catch { /* ignore */ }
             set({ session: null, user: null, profile: null, familyId: null });
           } else {
@@ -106,6 +108,7 @@ export const useAuthStore = create<AuthState>()(
       handleAuthChange: async (session: Session | null) => {
         if (!session) {
           // Signed out — clear everything except onboarding flag
+          clearSentryUser();
           set({
             session: null,
             user: null,
@@ -117,6 +120,11 @@ export const useAuthStore = create<AuthState>()(
 
         // Signed in — load profile and family
         set({ session, user: session.user });
+
+        // Tag errors with user ID immediately so any crash during
+        // profile loading is still attributed to the right user.
+        // familyId gets updated below once we know it.
+        setSentryUser(session.user.id, null);
 
         try {
           const [profile, familyId] = await Promise.all([
@@ -130,6 +138,9 @@ export const useAuthStore = create<AuthState>()(
             // Sync the local onboarding flag with the server value
             hasCompletedOnboarding: profile.onboarding_completed,
           });
+
+          // Update Sentry context with familyId now that we know it
+          setSentryUser(session.user.id, familyId);
         } catch (error) {
           const message = (error as Error)?.message ?? '';
           if (message.includes('Not authenticated')) {
@@ -137,6 +148,7 @@ export const useAuthStore = create<AuthState>()(
             // Sign out cleanly so the router sends the user back to login
             // instead of leaving them stuck with a session but no profile.
             console.warn('Session invalid during profile load, signing out');
+            clearSentryUser();
             try { await authService.signOut(); } catch { /* ignore */ }
             set({ session: null, user: null, profile: null, familyId: null });
           } else {
@@ -177,6 +189,7 @@ export const useAuthStore = create<AuthState>()(
         }
 
         await authService.signOut();
+        clearSentryUser();
         set({
           session: null,
           user: null,
