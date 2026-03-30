@@ -230,7 +230,7 @@ Apply before your first sale. Reduces Apple's cut from 30% to 15% for developers
 ## 5. Customer Support
 
 ### At Launch (Solo)
-- **Support email** — support@[yourdomain].com. Route to your personal inbox initially.
+- **Support email** — foreverfirefliesapp@gmail.com. Routes to the app's dedicated Gmail inbox.
 - **In-app feedback** — "Contact Us" in Settings opens email compose with device info + app version auto-attached. (See PRD V1.5 roadmap)
 - **FAQ on landing page** — answer the top 10 questions before anyone asks:
   1. Is my data private?

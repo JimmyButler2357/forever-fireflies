@@ -20,7 +20,7 @@ import {
 } from '@/constants/theme';
 import {
   PREVIEW_FEED_ENTRIES,
-  PREVIEW_CORE_MEMORIES,
+  PREVIEW_FAVORITES,
   PREVIEW_SEARCH_ENTRIES,
 } from '@/constants/previewData';
 import EntryCard from '@/components/EntryCard';
@@ -113,7 +113,7 @@ export default function WelcomePreviewScreen() {
               The ones you'll come back to again and again.
             </Text>
             <View style={styles.cardList}>
-              {PREVIEW_CORE_MEMORIES.map((entry, i) => (
+              {PREVIEW_FAVORITES.map((entry, i) => (
                 <EntryCard
                   key={`core-${i}`}
                   entry={entry}

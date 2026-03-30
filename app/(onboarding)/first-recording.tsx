@@ -1,22 +1,40 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { View, Text, Pressable, Animated, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii, shadows, screenColors } from '@/constants/theme';
-import { useChildrenStore } from '@/stores/childrenStore';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import PaperTexture from '@/components/PaperTexture';
 
 /**
  * First Recording — onboarding step 5.
- * Uses a simple inline mic button (no Reanimated) to avoid
- * native worklets version mismatch in Expo Go.
- * Pulsing glow animation will be added in Chunk 12 polish pass.
+ * Uses built-in RN Animated API (no Reanimated) for the
+ * breathing pulse glow behind the mic button.
  */
 export default function FirstRecordingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const children = useChildrenStore((s) => s.children);
-  const firstName = children.length > 0 ? children[0].name : 'your child';
+  const reduceMotion = useReduceMotion();
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.15,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [reduceMotion]);
 
   const handleRecord = () => {
     router.push({
@@ -35,20 +53,28 @@ export default function FirstRecordingScreen() {
         <View style={styles.promptCard}>
           <PaperTexture />
           <Text style={styles.promptText}>
-            What's something {firstName} did recently that you don't want to forget?
+            What's something your child did recently that you don't want to forget?
           </Text>
         </View>
 
-        {/* Simple mic button — no Reanimated */}
-        <Pressable
-          onPress={handleRecord}
-          style={({ pressed }) => [
-            styles.micButton,
-            pressed && { opacity: 0.85 },
-          ]}
-        >
-          <Ionicons name="mic" size={40} color={colors.card} />
-        </Pressable>
+        {/* Mic button with breathing pulse glow */}
+        <View style={styles.micWrapper}>
+          <Animated.View
+            style={[
+              styles.pulseCircle,
+              { transform: [{ scale: pulseAnim }] },
+            ]}
+          />
+          <Pressable
+            onPress={handleRecord}
+            style={({ pressed }) => [
+              styles.micButton,
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            <Ionicons name="mic" size={40} color={colors.card} />
+          </Pressable>
+        </View>
 
         {/* Write instead link */}
         <Pressable
@@ -95,6 +121,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
   },
+  micWrapper: {
+    width: 128,
+    height: 128,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pulseCircle: {
+    position: 'absolute',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.accentGlow,
+  },
   micButton: {
     width: 96,
     height: 96,
@@ -102,12 +141,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    // Static glow shadow (no animation)
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.35,
     shadowRadius: 20,
     elevation: 4,
+    zIndex: 1,
   },
   writeLink: {
     flexDirection: 'row',

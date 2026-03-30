@@ -37,6 +37,7 @@ import { entriesService } from '@/services/entries.service';
 import { storageService } from '@/services/storage.service';
 import TagPill from '@/components/TagPill';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
+import FavoriteAnimation from '@/components/FavoriteAnimation';
 import ChildSelectModal from '@/components/ChildSelectModal';
 import CityAutocomplete from '@/components/CityAutocomplete';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -256,6 +257,8 @@ export default function EntryDetailScreen() {
   const [saveIndicator, setSaveIndicator] = useState(false);
   const [showBanner, setShowBanner] = useState(!!params.audioUri);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  // Favorite animation — burst originates from the tap position
+  const [favAnimOrigin, setFavAnimOrigin] = useState<{ x: number; y: number } | null>(null);
 
   // Banner auto-dismiss (built-in Animated, not Reanimated)
   const bannerOpacity = useRef(new Animated.Value(1)).current;
@@ -913,11 +916,21 @@ export default function EntryDetailScreen() {
     updateEntryLocal(entry.id, { tags: newTags });
   };
 
-  const handleToggleFavorite = async () => {
+  const handleToggleFavorite = async (e?: GestureResponderEvent) => {
     // Optimistic update
     const newVal = !entry.isFavorited;
     setEntry((prev) => prev ? { ...prev, isFavorited: newVal } : prev);
     updateEntryLocal(entry.id, { isFavorited: newVal });
+
+    // Trigger "catch a firefly" burst when favoriting (not unfavoriting).
+    // pageX/pageY from the press event gives the exact tap position.
+    if (newVal && e) {
+      setFavAnimOrigin({
+        x: e.nativeEvent.pageX,
+        y: e.nativeEvent.pageY,
+      });
+    }
+
     try {
       await entriesService.toggleFavorite(entry.id);
     } catch (err) {
@@ -1041,7 +1054,7 @@ export default function EntryDetailScreen() {
           {/* Favorite toggle — hidden when user doesn't have access */}
           {hasAccess && (
             <Pressable
-              onPress={handleToggleFavorite}
+              onPress={(e) => handleToggleFavorite(e)}
               hitSlop={hitSlop.icon}
               style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.6 }]}
             >
@@ -1525,6 +1538,15 @@ export default function EntryDetailScreen() {
           }
         }}
       />
+
+      {/* Favorite animation overlay — full-screen, non-blocking */}
+      {favAnimOrigin && (
+        <FavoriteAnimation
+          originX={favAnimOrigin.x}
+          originY={favAnimOrigin.y}
+          onComplete={() => setFavAnimOrigin(null)}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }

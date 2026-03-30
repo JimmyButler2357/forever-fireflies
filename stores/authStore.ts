@@ -22,6 +22,7 @@ import { profilesService } from '@/services/profiles.service';
 import { familiesService } from '@/services/families.service';
 import { notificationsService } from '@/services/notifications.service';
 import { setSentryUser, clearSentryUser } from '@/lib/sentry';
+import { identifyPostHogUser, resetPostHogUser } from '@/lib/posthog';
 import { useSubscriptionStore } from '@/stores/subscriptionStore';
 import { identifyUser } from '@/lib/revenueCat';
 
@@ -56,6 +57,10 @@ interface AuthState {
 
   /** Sign out — clears Supabase session + local state. */
   signOut: () => Promise<void>;
+
+  /** Permanently delete the account and all data on the server,
+   *  then clear local state. After this, the user no longer exists. */
+  deleteAccount: () => Promise<void>;
 
   /** Mark onboarding as complete (local flag only — Supabase is
    *  updated separately via profilesService.completeOnboarding). */
@@ -97,6 +102,7 @@ export const useAuthStore = create<AuthState>()(
           if (message.includes('Refresh Token') || message.includes('Invalid')) {
             console.warn('Stale session detected, signing out:', message);
             clearSentryUser();
+            resetPostHogUser();
             try { await authService.signOut(); } catch { /* ignore */ }
             set({ session: null, user: null, profile: null, familyId: null });
           } else {
@@ -111,6 +117,7 @@ export const useAuthStore = create<AuthState>()(
         if (!session) {
           // Signed out — clear everything except onboarding flag
           clearSentryUser();
+          resetPostHogUser();
           set({
             session: null,
             user: null,
@@ -144,6 +151,15 @@ export const useAuthStore = create<AuthState>()(
           // Update Sentry context with familyId now that we know it
           setSentryUser(session.user.id, familyId);
 
+          // Tell PostHog who this user is so all analytics events
+          // are grouped under their ID. The properties help you
+          // segment users later (e.g. "show me only users who
+          // completed onboarding" or "users in family X").
+          identifyPostHogUser(session.user.id, {
+            familyId,
+            onboardingCompleted: profile.onboarding_completed,
+          });
+
           // Initialize subscription state from profile + RevenueCat.
           // This figures out if the user is on trial, has a paid plan,
           // or their trial has expired — and sets hasAccess accordingly.
@@ -162,6 +178,7 @@ export const useAuthStore = create<AuthState>()(
             // instead of leaving them stuck with a session but no profile.
             console.warn('Session invalid during profile load, signing out');
             clearSentryUser();
+            resetPostHogUser();
             try { await authService.signOut(); } catch { /* ignore */ }
             set({ session: null, user: null, profile: null, familyId: null });
           } else {
@@ -203,6 +220,7 @@ export const useAuthStore = create<AuthState>()(
 
         await authService.signOut();
         clearSentryUser();
+        resetPostHogUser();
         set({
           session: null,
           user: null,
@@ -211,6 +229,40 @@ export const useAuthStore = create<AuthState>()(
           hasCompletedOnboarding: false,
         });
         // Reset subscription state so the next user starts fresh.
+        useSubscriptionStore.setState({
+          hasAccess: false,
+          status: 'loading',
+          trialDaysRemaining: 0,
+        });
+      },
+
+      deleteAccount: async () => {
+        // Deactivate push token first (fire-and-forget, same as signOut).
+        try {
+          const storedToken = await AsyncStorage.getItem('ff_push_token');
+          if (storedToken) {
+            await notificationsService.deactivateDevice(storedToken);
+            await AsyncStorage.removeItem('ff_push_token');
+          }
+        } catch (err) {
+          console.warn('Failed to deactivate device on delete:', err);
+        }
+
+        // Call the edge function — deletes storage files + auth user
+        // (which cascades all DB rows). After this, the user is gone.
+        await authService.deleteAccount();
+
+        // Clear all local state. We do NOT call authService.signOut()
+        // because the user no longer exists — there's no session to end.
+        clearSentryUser();
+        resetPostHogUser();
+        set({
+          session: null,
+          user: null,
+          profile: null,
+          familyId: null,
+          hasCompletedOnboarding: false,
+        });
         useSubscriptionStore.setState({
           hasAccess: false,
           status: 'loading',

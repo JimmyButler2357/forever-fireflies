@@ -17,7 +17,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useSubscriptionStore } from '@/stores/subscriptionStore';
 import { profilesService } from '@/services/profiles.service';
 import PrimaryButton from '@/components/PrimaryButton';
-import { PAYWALL_PAYWALL_VALUE_PROPS } from '@/lib/subscriptionHelpers';
+import { PAYWALL_VALUE_PROPS } from '@/lib/subscriptionHelpers';
 
 export default function PaywallScreen() {
   const router = useRouter();

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forever Fireflies — Icon Playground v7</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#1a1a1a;color:#e0e0e0;min-height:100vh;padding:24px}
+  h1{font-size:24px;font-weight:600;color:#F2C94C;margin-bottom:4px}
+  .subtitle{font-size:13px;color:#888;margin-bottom:24px}
+  .section-label{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#E8724A;font-weight:700;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #333;margin-top:16px}
+  .controls{background:#242424;border:1px solid #333;border-radius:12px;padding:20px 24px;margin-bottom:28px;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end}
+  .control-group{display:flex;flex-direction:column;gap:6px}
+  .control-group label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#999;font-weight:600}
+  .control-group .value{font-size:11px;color:#F2C94C;font-family:'SF Mono','Cascadia Code','Fira Code',monospace}
+  input[type="range"]{-webkit-appearance:none;width:170px;height:6px;background:#333;border-radius:3px;outline:none}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:#F2C94C;border-radius:50%;cursor:pointer}
+  .presets{display:flex;gap:8px;margin-left:auto}
+  .preset-btn{background:#333;border:1px solid #444;color:#ccc;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;transition:all .15s}
+  .preset-btn:hover{background:#444;color:#fff}
+  .preset-btn.active{background:#E8724A;border-color:#E8724A;color:#fff}
+  .icon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:22px;margin-bottom:32px}
+  .icon-card{background:#242424;border:1px solid #333;border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;transition:border-color .2s}
+  .icon-card:hover{border-color:#555}
+  .icon-card h3{font-size:14px;font-weight:600;color:#eee}
+  .icon-card .variant{font-size:10px;color:#F2C94C;font-weight:500;margin-top:-5px}
+  .icon-card .desc{font-size:11px;color:#888;text-align:center;line-height:1.4;max-width:230px}
+  .icon-wrapper{width:192px;height:192px;border-radius:42px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.4)}
+  .icon-wrapper canvas{width:192px;height:192px}
+  .download-btn{background:transparent;border:1px solid #555;color:#ccc;padding:5px 14px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px}
+  .download-btn:hover{background:#333;border-color:#888;color:#fff}
+  .download-btn svg{width:13px;height:13px}
+  .prompt-section{background:#242424;border:1px solid #333;border-radius:12px;padding:20px 24px}
+  .prompt-section h3{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:#999;font-weight:600;margin-bottom:12px}
+  .prompt-output{font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:13px;line-height:1.6;color:#ccc;background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:16px;white-space:pre-wrap;min-height:60px}
+  .copy-btn{margin-top:12px;background:#F2C94C;border:none;color:#1a1a1a;padding:8px 20px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+  .copy-btn:hover{background:#e5bc3f}
+  .copy-btn.copied{background:#4CAF7C;color:#fff}
+</style>
+</head>
+<body>
+
+<h1>Forever Fireflies — Icon Playground v7</h1>
+<p class="subtitle">5 directions refined: Sealed Jar, Single Orb, Child Hands, Constellation, FF Monogram.</p>
+
+<div class="controls">
+  <div class="control-group">
+    <label>BG Hue <span class="value" id="hueVal">16</span></label>
+    <input type="range" id="hueSlider" min="0" max="40" value="16" step="1">
+  </div>
+  <div class="control-group">
+    <label>Saturation <span class="value" id="satVal">76%</span></label>
+    <input type="range" id="satSlider" min="50" max="100" value="76" step="1">
+  </div>
+  <div class="control-group">
+    <label>Lightness <span class="value" id="lightVal">60%</span></label>
+    <input type="range" id="lightSlider" min="40" max="75" value="60" step="1">
+  </div>
+  <div class="control-group">
+    <label>Cream <span class="value" id="creamVal">100%</span></label>
+    <input type="range" id="creamSlider" min="50" max="100" value="100" step="1">
+  </div>
+  <div class="control-group">
+    <label>Glow <span class="value" id="glowVal">100%</span></label>
+    <input type="range" id="glowSlider" min="0" max="150" value="100" step="5">
+  </div>
+  <div class="presets">
+    <button class="preset-btn active" onclick="applyPreset('default')">Default</button>
+    <button class="preset-btn" onclick="applyPreset('sunset')">Sunset</button>
+    <button class="preset-btn" onclick="applyPreset('ember')">Ember</button>
+    <button class="preset-btn" onclick="applyPreset('peach')">Peach</button>
+  </div>
+</div>
+
+<div class="section-label">Sealed Jar</div>
+<div class="icon-grid" id="jarGrid"></div>
+<div class="section-label">Single Orb</div>
+<div class="icon-grid" id="orbGrid"></div>
+<div class="section-label">Child Hands</div>
+<div class="icon-grid" id="handsGrid"></div>
+<div class="section-label">Constellation</div>
+<div class="icon-grid" id="constGrid"></div>
+<div class="section-label">FF Monogram</div>
+<div class="icon-grid" id="ffGrid"></div>
+
+<div class="prompt-section">
+  <h3>Prompt Output</h3>
+  <div class="prompt-output" id="promptOutput"></div>
+  <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">Copy Prompt</button>
+</div>
+
+<script>
+const S=512, R=Math.round(S*.22), LN=14;
+const st={hue:16,sat:76,light:60,co:1,gi:1};
+const PR={default:{hue:16,sat:76,light:60,co:1,gi:1},sunset:{hue:24,sat:82,light:58,co:.95,gi:1.3},ember:{hue:8,sat:72,light:48,co:1,gi:.8},peach:{hue:22,sat:68,light:70,co:.9,gi:1.1}};
+
+function bg(){return `hsl(${st.hue},${st.sat}%,${st.light}%)`}
+function cr(a){return `rgba(250,248,245,${(a??1)*st.co})`}
+function gd(a){return `rgba(242,201,76,${Math.min((a??1)*st.gi,1)})`}
+function gg(a){return `rgba(242,201,76,${Math.min((a??.5)*st.gi,1)})`}
+
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath()}
+function fbg(c){rr(c,0,0,S,S,R);c.fillStyle=bg();c.fill();c.save();c.clip()}
+
+function dot(c,x,y,r){
+  const sp=r*3.5*Math.max(st.gi,.3);
+  const g=c.createRadialGradient(x,y,0,x,y,sp);
+  g.addColorStop(0,gd(.9));g.addColorStop(.3,gg(.4));g.addColorStop(1,'rgba(242,201,76,0)');
+  c.fillStyle=g;c.beginPath();c.arc(x,y,sp,0,Math.PI*2);c.fill();
+  const cg=c.createRadialGradient(x,y,0,x,y,r);
+  cg.addColorStop(0,`rgba(255,255,250,${Math.min(.8*st.gi,1)})`);
+  cg.addColorStop(.5,gd(1));cg.addColorStop(1,gd(.6));
+  c.fillStyle=cg;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill();
+}
+
+function bigGlow(c,x,y,rad,alpha){
+  const sp=rad*Math.max(st.gi,.2);
+  const g=c.createRadialGradient(x,y,0,x,y,sp);
+  const a1=Math.min((alpha||.35)*st.gi,1);
+  g.addColorStop(0,`rgba(242,201,76,${a1})`);g.addColorStop(.6,`rgba(242,201,76,${a1*.3})`);g.addColorStop(1,'rgba(242,201,76,0)');
+  c.fillStyle=g;c.beginPath();c.arc(x,y,sp,0,Math.PI*2);c.fill();
+}
+
+function jarShell(c){
+  const cx=S/2;
+  c.lineCap='round';c.lineJoin='round';c.strokeStyle=cr();c.lineWidth=LN;
+  c.beginPath();c.roundRect(cx-68,118,136,32,8);c.stroke();
+  c.lineWidth=4;c.strokeStyle=cr(.4);
+  c.beginPath();c.moveTo(cx-52,134);c.lineTo(cx+52,134);c.stroke();
+  c.beginPath();c.moveTo(cx-52,142);c.lineTo(cx+52,142);c.stroke();
+  c.strokeStyle=cr();c.lineWidth=LN;
+  c.beginPath();c.ellipse(cx,158,76,12,0,0,Math.PI*2);c.stroke();
+  c.beginPath();c.moveTo(cx-68,170);c.quadraticCurveTo(cx-92,198,cx-100,235);c.stroke();
+  c.beginPath();c.moveTo(cx+68,170);c.quadraticCurveTo(cx+92,198,cx+100,235);c.stroke();
+  c.beginPath();c.moveTo(cx-100,235);c.lineTo(cx-105,370);c.quadraticCurveTo(cx-105,415,cx-62,420);c.lineTo(cx+62,420);c.quadraticCurveTo(cx+105,415,cx+105,370);c.lineTo(cx+100,235);c.stroke();
+  c.strokeStyle=cr(.15);c.lineWidth=8;
+  c.beginPath();c.moveTo(cx-80,250);c.lineTo(cx-84,360);c.stroke();
+  c.lineWidth=5;c.beginPath();c.moveTo(cx+78,260);c.lineTo(cx+80,320);c.stroke();
+}
+
+// ===================== JARS =====================
+const jarIcons=[
+  {id:'jar-3',name:'Sealed Jar',variant:'Three Dots',desc:'Three glowing dots at staggered heights'},
+  {id:'jar-5',name:'Sealed Jar',variant:'Scattered Five',desc:'Five prominent dots filling the jar'},
+];
+
+function drawJar3(c){fbg(c);bigGlow(c,S/2,310,165,.38);jarShell(c);dot(c,S/2-28,272,11);dot(c,S/2+32,322,10);dot(c,S/2-8,375,9);c.restore()}
+function drawJar5(c){fbg(c);bigGlow(c,S/2,310,170,.32);jarShell(c);dot(c,S/2-38,258,10);dot(c,S/2+40,272,9);dot(c,S/2-20,325,11);dot(c,S/2+28,365,10);dot(c,S/2+5,398,8);c.restore()}
+
+// ===================== SINGLE ORB =====================
+const orbIcons=[
+  {id:'orb-clean',name:'Single Orb',variant:'Clean Center',desc:'One luminous sphere, dead center — radically simple'},
+  {id:'orb-halo',name:'Single Orb',variant:'With Halo Ring',desc:'Central orb with a faint ring around it — a captured moment'},
+];
+
+function drawOrbClean(c){
+  fbg(c);const cx=S/2,cy=S/2;
+  bigGlow(c,cx,cy,220,.4);bigGlow(c,cx,cy,140,.35);
+  const orb=c.createRadialGradient(cx-8,cy-8,0,cx,cy,55);
+  orb.addColorStop(0,`rgba(255,255,250,${Math.min(.95*st.gi,1)})`);
+  orb.addColorStop(.35,gd(.85));orb.addColorStop(.7,gg(.4));orb.addColorStop(1,'rgba(242,201,76,0)');
+  c.fillStyle=orb;c.beginPath();c.arc(cx,cy,55,0,Math.PI*2);c.fill();
+  const sparkles=[[cx-95,cy-70,3],[cx+88,cy-55,2.5],[cx+75,cy+80,3],[cx-80,cy+65,2.5],[cx-25,cy-110,2],[cx+40,cy+105,2]];
+  sparkles.forEach(([sx,sy,sr])=>{c.fillStyle=cr(.25);c.beginPath();c.arc(sx,sy,sr,0,Math.PI*2);c.fill()});
+  c.restore();
+}
+
+function drawOrbHalo(c){
+  fbg(c);const cx=S/2,cy=S/2;
+  bigGlow(c,cx,cy,210,.35);bigGlow(c,cx,cy,130,.3);
+  // Halo ring
+  c.strokeStyle=cr(.12);c.lineWidth=3;
+  c.beginPath();c.arc(cx,cy,95,0,Math.PI*2);c.stroke();
+  c.strokeStyle=cr(.06);c.lineWidth=1.5;
+  c.beginPath();c.arc(cx,cy,115,0,Math.PI*2);c.stroke();
+  const orb=c.createRadialGradient(cx-6,cy-6,0,cx,cy,50);
+  orb.addColorStop(0,`rgba(255,255,250,${Math.min(.95*st.gi,1)})`);
+  orb.addColorStop(.4,gd(.8));orb.addColorStop(.75,gg(.35));orb.addColorStop(1,'rgba(242,201,76,0)');
+  c.fillStyle=orb;c.beginPath();c.arc(cx,cy,50,0,Math.PI*2);c.fill();
+  const sparkles=[[cx-100,cy-75,2.5],[cx+95,cy-50,2],[cx+70,cy+85,2.5],[cx-85,cy+60,2]];
+  sparkles.forEach(([sx,sy,sr])=>{c.fillStyle=cr(.2);c.beginPath();c.arc(sx,sy,sr,0,Math.PI*2);c.fill()});
+  c.restore();
+}
+
+// ===================== CHILD HANDS =====================
+const handsIcons=[
+  {id:'hands-cup',name:'Child Hands',variant:'Cupped Together',desc:'Two chubby little hands cupped together, glow peeking between fingers'},
+  {id:'hands-open',name:'Child Hands',variant:'Open Palms',desc:'Small open palms held up, firefly floating just above'},
+  {id:'hands-peek',name:'Child Hands',variant:'Peek Through',desc:'Hands closed around the light, glow leaking through finger gaps'},
+];
+
+// Helper: draw a chubby child hand
+// Child hands: short stubby fingers, round palm, soft curves — nothing angular
+function childHandLeft(c, x, y, s, rot) {
+  c.save();
+  c.translate(x, y);
+  c.rotate(rot || 0);
+
+  c.fillStyle = cr(.9);
+  c.strokeStyle = cr(.5);
+  c.lineWidth = 3*s;
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+
+  // Palm — rounded rectangle
+  c.beginPath();
+  c.ellipse(0, 0, 42*s, 48*s, 0, 0, Math.PI*2);
+  c.fill();
+
+  // Thumb — short chubby oval off to the side
+  c.beginPath();
+  c.ellipse(-40*s, -18*s, 16*s, 22*s, .5, 0, Math.PI*2);
+  c.fill();
+
+  // Four fingers — short stubby ovals at top of palm
+  const fingers = [
+    {x: -22*s, y: -48*s, rx: 11*s, ry: 22*s, rot: .15},
+    {x: -4*s,  y: -54*s, rx: 11*s, ry: 24*s, rot: .05},
+    {x: 16*s,  y: -52*s, rx: 10*s, ry: 22*s, rot: -.05},
+    {x: 32*s,  y: -44*s, rx: 9*s,  ry: 20*s, rot: -.2},
+  ];
+  fingers.forEach(f => {
+    c.beginPath();
+    c.ellipse(f.x, f.y, f.rx, f.ry, f.rot, 0, Math.PI*2);
+    c.fill();
+  });
+
+  // Subtle palm lines
+  c.strokeStyle = cr(.15);
+  c.lineWidth = 2*s;
+  c.beginPath();
+  c.moveTo(-20*s, -5*s);
+  c.quadraticCurveTo(0, 5*s, 25*s, -8*s);
+  c.stroke();
+
+  c.restore();
+}
+
+function childHandRight(c, x, y, s, rot) {
+  c.save();
+  c.translate(x, y);
+  c.scale(-1, 1);
+  c.rotate(-(rot || 0));
+
+  c.fillStyle = cr(.9);
+  c.lineWidth = 3*s;
+  c.lineCap = 'round';
+
+  c.beginPath();
+  c.ellipse(0, 0, 42*s, 48*s, 0, 0, Math.PI*2);
+  c.fill();
+
+  c.beginPath();
+  c.ellipse(-40*s, -18*s, 16*s, 22*s, .5, 0, Math.PI*2);
+  c.fill();
+
+  const fingers = [
+    {x: -22*s, y: -48*s, rx: 11*s, ry: 22*s, rot: .15},
+    {x: -4*s,  y: -54*s, rx: 11*s, ry: 24*s, rot: .05},
+    {x: 16*s,  y: -52*s, rx: 10*s, ry: 22*s, rot: -.05},
+    {x: 32*s,  y: -44*s, rx: 9*s,  ry: 20*s, rot: -.2},
+  ];
+  fingers.forEach(f => {
+    c.beginPath();
+    c.ellipse(f.x, f.y, f.rx, f.ry, f.rot, 0, Math.PI*2);
+    c.fill();
+  });
+
+  c.strokeStyle = cr(.15);
+  c.lineWidth = 2*s;
+  c.beginPath();
+  c.moveTo(-20*s, -5*s);
+  c.quadraticCurveTo(0, 5*s, 25*s, -8*s);
+  c.stroke();
+
+  c.restore();
+}
+
+// Hands cupped together
+function drawHandsCup(c){
+  fbg(c);
+  const cx=S/2, cy=S/2+20;
+
+  bigGlow(c, cx, cy-30, 150, .4);
+
+  // Left hand — rotated inward, cupping from the left
+  childHandLeft(c, cx-55, cy+30, .95, .4);
+  // Right hand — mirror, cupping from the right
+  childHandRight(c, cx+55, cy+30, .95, .4);
+
+  // Glow peeking out between the hands (above the palms)
+  dot(c, cx, cy-25, 18);
+  dot(c, cx-20, cy-5, 5);
+  dot(c, cx+25, cy-10, 4);
+
+  c.restore();
+}
+
+// Hands open, firefly floating above
+function drawHandsOpen(c){
+  fbg(c);
+  const cx=S/2, cy=S/2+40;
+
+  bigGlow(c, cx, cy-80, 140, .35);
+
+  // Two small open palms held up, fingers pointing up
+  childHandLeft(c, cx-60, cy+20, .85, .25);
+  childHandRight(c, cx+60, cy+20, .85, .25);
+
+  // Firefly glow floating above the hands
+  dot(c, cx, cy-80, 20);
+  // Tiny trail dots
+  dot(c, cx+8, cy-45, 5);
+  dot(c, cx-5, cy-55, 3.5);
+
+  c.restore();
+}
+
+// Hands closed around glow, light leaking through gaps
+function drawHandsPeek(c){
+  fbg(c);
+  const cx=S/2, cy=S/2+10;
+
+  // Strong glow from inside the hands
+  bigGlow(c, cx, cy, 170, .5);
+
+  // Overlapping hands forming a closed cup
+  // Left hand (more closed, fingers curled over)
+  c.fillStyle = cr(.88);
+  // Left palm
+  c.beginPath(); c.ellipse(cx-30, cy+15, 50, 55, .15, 0, Math.PI*2); c.fill();
+  // Left fingers curling over top
+  const lFingers = [
+    {x:cx-52, y:cy-38, rx:12, ry:24, rot:.3},
+    {x:cx-32, y:cy-48, rx:12, ry:26, rot:.15},
+    {x:cx-10, y:cy-52, rx:12, ry:27, rot:.05},
+    {x:cx+10, y:cy-48, rx:11, ry:24, rot:-.1},
+  ];
+  lFingers.forEach(f=>{c.beginPath();c.ellipse(f.x,f.y,f.rx,f.ry,f.rot,0,Math.PI*2);c.fill()});
+  // Left thumb
+  c.beginPath(); c.ellipse(cx-75, cy-5, 16, 24, .6, 0, Math.PI*2); c.fill();
+
+  // Right hand (slightly behind)
+  c.fillStyle = cr(.82);
+  c.beginPath(); c.ellipse(cx+30, cy+20, 48, 52, -.15, 0, Math.PI*2); c.fill();
+  const rFingers = [
+    {x:cx+52, y:cy-32, rx:11, ry:23, rot:-.3},
+    {x:cx+34, y:cy-44, rx:11, ry:25, rot:-.12},
+    {x:cx+14, y:cy-48, rx:11, ry:24, rot:0},
+  ];
+  rFingers.forEach(f=>{c.beginPath();c.ellipse(f.x,f.y,f.rx,f.ry,f.rot,0,Math.PI*2);c.fill()});
+  c.beginPath(); c.ellipse(cx+72, cy+2, 15, 22, -.5, 0, Math.PI*2); c.fill();
+
+  // Light gaps — draw glow between finger gaps at top
+  dot(c, cx-22, cy-32, 8);
+  dot(c, cx, cy-38, 10);
+  dot(c, cx+20, cy-30, 7);
+
+  // Subtle glow leaking from sides
+  const sideL = c.createRadialGradient(cx-60, cy, 0, cx-60, cy, 40*Math.max(st.gi,.3));
+  sideL.addColorStop(0, gg(.2)); sideL.addColorStop(1, 'rgba(242,201,76,0)');
+  c.fillStyle=sideL; c.beginPath(); c.arc(cx-60,cy,40,0,Math.PI*2); c.fill();
+  const sideR = c.createRadialGradient(cx+60, cy, 0, cx+60, cy, 35*Math.max(st.gi,.3));
+  sideR.addColorStop(0, gg(.15)); sideR.addColorStop(1, 'rgba(242,201,76,0)');
+  c.fillStyle=sideR; c.beginPath(); c.arc(cx+60,cy,35,0,Math.PI*2); c.fill();
+
+  c.restore();
+}
+
+// ===================== CONSTELLATION =====================
+const constIcons=[
+  {id:'const-organic',name:'Constellation',variant:'Organic Scatter',desc:'5 dots in a gentle organic pattern with faint connecting lines'},
+  {id:'const-arc',name:'Constellation',variant:'Rising Arc',desc:'Dots sweeping upward in an arc, like fireflies lifting off'},
+];
+
+function drawConstOrganic(c){
+  fbg(c);
+  const pts=[{x:170,y:165,r:11},{x:310,y:148,r:9},{x:145,y:310,r:10},{x:340,y:285,r:12},{x:255,y:380,r:8}];
+  c.strokeStyle=cr(.08);c.lineWidth=2.5;c.lineCap='round';
+  [[0,1],[0,2],[1,3],[2,4],[3,4],[1,4]].forEach(([a,b])=>{c.beginPath();c.moveTo(pts[a].x,pts[a].y);c.lineTo(pts[b].x,pts[b].y);c.stroke()});
+  [[0,1],[1,3],[2,4]].forEach(([a,b])=>{
+    const mx=(pts[a].x+pts[b].x)/2,my=(pts[a].y+pts[b].y)/2;
+    c.fillStyle=cr(.15);c.beginPath();c.arc(mx,my,2.5,0,Math.PI*2);c.fill();
+  });
+  pts.forEach(p=>dot(c,p.x,p.y,p.r));
+  c.restore();
+}
+
+function drawConstArc(c){
+  fbg(c);
+  // Dots in an upward arc from lower-left to upper-right
+  const pts=[{x:120,y:390,r:7},{x:170,y:320,r:9},{x:235,y:260,r:10},{x:310,y:210,r:11},{x:380,y:155,r:12}];
+  c.strokeStyle=cr(.07);c.lineWidth=2.5;c.lineCap='round';
+  c.beginPath();c.moveTo(pts[0].x,pts[0].y);
+  pts.slice(1).forEach(p=>c.lineTo(p.x,p.y));c.stroke();
+  // Midpoint dots
+  for(let i=0;i<pts.length-1;i++){
+    const mx=(pts[i].x+pts[i+1].x)/2,my=(pts[i].y+pts[i+1].y)/2;
+    c.fillStyle=cr(.1);c.beginPath();c.arc(mx,my,2,0,Math.PI*2);c.fill();
+  }
+  pts.forEach(p=>dot(c,p.x,p.y,p.r));
+  c.restore();
+}
+
+// ===================== FF MONOGRAM =====================
+const ffIcons=[
+  {id:'ff-rounded',name:'FF Monogram',variant:'Rounded Serif + Dots',desc:'Your FF letters but with softer, rounder serifs and glow dots'},
+  {id:'ff-cozy',name:'FF Monogram',variant:'Cozy Rounded',desc:'Much rounder, almost bubbly FF with a big glow dot between them'},
+  {id:'ff-stacked',name:'FF Monogram',variant:'Stacked + Glow',desc:'Two F\'s stacked/overlapping with firefly dots scattered around'},
+];
+
+// Draw a rounded serif F
+// The current icon has classic heavy serifs — we'll soften them
+function drawRoundedF(c, x, y, s, roundness) {
+  const r = roundness || 0; // 0 = slightly rounded, 1 = very rounded
+  c.fillStyle = cr();
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+
+  if (r < 0.5) {
+    // Soft serif F — based on current icon but with rounded corners
+    const w = 85*s, h = 140*s;
+    const stemW = 22*s;
+    const serifH = 22*s;
+    const serifExt = 14*s;
+    const cr2 = 6*s; // corner radius for rounding
+
+    c.beginPath();
+    // Bottom-left serif
+    c.roundRect(x - serifExt, y + h - serifH, stemW + serifExt*2, serifH, cr2);
+    c.fill();
+    // Stem
+    c.beginPath();
+    c.roundRect(x, y, stemW, h, cr2);
+    c.fill();
+    // Top bar (with serifs)
+    c.beginPath();
+    c.roundRect(x - serifExt, y, w + serifExt, serifH, cr2);
+    c.fill();
+    // Top bar thickness
+    c.beginPath();
+    c.roundRect(x, y, w, serifH + 8*s, cr2);
+    c.fill();
+    // Middle bar
+    c.beginPath();
+    c.roundRect(x, y + h*.42, w*.72, serifH*.8, cr2);
+    c.fill();
+    // Middle bar serif nub
+    c.beginPath();
+    c.roundRect(x - serifExt, y + h*.42 - 2*s, stemW + serifExt, serifH*.8 + 4*s, cr2);
+    c.fill();
+  } else {
+    // Very rounded / bubbly F
+    c.lineJoin = 'round';
+    c.strokeStyle = cr();
+    c.lineWidth = 28*s;
+    c.lineCap = 'round';
+
+    // Stem
+    c.beginPath();
+    c.moveTo(x + 12*s, y + 10*s);
+    c.lineTo(x + 12*s, y + 130*s);
+    c.stroke();
+
+    // Top bar
+    c.beginPath();
+    c.moveTo(x + 5*s, y + 10*s);
+    c.lineTo(x + 75*s, y + 10*s);
+    c.stroke();
+
+    // Middle bar (shorter)
+    c.beginPath();
+    c.moveTo(x + 5*s, y + 60*s);
+    c.lineTo(x + 58*s, y + 60*s);
+    c.stroke();
+  }
+}
+
+function drawFFRounded(c){
+  fbg(c);
+  const cx=S/2;
+
+  // Two rounded serif F's side by side
+  drawRoundedF(c, cx-120, S/2-75, 1, 0);
+  drawRoundedF(c, cx+10, S/2-75, 1, 0);
+
+  // Glow dots
+  dot(c, cx+105, S/2-82, 10);
+  dot(c, cx-30, S/2+80, 7);
+  dot(c, cx+80, S/2+45, 5);
+
+  bigGlow(c, cx, S/2, 160, .08);
+  c.restore();
+}
+
+function drawFFCozy(c){
+  fbg(c);
+  const cx=S/2;
+
+  // Very rounded bubbly F's
+  drawRoundedF(c, cx-105, S/2-70, 1, 1);
+  drawRoundedF(c, cx+20, S/2-70, 1, 1);
+
+  // Big glow dot sitting between and slightly below the two F's
+  bigGlow(c, cx-5, S/2+20, 120, .2);
+  dot(c, cx-5, S/2+20, 16);
+
+  // Small accent dots
+  dot(c, cx+90, S/2-75, 6);
+  dot(c, cx-110, S/2+65, 5);
+
+  c.restore();
+}
+
+function drawFFStacked(c){
+  fbg(c);
+  const cx=S/2;
+
+  // First F (slightly back, lighter)
+  c.globalAlpha = .5;
+  drawRoundedF(c, cx-75, S/2-85, 1.1, 0);
+  c.globalAlpha = 1;
+
+  // Second F (overlapping, slightly offset, full opacity)
+  drawRoundedF(c, cx-40, S/2-65, 1.1, 0);
+
+  // Firefly dots scattered around the letters
+  dot(c, cx+90, S/2-90, 11);
+  dot(c, cx-85, S/2+70, 8);
+  dot(c, cx+75, S/2+55, 7);
+  dot(c, cx+10, S/2-100, 6);
+
+  bigGlow(c, cx, S/2, 180, .1);
+  c.restore();
+}
+
+// ===================== REGISTRY =====================
+const allSections = [
+  {gridId:'jarGrid', icons:jarIcons},
+  {gridId:'orbGrid', icons:orbIcons},
+  {gridId:'handsGrid', icons:handsIcons},
+  {gridId:'constGrid', icons:constIcons},
+  {gridId:'ffGrid', icons:ffIcons},
+];
+
+const allIcons = [...jarIcons,...orbIcons,...handsIcons,...constIcons,...ffIcons];
+
+const drawFns={
+  'jar-3':drawJar3,'jar-5':drawJar5,
+  'orb-clean':drawOrbClean,'orb-halo':drawOrbHalo,
+  'hands-cup':drawHandsCup,'hands-open':drawHandsOpen,'hands-peek':drawHandsPeek,
+  'const-organic':drawConstOrganic,'const-arc':drawConstArc,
+  'ff-rounded':drawFFRounded,'ff-cozy':drawFFCozy,'ff-stacked':drawFFStacked,
+};
+
+function buildSection(gridId,list){
+  const grid=document.getElementById(gridId);grid.innerHTML='';
+  list.forEach(icon=>{
+    const card=document.createElement('div');card.className='icon-card';
+    const canvas=document.createElement('canvas');canvas.width=S;canvas.height=S;canvas.id=`canvas-${icon.id}`;
+    const wrap=document.createElement('div');wrap.className='icon-wrapper';wrap.appendChild(canvas);
+    card.innerHTML=`<h3>${icon.name}</h3><span class="variant">${icon.variant}</span>`;
+    card.appendChild(wrap);
+    card.innerHTML+=`<p class="desc">${icon.desc}</p>`;
+    const btn=document.createElement('button');btn.className='download-btn';
+    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Download`;
+    btn.onclick=()=>downloadIcon(icon.id);
+    card.appendChild(btn);grid.appendChild(card);
+  });
+}
+
+function renderAll(){
+  allIcons.forEach(icon=>{
+    const canvas=document.getElementById(`canvas-${icon.id}`);
+    if(!canvas)return;
+    const c=canvas.getContext('2d');c.clearRect(0,0,S,S);c.save();drawFns[icon.id](c);c.restore();
+  });
+  updatePrompt();
+}
+
+function downloadIcon(id){
+  const dl=document.createElement('canvas');dl.width=S;dl.height=S;
+  drawFns[id](dl.getContext('2d'));
+  const a=document.createElement('a');a.download=`forever-fireflies-${id}-512.png`;a.href=dl.toDataURL('image/png');a.click();
+}
+
+function updatePrompt(){
+  const h=`hsl(${st.hue},${st.sat}%,${st.light}%)`;
+  let t=`App icon for "Forever Fireflies" — parenting journal.\n512x512px, ~22% corner radius.\nBackground: warm orange (${h}).\n`;
+  t+=st.co<1?`Cream at ${Math.round(st.co*100)}%.\n`:`Cream (#FAF8F5).\n`;
+  t+=st.gi!==1?`Gold glow at ${Math.round(st.gi*100)}%.\n`:`Gold glow (#F2C94C).\n`;
+  t+=`Warm, organic, journal-like. No literal insects.`;
+  document.getElementById('promptOutput').textContent=t;
+}
+
+function copyPrompt(){
+  navigator.clipboard.writeText(document.getElementById('promptOutput').textContent).then(()=>{
+    const b=document.getElementById('copyBtn');b.textContent='Copied!';b.classList.add('copied');
+    setTimeout(()=>{b.textContent='Copy Prompt';b.classList.remove('copied')},1500);
+  });
+}
+
+function bindControls(){
+  document.getElementById('hueSlider').oninput=function(){st.hue=+this.value;document.getElementById('hueVal').textContent=this.value;clearP();renderAll()};
+  document.getElementById('satSlider').oninput=function(){st.sat=+this.value;document.getElementById('satVal').textContent=this.value+'%';clearP();renderAll()};
+  document.getElementById('lightSlider').oninput=function(){st.light=+this.value;document.getElementById('lightVal').textContent=this.value+'%';clearP();renderAll()};
+  document.getElementById('creamSlider').oninput=function(){st.co=+this.value/100;document.getElementById('creamVal').textContent=this.value+'%';clearP();renderAll()};
+  document.getElementById('glowSlider').oninput=function(){st.gi=+this.value/100;document.getElementById('glowVal').textContent=this.value+'%';clearP();renderAll()};
+}
+
+function clearP(){document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'))}
+function applyPreset(n){
+  const p=PR[n];st.hue=p.hue;st.sat=p.sat;st.light=p.light;st.co=p.co;st.gi=p.gi;
+  document.getElementById('hueSlider').value=p.hue;document.getElementById('satSlider').value=p.sat;
+  document.getElementById('lightSlider').value=p.light;document.getElementById('creamSlider').value=Math.round(p.co*100);
+  document.getElementById('glowSlider').value=Math.round(p.gi*100);
+  document.getElementById('hueVal').textContent=p.hue;document.getElementById('satVal').textContent=p.sat+'%';
+  document.getElementById('lightVal').textContent=p.light+'%';document.getElementById('creamVal').textContent=Math.round(p.co*100)+'%';
+  document.getElementById('glowVal').textContent=Math.round(p.gi*100)+'%';
+  clearP();document.querySelector(`.preset-btn[onclick="applyPreset('${n}')"]`).classList.add('active');
+  renderAll();
+}
+
+allSections.forEach(s=>buildSection(s.gridId,s.icons));
+bindControls();
+renderAll();
+</script>
+</body>
+</html>

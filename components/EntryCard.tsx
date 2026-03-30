@@ -110,6 +110,7 @@ function buildQuickBlendStops(inputColors: string[]): {
 interface EntryCardEntry {
   childNames: string[];
   childColors: string[];
+  childAges?: string[];
   date: string;
   time: string;
   title?: string;
@@ -118,6 +119,7 @@ interface EntryCardEntry {
   isFavorited: boolean;
   hasAudio: boolean;
   audioStoragePath?: string;
+  firstMemoryBadge?: { names: string[]; colorHexes: string[] };
 }
 
 interface EntryCardProps {
@@ -133,6 +135,8 @@ interface EntryCardProps {
   /** When set, shows a sync status badge (pending/syncing/failed).
    *  Used for offline drafts that haven't been uploaded yet. */
   syncStatus?: DraftStatus;
+  /** Warm gold glow border — used for first-entry celebration on Home. */
+  glowing?: boolean;
 }
 
 /**
@@ -154,6 +158,7 @@ export default function EntryCard({
   highlightQuery,
   showTags = true,
   syncStatus,
+  glowing = false,
 }: EntryCardProps) {
   const isCoreMemory = variant === 'coreMemory';
   const reduceMotion = useReduceMotion();
@@ -203,6 +208,7 @@ export default function EntryCard({
           styles.card,
           isCoreMemory ? styles.coreMemoryCard : styles.homeCard,
           entry.isFavorited && !isCoreMemory && styles.favoritedCard,
+          glowing && styles.glowingCard,
           syncStatus && { opacity: 0.85 },
           pressed && { backgroundColor: colors.cardPressed },
         ]}
@@ -211,8 +217,8 @@ export default function EntryCard({
              When 2+ children, shows a quick-blend gradient between their colors. */}
         {hasMultipleChildren ? (
           <LinearGradient
-            colors={blendStops.colors}
-            locations={blendStops.locations}
+            colors={blendStops.colors as [string, string, ...string[]]}
+            locations={blendStops.locations as [number, number, ...number[]]}
             style={styles.leftBar}
           />
         ) : (
@@ -261,6 +267,23 @@ export default function EntryCard({
             </View>
           ) : null}
         </View>
+
+        {/* First memory marker — badge on each child's earliest entry */}
+        {entry.firstMemoryBadge && (
+          <View style={styles.firstMemoryRow}>
+            {entry.firstMemoryBadge.names.map((name, i) => (
+              <Text
+                key={name}
+                style={[
+                  styles.firstMemoryBadge,
+                  { color: entry.firstMemoryBadge!.colorHexes[i] },
+                ]}
+              >
+                ✦ {name}'s first memory
+              </Text>
+            ))}
+          </View>
+        )}
 
         {/* Title — AI-generated or user-edited entry name */}
         {entry.title ? (
@@ -377,6 +400,15 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  glowingCard: {
+    borderWidth: 1.5,
+    borderColor: childColorWithOpacity(colors.glow, 0.35),
+    shadowColor: colors.glow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 4,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -409,6 +441,16 @@ const styles = StyleSheet.create({
   meta: {
     ...typography.cardMeta,
     color: colors.textMuted,
+  },
+  firstMemoryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 4,
+    gap: 4,
+  },
+  firstMemoryBadge: {
+    ...typography.caption,
+    fontWeight: '600',
   },
   title: {
     ...typography.formLabel,

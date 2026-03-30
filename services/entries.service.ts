@@ -4,6 +4,7 @@
 
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/database.types';
+import { capture } from '@/lib/posthog';
 
 type Entry = Database['public']['Tables']['entries']['Row'];
 type EntryInsert = Database['public']['Tables']['entries']['Insert'];
@@ -51,6 +52,7 @@ export const entriesService = {
       .single();
 
     if (error) throw new Error(`Failed to create entry: ${error.message}`, { cause: error });
+    capture('entry_created', { type: data.entry_type, hasAudio: !!data.audio_storage_path });
     return data;
   },
 

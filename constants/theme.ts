@@ -56,6 +56,10 @@ export const childColors = [
   { name: 'Plum', hex: '#B88BB4' },
   { name: 'Teal', hex: '#6BB5A8' },
   { name: 'Rose', hex: '#D48B8B' },
+  { name: 'Sage', hex: '#A3B88B' },
+  { name: 'Coral', hex: '#D4857A' },
+  { name: 'Lavender', hex: '#9088C4' },
+  { name: 'Marigold', hex: '#C9A044' },
 ] as const;
 
 /**

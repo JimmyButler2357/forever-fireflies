@@ -1,18 +1,60 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Linking, Platform, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '@/constants/theme';
+import { colors, typography, spacing, radii, shadows } from '@/constants/theme';
+import { config } from '@/lib/config';
 import TopBar from '@/components/TopBar';
 
 export default function ContactScreen() {
+  const handleEmail = () => {
+    const subject = encodeURIComponent('Fireflies Feedback — v1.0.0');
+    const body = encodeURIComponent(
+      `\n\n---\nApp: Fireflies v1.0.0\nPlatform: ${Platform.OS} ${Platform.Version}`,
+    );
+    Linking.openURL(`mailto:${config.supportEmail}?subject=${subject}&body=${body}`);
+  };
+
   return (
     <View style={styles.container}>
       <TopBar title="Contact Us" showBack />
       <View style={styles.content}>
-        <Ionicons name="mail-outline" size={48} color={colors.textMuted} />
-        <Text style={styles.heading}>Coming Soon</Text>
+        <Text style={styles.heading}>We'd love to hear from you</Text>
         <Text style={styles.body}>
-          We'd love to hear from you. Contact options are on their way.
+          Have a question, idea, or just want to say hi? Reach out anytime.
         </Text>
+
+        {/* Email button */}
+        <Pressable
+          onPress={handleEmail}
+          style={({ pressed }) => [
+            styles.button,
+            shadows.sm,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Ionicons name="mail-outline" size={20} color={colors.accent} />
+          <View style={styles.buttonText}>
+            <Text style={styles.buttonLabel}>Send us an email</Text>
+            <Text style={styles.buttonSub}>{config.supportEmail}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </Pressable>
+
+        {/* Website button */}
+        <Pressable
+          onPress={() => Linking.openURL(config.websiteUrl)}
+          style={({ pressed }) => [
+            styles.button,
+            shadows.sm,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Ionicons name="globe-outline" size={20} color={colors.accent} />
+          <View style={styles.buttonText}>
+            <Text style={styles.buttonLabel}>Visit our website</Text>
+            <Text style={styles.buttonSub}>foreverfireflies.app</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </Pressable>
       </View>
     </View>
   );
@@ -25,19 +67,44 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing(3),
-    paddingHorizontal: spacing(8),
+    paddingHorizontal: spacing(6),
+    paddingTop: spacing(10),
+    gap: spacing(4),
   },
   heading: {
     ...typography.sectionHeading,
     color: colors.text,
+    textAlign: 'center',
   },
   body: {
     ...typography.formLabel,
     color: colors.textSoft,
     textAlign: 'center',
     lineHeight: 21,
+    marginBottom: spacing(4),
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    backgroundColor: colors.card,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing(4),
+    paddingVertical: spacing(4),
+  },
+  buttonPressed: {
+    backgroundColor: colors.cardPressed,
+  },
+  buttonText: {
+    flex: 1,
+    gap: spacing(1),
+  },
+  buttonLabel: {
+    ...typography.formLabel,
+    color: colors.text,
+  },
+  buttonSub: {
+    ...typography.caption,
+    color: colors.textMuted,
   },
 });

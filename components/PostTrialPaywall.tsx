@@ -34,8 +34,9 @@ import {
 } from '@/constants/theme';
 import { useSubscriptionStore } from '@/stores/subscriptionStore';
 import { getOfferings, purchasePackage } from '@/lib/revenueCat';
-import { PAYWALL_PAYWALL_VALUE_PROPS } from '@/lib/subscriptionHelpers';
+import { PAYWALL_VALUE_PROPS } from '@/lib/subscriptionHelpers';
 import PrimaryButton from '@/components/PrimaryButton';
+import { capture } from '@/lib/posthog';
 import type { PurchasesPackage } from 'react-native-purchases';
 
 // ─── Props ──────────────────────────────────────────────
@@ -92,6 +93,7 @@ export default function PostTrialPaywall({ visible, onClose }: PostTrialPaywallP
       if (info) {
         // Purchase succeeded — grant access immediately
         useSubscriptionStore.getState().onPurchaseComplete();
+        capture('subscription_converted', { plan: selectedPlan });
         onClose();
       }
       // If info is null, user cancelled — do nothing

@@ -217,7 +217,7 @@ This avoids painful `ALTER TABLE` migrations on tables that may have millions of
 | `name` | text | NO | — | MVP | Required. FR-002 |
 | `nickname` | text | YES | null | MVP | Used for transcript auto-detection. FR-002, FR-009 |
 | `birthday` | date | NO | — | MVP | Powers age stamps (e.g., "Emma 2y 4m"). Required — gates onboarding continue button. Product Spec §2.2 |
-| `color_index` | smallint | NO | 0 | MVP | 0–5 cycling through childColors palette |
+| `color_index` | smallint | NO | 0 | MVP | 0–9 cycling through childColors palette |
 | `display_order` | smallint | NO | 0 | MVP | Sort order for tab display |
 | `photo_url` | text | YES | null | **V2** | Pre-wired. Profile photo in Supabase Storage |
 | `created_at` | timestamptz | NO | now() | MVP | |
@@ -228,7 +228,7 @@ This avoids painful `ALTER TABLE` migrations on tables that may have millions of
 
 **Notes:**
 - FR-002 allows 1–20 children per user
-- `color_index` maps to the palette: Blue(0), Amber(1), Green(2), Plum(3), Teal(4), Rose(5)
+- `color_index` maps to the palette: Blue(0), Amber(1), Green(2), Plum(3), Teal(4), Rose(5), Sage(6), Coral(7), Lavender(8), Marigold(9)
 - `nickname` is critical for auto-detection — e.g., if nickname is "Bug", the transcript "Bug said the funniest thing" should match this child
 
 **RLS policies:**

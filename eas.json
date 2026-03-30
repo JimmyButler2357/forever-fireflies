@@ -18,16 +18,18 @@
       "distribution": "internal",
       "channel": "preview",
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_BYPASS_PAYWALL": "true"
+        "EXPO_PUBLIC_BYPASS_PAYWALL": "true",
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_5gwXzQt1qkcad7W7BADgwpBFf3sn5JqOagwafo5o0s3"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "SENTRY_AUTH_TOKEN": "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"
+        "SENTRY_AUTH_TOKEN": "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",
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_5gwXzQt1qkcad7W7BADgwpBFf3sn5JqOagwafo5o0s3"
       }
     }
   },

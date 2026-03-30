@@ -8,6 +8,7 @@
 import { useAuthStore } from '@/stores/authStore';
 import { useSubscriptionStore } from '@/stores/subscriptionStore';
 import { profilesService } from '@/services/profiles.service';
+import { capture } from '@/lib/posthog';
 
 /** Start the free trial if this is the user's first entry.
  *  Idempotent — safe to call multiple times. The RPC only sets
@@ -25,6 +26,7 @@ export async function startTrialIfNeeded(): Promise<void> {
     const updatedProfile = { ...profile, trial_started_at: new Date().toISOString() };
     useAuthStore.getState().setProfile(updatedProfile);
     await useSubscriptionStore.getState().initialize(updatedProfile);
+    capture('trial_started');
   } catch (err) {
     console.warn('Failed to start trial:', err);
     // Non-blocking — we'll retry on next app launch
@@ -40,6 +42,6 @@ export const PAYWALL_VALUE_PROPS = [
   { icon: 'pricetag' as const, text: 'Organized by child, tag, or date' },
 ];
 
-/** RevenueCat entitlement name — the "key" that unlocks premium access.
- *  Defined once here so a typo doesn't silently break subscription checks. */
-export const PREMIUM_ENTITLEMENT = 'premium';
+// PREMIUM_ENTITLEMENT moved to '@/lib/subscriptionConstants' to break
+// circular imports. Import it from there instead.
+export { PREMIUM_ENTITLEMENT } from '@/lib/subscriptionConstants';

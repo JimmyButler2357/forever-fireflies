@@ -19,6 +19,31 @@ export function initSentry() {
     sampleRate: 1.0,       // Send 100% of errors (fine at small scale)
     maxBreadcrumbs: 50,    // Trail of user actions before each crash
     enabled: !__DEV__,
+
+    // ── PII scrubbing ──────────────────────────────────────────
+    // Sentry.wrap() auto-logs every screen navigation as a breadcrumb,
+    // including route params. Some params carry children's PII:
+    //   - promptText  → "What did Emma do today?"
+    //   - transcript  → full dictated memory mentioning kids by name
+    //   - appendTranscript → existing transcript when appending audio
+    //
+    // beforeBreadcrumb runs on-device BEFORE data leaves the phone.
+    // We keep the screen name (useful for debugging) but strip the
+    // params so children's names never reach Sentry's servers.
+    beforeBreadcrumb(breadcrumb) {
+      if (breadcrumb.category === 'navigation') {
+        // Sentry stores the destination URL in breadcrumb.data.to
+        // as a string like "/(main)/recording?promptText=What+did+Emma..."
+        // Strip query params but keep the path.
+        if (breadcrumb.data?.to && typeof breadcrumb.data.to === 'string') {
+          breadcrumb.data.to = breadcrumb.data.to.split('?')[0];
+        }
+        if (breadcrumb.data?.from && typeof breadcrumb.data.from === 'string') {
+          breadcrumb.data.from = breadcrumb.data.from.split('?')[0];
+        }
+      }
+      return breadcrumb;
+    },
   });
 }
 

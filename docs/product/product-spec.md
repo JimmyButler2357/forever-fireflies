@@ -228,7 +228,7 @@ Expected output: [{"tag": "humor", "confidence": 0.95}, {"tag": "milestone", "co
 - Tagging prompt should be versioned and stored in a config table (not hardcoded) to enable A/B testing
 - Tag taxonomy should be a database table with a version field, allowing expansion without code deploys
 - All entry processing (transcription, tagging) must be idempotent — safe to retry on failure
-- Only entry text is sent to the AI provider — no child names, user identifiers, or audio files
+- The full transcript is sent to the AI provider for title generation, filler removal, and tagging. Transcripts naturally contain child names and other personal details spoken by the parent. No child records, user identifiers, or audio files are sent separately.
 - Entry text is not used for model training (per Anthropic's API data policy)
 
 ---
@@ -328,7 +328,7 @@ If someone hasn't recorded in 7+ days and opens the app, a gentle interstitial a
 - **Free trial:** 7-day trial (implemented in wireframe paywall), full access to all features. A/B test 14-day variant once live.
 - **After trial:** $5.99/month or $49.99/year (launch pricing — ~3.5 months free on annual). Annual plan pre-selected in the paywall with a "Save 30%" badge.
 - **Price testing:** Use RevenueCat Experiments to A/B test $4.99 and $6.99 monthly variants once there's enough traffic. You can always lower a price; raising it after launch is much harder.
-- **Paywall behavior:** Entries recorded during trial become visible but locked (see dates, child names, first few words — but cannot play audio or read full text). This creates loss aversion and is the highest-converting approach for emotional data. Locked entry card design to be specced during Phase 6 (Subscription & Paywall implementation).
+- **Paywall behavior (implemented):** After trial expires, the app enters a read-only state — users can browse entry cards (dates, child names, previews) but cannot record, edit, play audio, or access Firefly Jar. A subscribe banner replaces the mic button. `PostTrialPaywall` modal offers annual/monthly plan selection. This creates loss aversion and is the highest-converting approach for emotional data.
 - **Paywall placement:** After the first recording in onboarding (step 8), after the parent has experienced core value. Visible dismiss button — no dark patterns. "Already subscribed? Restore purchase" link at bottom.
 - **Win-back email:** "You recorded [X] memories about [child name] during your trial. They're waiting for you."
 - For the full email strategy (welcome series, waitlist sequence, lifecycle triggers, and tooling), see [`docs/marketing/marketing-plan.md`](../marketing/marketing-plan.md) — Email Strategy section.
@@ -619,7 +619,7 @@ These are the performance, security, and quality targets that apply at MVP. More
 - **RevenueCat** — wraps Apple/Google in-app purchases with unified API. Handles receipt validation, trial management, subscription lifecycle, and basic analytics. Free tier covers up to $2,500/mo in MTR.
 
 ### Analytics
-- **PostHog** — open source, generous free tier (1M events/mo), privacy-friendly. Good alignment with the app's privacy-first positioning. Tracks retention, funnel analysis, and custom events.
+- **PostHog** — open source, generous free tier (1M events/mo), privacy-friendly. Good alignment with the app's privacy-first positioning. **Integrated** — SDK wrapper in `lib/posthog.ts`, 8 events tracked (account_created, child_added, trial_started, entry_created, recording_started, firefly_jar_viewed, search_opened, subscription_converted). Two dashboard insights configured: Onboarding → Subscription funnel + Trial Engagement trend.
 
 ### AI Tagging (MVP → V2)
 - **MVP:** Keyword matching for topic classification — implemented during Phase 4d (Saving Entries). Current prototype uses manual tagging only
@@ -730,7 +730,7 @@ Key risks from the standard PRD worth revisiting before launch. Not fully specce
 |------|----------|------------|---------------------|
 | Users don't sustain journaling habit past week 1 | High | High | Prompts reduce blank-page friction; personalized notifications; wrap-ups reward sustained use; no guilt mechanisms |
 | Voice transcription quality is poor (accents, background noise) | Medium | Medium | Allow text editing of all transcriptions; save original audio as fallback; evaluate cloud STT for V2 |
-| COPPA / child privacy compliance issues | High | Medium | Legal review before launch; parent is data subject (not child); no child-identifiable data sent to LLM |
+| COPPA / child privacy compliance issues | High | Medium | Legal review before launch; parent is data subject (not child); transcripts may contain child names (disclosed in privacy policy); no child records or identifiers sent separately; API data not used for training |
 | Subscription fatigue — users won't pay $5.99/mo | High | Medium | Paywall after first recording creates emotional investment; pricing competitive; A/B test $4.99 and $6.99 |
 | Third-party API dependency (Deepgram, Claude) | Medium | Low | Abstract transcription and tagging behind service interfaces; can swap providers without app changes |
 | Contributor link abuse or spam (V2) | Low | Low | Links are scoped, labeled, and revocable; rate limiting on submissions |

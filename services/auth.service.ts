@@ -34,7 +34,7 @@ export const authService = {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'apple',
       options: {
-        redirectTo: 'core-memories://auth/callback',
+        redirectTo: 'forever-fireflies://auth/callback',
       },
     });
     if (error) throw new Error(`Failed to sign in with Apple: ${error.message}`, { cause: error });
@@ -47,7 +47,7 @@ export const authService = {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'core-memories://auth/callback',
+        redirectTo: 'forever-fireflies://auth/callback',
       },
     });
     if (error) throw new Error(`Failed to sign in with Google: ${error.message}`, { cause: error });
@@ -62,7 +62,7 @@ export const authService = {
    *  email exists (so attackers can't check if someone has an account). */
   async resetPasswordForEmail(email: string) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'core-memories://reset-password',
+      redirectTo: 'forever-fireflies://reset-password',
     });
     if (error) throw new Error(`Failed to send reset email: ${error.message}`, { cause: error });
   },
@@ -80,6 +80,43 @@ export const authService = {
   async signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw new Error(`Failed to sign out: ${error.message}`, { cause: error });
+  },
+
+  /** Permanently delete the current user's account and all data.
+   *  Calls the `delete-account` edge function which:
+   *  1. Deletes all audio files from Storage
+   *  2. Deletes the user from auth.users (cascades all DB rows)
+   *  3. Auto-revokes Apple Sign-In tokens if applicable
+   *
+   *  After this call, the user no longer exists — there's no session
+   *  to sign out of. The caller should clear local state and navigate
+   *  to the onboarding screen. */
+  async deleteAccount() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated — cannot delete account');
+
+    const { data, error } = await supabase.functions.invoke('delete-account', {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    // supabase.functions.invoke() wraps non-2xx responses into a
+    // FunctionsHttpError with a generic message. The actual error
+    // body is hidden in error.context (a raw Response object).
+    if (error) {
+      const ctx = (error as any).context;
+      if (ctx && typeof ctx.text === 'function') {
+        const body = await ctx.text().catch(() => '');
+        throw new Error(`Failed to delete account: ${body || error.message}`, { cause: error });
+      }
+      throw new Error(`Failed to delete account: ${error.message}`, { cause: error });
+    }
+
+    // The edge function returns 200 with { success: false } on server errors
+    if (data?.success === false) {
+      throw new Error(`Failed to delete account: ${data.error || 'Unknown server error'}`);
+    }
   },
 
   /** Get current session (null if not logged in) */

@@ -3,7 +3,7 @@
     "name": "Forever Fireflies",
     "slug": "forever-fireflies",
     "version": "1.0.0",
-    "scheme": "core-memories",
+    "scheme": "forever-fireflies",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.corememories.app",
+      "bundleIdentifier": "com.foreverfireflies.app",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Forever Fireflies uses your microphone to record voice memories.",
         "NSSpeechRecognitionUsageDescription": "Forever Fireflies uses speech recognition to transcribe your voice recordings.",
@@ -25,9 +25,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FAF8F5"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#E8724A"
       },
-      "package": "com.corememories.app",
+      "package": "com.foreverfireflies.app",
       "permissions": [
         "RECORD_AUDIO",
         "ACCESS_FINE_LOCATION",
@@ -75,10 +76,12 @@
         "@sentry/react-native/expo",
         {
           "organization": "foreverfireflies",
-          "project": "forever-fireflies"
+          "project": "forever-fireflies",
+          "enableAutoUpload": true
         }
       ],
-      "react-native-purchases"
+      "@sentry/react-native",
+      "expo-font"
     ],
     "platforms": [
       "ios",

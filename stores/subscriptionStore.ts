@@ -19,7 +19,7 @@ import { create } from 'zustand';
 import type { Database } from '@/lib/database.types';
 import { config } from '@/lib/config';
 import { daysAgo } from '@/lib/dateUtils';
-import { PREMIUM_ENTITLEMENT } from '@/lib/subscriptionHelpers';
+import { PREMIUM_ENTITLEMENT } from '@/lib/subscriptionConstants';
 import {
   checkPremiumEntitlement,
   getCustomerInfo,

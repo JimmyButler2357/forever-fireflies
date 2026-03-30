@@ -18,6 +18,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Database } from '@/lib/database.types';
+import { childColors } from '@/constants/theme';
 
 // The Supabase row type — what the database sends us.
 // Uses snake_case because that's the database convention.
@@ -111,7 +112,7 @@ export const useChildrenStore = create<ChildrenState>()(
             {
               ...child,
               id: `c_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-              colorIndex: child.colorIndex ?? state.children.length % 6,
+              colorIndex: child.colorIndex ?? state.children.length % childColors.length,
             },
           ],
         })),

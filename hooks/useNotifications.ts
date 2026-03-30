@@ -102,11 +102,7 @@ export function useNotifications() {
 
         // Register with Supabase so the Edge Function knows to send here
         const platform = Platform.OS as 'ios' | 'android';
-        await notificationsService.registerDevice(
-          session!.user.id,
-          token,
-          platform,
-        );
+        await notificationsService.registerDevice(token, platform);
         // Update last-active timestamp (helps the server know which
         // devices are still in use vs abandoned)
         await notificationsService.updateDeviceActivity(token);

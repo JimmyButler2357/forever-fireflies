@@ -40,7 +40,7 @@ import { entriesService } from '@/services/entries.service';
 import { useSearchFilter, collectLocations, getAvailableTags } from '@/hooks/useSearchFilter';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { getAge } from '@/lib/dateUtils';
-import { buildChildMap, entryToCard, draftToCard } from '@/lib/entryHelpers';
+import { buildChildMap, entryToCard, draftToCard, getFirstEntryBadges } from '@/lib/entryHelpers';
 import { useDraftStore } from '@/stores/draftStore';
 import { useDraftSync } from '@/hooks/useDraftSync';
 import DraftBanner from '@/components/DraftBanner';
@@ -54,6 +54,7 @@ import FilterChips from '@/components/FilterChips';
 import DateRangePicker from '@/components/DateRangePicker';
 import PostTrialPaywall from '@/components/PostTrialPaywall';
 import { useSubscription } from '@/hooks/useSubscription';
+import { capture } from '@/lib/posthog';
 
 // ─── Animation duration ──────────────────────────────────
 
@@ -129,6 +130,7 @@ export default function HomeScreen() {
     } else {
       // Expand search
       setIsSearchActive(true);
+      capture('search_opened');
       const duration = reduceMotion ? 0 : ANIM_DURATION;
       searchAreaOpacity.value = withTiming(1, { duration });
       // 200 is enough for search bar + filter chips + date picker when open
@@ -267,6 +269,12 @@ export default function HomeScreen() {
   // Build child lookup for fast access
   const childMap = useMemo(() => buildChildMap(children), [children]);
 
+  // Identify each child's earliest entry for "first memory" badges
+  const firstMemoryBadges = useMemo(
+    () => getFirstEntryBadges(activeEntries, childMap),
+    [activeEntries, childMap],
+  );
+
   const childColor = childColors[children[0]?.colorIndex ?? 0]?.hex ?? childColors[0].hex;
 
   // ─── Loading state ──────────────────────────────────────
@@ -326,7 +334,7 @@ export default function HomeScreen() {
           // Only show Firefly Jar heart when user has access (trial active or subscribed).
           // When expired, we hide it so lapsed users aren't tempted by a locked screen.
           ...(hasAccess
-            ? [{ icon: 'heart-outline' as keyof typeof Ionicons.glyphMap, onPress: () => router.push('/(main)/core-memories') }]
+            ? [{ icon: 'heart-outline' as keyof typeof Ionicons.glyphMap, onPress: () => router.push('/(main)/firefly-jar') }]
             : []),
           { icon: 'menu-outline' as const, onPress: () => setMenuVisible(true) },
         ]}
@@ -488,11 +496,12 @@ export default function HomeScreen() {
         }
         renderItem={({ item, index }) => (
           <EntryCard
-            entry={entryToCard(item, childMap)}
+            entry={entryToCard(item, childMap, 'short', firstMemoryBadges)}
             index={index}
             onPress={() => router.push({ pathname: '/(main)/entry-detail', params: { entryId: item.id } })}
             showTags={isSearchActive}
             highlightQuery={isSearchActive ? searchFilter.query.trim() : undefined}
+            glowing={isFirstEntry}
           />
         )}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}

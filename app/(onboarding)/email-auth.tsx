@@ -15,6 +15,7 @@ import { colors, typography, spacing, radii, hitSlop } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
 import TopBar from '@/components/TopBar';
 import PrimaryButton from '@/components/PrimaryButton';
+import { capture } from '@/lib/posthog';
 
 /**
  * Email auth screen — handles both sign-up and sign-in.
@@ -65,11 +66,13 @@ export default function EmailAuthScreen() {
       if (mode === 'signup') {
         await signUp(email.trim(), password);
         // If no session after signup, email confirmation is required.
+        // Don't fire account_created yet — they haven't confirmed.
         const { session } = useAuthStore.getState();
         if (!session) {
           setSuccess('Check your email for a confirmation link!');
           return;
         }
+        capture('account_created', { method: 'email' });
       } else {
         await signIn(email.trim(), password);
       }

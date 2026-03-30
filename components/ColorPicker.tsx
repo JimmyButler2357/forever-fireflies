@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   },
   touchTarget: {
     alignItems: 'center',
-    minWidth: minTouchTarget,
+    width: '18%',
     minHeight: minTouchTarget,
     gap: spacing(1),
   },

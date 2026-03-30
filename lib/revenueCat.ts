@@ -15,7 +15,7 @@
 import Purchases from 'react-native-purchases';
 import type { PurchasesPackage, CustomerInfo } from 'react-native-purchases';
 import { config } from '@/lib/config';
-import { PREMIUM_ENTITLEMENT } from '@/lib/subscriptionHelpers';
+import { PREMIUM_ENTITLEMENT } from '@/lib/subscriptionConstants';
 
 /** Configure RevenueCat with our API key.
  *  Call once on app launch (fire-and-forget — no need to await).

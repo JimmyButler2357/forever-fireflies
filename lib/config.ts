@@ -18,4 +18,23 @@ export const config = {
    *  It identifies your app to RevenueCat but can't be used to make purchases
    *  or access customer data on its own. */
   revenueCatApiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? 'PLACEHOLDER_REVENUECAT_KEY',
+
+  /** PostHog project API key for analytics. Like the Sentry DSN, this is
+   *  a public key — safe to include in the app binary. It tells PostHog
+   *  which project to send events to, but can't be used to read data back. */
+  posthogApiKey: process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? 'PLACEHOLDER_POSTHOG_KEY',
+  // ─── Public URLs & Contact ─────────────────────────────
+  // Centralized so every screen imports from one place.
+
+  /** Public support email shown to users in-app and on store listings. */
+  supportEmail: 'foreverfirefliesapp@gmail.com',
+
+  /** Main website URL. */
+  websiteUrl: 'https://foreverfireflies.app',
+
+  /** Privacy policy — hosted on the website, linked from Settings + store listings. */
+  privacyPolicyUrl: 'https://foreverfireflies.app/privacy',
+
+  /** Terms of service — hosted on the website, linked from Settings + store listings. */
+  termsOfServiceUrl: 'https://foreverfireflies.app/terms',
 } as const;

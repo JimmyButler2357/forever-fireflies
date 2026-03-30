@@ -413,8 +413,10 @@ export type Database = {
           notification_days: number[] | null
           notification_enabled: boolean
           notification_time: string | null
+          notification_time_utc: string | null
           onboarding_completed: boolean
           subscription_status: string
+          timezone: string
           trial_ends_at: string | null
           trial_started_at: string | null
           updated_at: string
@@ -426,8 +428,10 @@ export type Database = {
           notification_days?: number[] | null
           notification_enabled?: boolean
           notification_time?: string | null
+          notification_time_utc?: string | null
           onboarding_completed?: boolean
           subscription_status?: string
+          timezone?: string
           trial_ends_at?: string | null
           trial_started_at?: string | null
           updated_at?: string
@@ -439,8 +443,10 @@ export type Database = {
           notification_days?: number[] | null
           notification_enabled?: boolean
           notification_time?: string | null
+          notification_time_utc?: string | null
           onboarding_completed?: boolean
           subscription_status?: string
+          timezone?: string
           trial_ends_at?: string | null
           trial_started_at?: string | null
           updated_at?: string
@@ -628,6 +634,14 @@ export type Database = {
         Args: { tag_ids: string[]; target_entry_id: string }
         Returns: undefined
       }
+      register_device: {
+        Args: {
+          p_device_name?: string
+          p_platform: string
+          p_push_token: string
+        }
+        Returns: string
+      }
       set_entry_children: {
         Args: {
           child_ids: string[]
@@ -644,10 +658,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      start_trial: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      start_trial: { Args: never; Returns: undefined }
       toggle_entry_favorite: {
         Args: { target_entry_id: string }
         Returns: boolean

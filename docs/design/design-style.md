@@ -55,6 +55,10 @@ Auto-assigned in order as children are added. These persist across the entire ap
 | 4 | Plum | `#B88BB4` | `#B88BB418` |
 | 5 | Teal | `#6BB5A8` | `#6BB5A820` |
 | 6 | Rose | `#D48B8B` | `#D48B8B20` |
+| 7 | Sage | `#A3B88B` | `#A3B88B20` |
+| 8 | Coral | `#D4857A` | `#D4857A20` |
+| 9 | Lavender | `#9088C4` | `#9088C420` |
+| 10 | Marigold | `#C9A044` | `#C9A04420` |
 
 Use child color at full opacity for text, dots, and active borders. Use at ~12% opacity (`+ "20"` hex suffix) for pill backgrounds and tab fills. Use at ~25% opacity for active filter tab backgrounds.
 

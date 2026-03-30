@@ -11,6 +11,11 @@ expo-env.d.ts
 ios/
 android/
 
+# Build artifacts (download from EAS instead)
+*.aab
+*.apk
+*.ipa
+
 # Misc
 *.jks
 *.p8

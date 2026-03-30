@@ -96,7 +96,7 @@ export default function NotificationsScreen() {
           if (userId) {
             // Register with Supabase (fire-and-forget — don't block navigation)
             const platform = Platform.OS as 'ios' | 'android';
-            notificationsService.registerDevice(userId, token, platform).catch(
+            notificationsService.registerDevice(token, platform).catch(
               (err) => console.warn('Failed to register device:', err)
             );
             // Store locally for logout deactivation

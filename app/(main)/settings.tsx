@@ -18,6 +18,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { config } from '@/lib/config';
 import {
   colors,
   typography,
@@ -66,6 +67,7 @@ export default function SettingsScreen() {
   const addEntryLocal = useEntriesStore((s) => s.addEntryLocal);
   const removeEntryLocal = useEntriesStore((s) => s.removeEntryLocal);
   const signOut = useAuthStore((s) => s.signOut);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const user = useAuthStore((s) => s.user);
   const familyId = useAuthStore((s) => s.familyId);
   const clearChildren = useChildrenStore((s) => s.clearChildren);
@@ -87,10 +89,11 @@ export default function SettingsScreen() {
   const [editColorIndex, setEditColorIndex] = useState(0);
   const [editNickname, setEditNickname] = useState('');
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [newChildName, setNewChildName] = useState('');
   const [newChildBirthday, setNewChildBirthday] = useState('');
-  const [newChildColorIndex, setNewChildColorIndex] = useState(children.length % 6);
+  const [newChildColorIndex, setNewChildColorIndex] = useState(children.length % childColors.length);
   const [newChildNickname, setNewChildNickname] = useState('');
 
   // Change password modal state
@@ -165,7 +168,7 @@ export default function SettingsScreen() {
           const userId = useAuthStore.getState().session?.user?.id;
           if (userId) {
             const platform = Platform.OS as 'ios' | 'android';
-            notificationsService.registerDevice(userId, token, platform).catch(
+            notificationsService.registerDevice(token, platform).catch(
               (err) => console.warn('Failed to register device:', err)
             );
             AsyncStorage.setItem('ff_push_token', token).catch(() => {});
@@ -289,7 +292,7 @@ export default function SettingsScreen() {
       setNewChildName('');
       setNewChildBirthday('');
       setNewChildNickname('');
-      setNewChildColorIndex((children.length + 1) % 6);
+      setNewChildColorIndex((children.length + 1) % childColors.length);
       setShowAddChildModal(false);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Could not add child';
@@ -303,7 +306,7 @@ export default function SettingsScreen() {
     setNewChildName('');
     setNewChildBirthday('');
     setNewChildNickname('');
-    setNewChildColorIndex(children.length % 6);
+    setNewChildColorIndex(children.length % childColors.length);
     setShowAddChildModal(true);
   };
 
@@ -362,15 +365,20 @@ export default function SettingsScreen() {
 
   const handleDeleteAccount = async () => {
     setShowDeleteAccountDialog(false);
-    // For MVP: sign out (simulates account deletion).
-    // Real account deletion will be added in a future phase.
+    setIsDeletingAccount(true);
     try {
-      await signOut();
+      await deleteAccount();
       clearChildren();
       clearEntries();
       router.replace('/(onboarding)');
     } catch (error) {
-      console.warn('Delete account sign-out error:', error);
+      console.warn('Delete account error:', error);
+      Alert.alert(
+        'Deletion failed',
+        "We couldn't delete your account right now. Please try again. If this keeps happening, contact support at foreverfirefliesapp@gmail.com.",
+      );
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
@@ -423,18 +431,24 @@ export default function SettingsScreen() {
             ))}
 
             {/* Add child button */}
-            <Pressable
-              onPress={openAddChildModal}
-              style={({ pressed }) => [
-                styles.row,
-                pressed && { backgroundColor: colors.cardPressed },
-              ]}
-            >
-              <View style={styles.addRow}>
-                <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
-                <Text style={styles.addLabel}>Add Child</Text>
+            {children.length < 15 ? (
+              <Pressable
+                onPress={openAddChildModal}
+                style={({ pressed }) => [
+                  styles.row,
+                  pressed && { backgroundColor: colors.cardPressed },
+                ]}
+              >
+                <View style={styles.addRow}>
+                  <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
+                  <Text style={styles.addLabel}>Add Child</Text>
+                </View>
+              </Pressable>
+            ) : (
+              <View style={[styles.row, { justifyContent: 'center' }]}>
+                <Text style={styles.limitNote}>Maximum of 15 children reached</Text>
               </View>
-            </Pressable>
+            )}
           </View>
         </View>
 
@@ -651,6 +665,7 @@ export default function SettingsScreen() {
               <Text style={styles.rowSublabel}>1.0.0</Text>
             </View>
             <Pressable
+              onPress={() => Linking.openURL(config.privacyPolicyUrl)}
               style={({ pressed }) => [
                 styles.row,
                 styles.rowBorder,
@@ -665,6 +680,7 @@ export default function SettingsScreen() {
               />
             </Pressable>
             <Pressable
+              onPress={() => Linking.openURL(config.termsOfServiceUrl)}
               style={({ pressed }) => [
                 styles.row,
                 styles.rowBorder,
@@ -682,7 +698,7 @@ export default function SettingsScreen() {
               onPress={() => {
                 const subject = encodeURIComponent('Fireflies Feedback — v1.0.0');
                 const body = encodeURIComponent(`\n\n---\nApp: Fireflies v1.0.0\nPlatform: ${Platform.OS} ${Platform.Version}`);
-                Linking.openURL(`mailto:jimmybutler2357@gmail.com?subject=${subject}&body=${body}`);
+                Linking.openURL(`mailto:${config.supportEmail}?subject=${subject}&body=${body}`);
               }}
               style={({ pressed }) => [
                 styles.row,
@@ -1152,14 +1168,30 @@ export default function SettingsScreen() {
       <ConfirmationDialog
         visible={showDeleteAccountDialog}
         title="Delete your account?"
-        body="This will permanently delete all your memories, children, and settings. This cannot be undone."
-        confirmLabel="Delete"
+        body={
+          'This will permanently delete your account and all associated data, including:\n\n' +
+          '\u2022 All audio recordings\n' +
+          '\u2022 All text entries and memories\n' +
+          '\u2022 Children and family settings\n' +
+          '\u2022 Your profile and preferences\n\n' +
+          'This action cannot be undone.\n\n' +
+          'If you have an active subscription, you\u2019ll need to cancel it separately in your app store settings.'
+        }
+        confirmLabel="Delete My Account"
         onConfirm={handleDeleteAccount}
         onCancel={() => setShowDeleteAccountDialog(false)}
       />
 
       {/* Post-trial paywall — shown when user taps the expired subscription row */}
       <PostTrialPaywall visible={showPaywall} onClose={() => setShowPaywall(false)} />
+
+      {/* ─── Deleting Account Overlay ────────────── */}
+      {isDeletingAccount && (
+        <View style={styles.deletingOverlay}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={styles.deletingText}>Deleting your account...</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -1248,6 +1280,10 @@ const styles = StyleSheet.create({
     ...typography.formLabel,
     color: colors.accent,
     fontWeight: '600',
+  },
+  limitNote: {
+    ...typography.caption,
+    color: colors.textMuted,
   },
   // ─── Time Picker ──────────────────────
   timeValueRow: {
@@ -1492,5 +1528,18 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.accent,
     fontWeight: '600',
+  },
+  // ─── Deleting Account Overlay ────────────
+  deletingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(44, 36, 32, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing(4),
+  },
+  deletingText: {
+    ...typography.formLabel,
+    color: colors.card,
+    fontWeight: '500',
   },
 });

@@ -21,12 +21,18 @@ import { initRevenueCat } from '@/lib/revenueCat';
 import { colors } from '@/constants/theme';
 import * as Sentry from '@sentry/react-native';
 import { initSentry } from '@/lib/sentry';
+import { initPostHog } from '@/lib/posthog';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Initialize Sentry before any component renders so it catches
 // errors from the very first render. Like arming an alarm before
 // opening the door.
 initSentry();
+
+// Initialize PostHog analytics — same idea as Sentry but for
+// tracking user behavior (which screens they visit, which buttons
+// they tap) instead of errors. Also starts early so no events are missed.
+initPostHog();
 
 function RootLayout() {
   const router = useRouter();
@@ -100,7 +106,7 @@ function RootLayout() {
   //
   // When a user taps the "Reset Password" link in their email,
   // it opens a URL like:
-  //   core-memories://reset-password#access_token=xxx&refresh_token=yyy&type=recovery
+  //   forever-fireflies://reset-password#access_token=xxx&refresh_token=yyy&type=recovery
   //
   // We need to:
   // 1. Parse the tokens out of the URL fragment (the part after #)
@@ -113,7 +119,7 @@ function RootLayout() {
   useEffect(() => {
     const handleDeepLink = (url: string) => {
       // The tokens live in the URL fragment (after #), not query params (after ?)
-      // Example: core-memories://reset-password#access_token=abc&refresh_token=def&type=recovery
+      // Example: forever-fireflies://reset-password#access_token=abc&refresh_token=def&type=recovery
       const hashIndex = url.indexOf('#');
       if (hashIndex === -1) return;
 

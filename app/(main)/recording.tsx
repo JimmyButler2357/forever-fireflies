@@ -23,6 +23,7 @@ import {
 } from '@/constants/theme';
 import { useEntriesStore } from '@/stores/entriesStore';
 import { entriesService } from '@/services/entries.service';
+import { capture } from '@/lib/posthog';
 import { storageService } from '@/services/storage.service';
 import { audioCleanupService } from '@/services/audioCleanup.service';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
@@ -30,6 +31,7 @@ import { formatDuration } from '@/lib/dateUtils';
 import { useLocation } from '@/hooks/useLocation';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { concatWavFiles, getWavDurationSeconds } from '@/lib/audioConcat';
+import { LinearGradient } from 'expo-linear-gradient';
 import ErrorState from '@/components/ErrorState';
 import WarmGlow from '@/components/WarmGlow';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -420,6 +422,7 @@ export default function RecordingScreen() {
     setSeconds(0);
     speech.reset(); // Clear any previous error or transcript
     await speech.start();
+    capture('recording_started');
     // The hook fires a 'start' event -> speech.isRecording = true.
     // If permission is denied, speech.error gets set instead.
   }, [speech]);
@@ -501,19 +504,27 @@ export default function RecordingScreen() {
             </Text>
 
             {/* Live transcript — updates in real-time as you speak */}
-            <ScrollView
-              ref={transcriptScrollRef}
-              style={styles.transcriptScroll}
-              contentContainerStyle={styles.transcriptContent}
-              showsVerticalScrollIndicator={false}
-              onContentSizeChange={() => {
-                transcriptScrollRef.current?.scrollToEnd({ animated: true });
-              }}
-            >
-              <Text style={speech.transcript ? styles.liveTranscript : styles.transcriptPlaceholder}>
-                {speech.transcript || 'Start speaking...'}
-              </Text>
-            </ScrollView>
+            <View style={styles.transcriptContainer}>
+              <ScrollView
+                ref={transcriptScrollRef}
+                style={styles.transcriptScroll}
+                contentContainerStyle={styles.transcriptContent}
+                showsVerticalScrollIndicator={false}
+                onContentSizeChange={() => {
+                  transcriptScrollRef.current?.scrollToEnd({ animated: true });
+                }}
+              >
+                <Text style={speech.transcript ? styles.liveTranscript : styles.transcriptPlaceholder}>
+                  {speech.transcript || 'Start speaking...'}
+                </Text>
+              </ScrollView>
+              {/* Fade overlay — older text fades out at the top */}
+              <LinearGradient
+                colors={[colors.bg, 'transparent']}
+                style={styles.transcriptFade}
+                pointerEvents="none"
+              />
+            </View>
           </>
         )}
 
@@ -703,10 +714,20 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   // ─── Live Transcript ──────────────────
-  transcriptScroll: {
+  transcriptContainer: {
     maxHeight: 120,
     width: '100%',
+  },
+  transcriptScroll: {
+    width: '100%',
     paddingHorizontal: spacing(5),
+  },
+  transcriptFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 32,
   },
   transcriptContent: {
     paddingVertical: spacing(2),

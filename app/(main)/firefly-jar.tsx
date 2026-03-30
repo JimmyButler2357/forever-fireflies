@@ -19,7 +19,7 @@ import {
 } from '@/constants/theme';
 import { useChildrenStore } from '@/stores/childrenStore';
 import { useEntriesStore } from '@/stores/entriesStore';
-import { buildChildMap, entryToCard } from '@/lib/entryHelpers';
+import { buildChildMap, entryToCard, getFirstEntryBadges } from '@/lib/entryHelpers';
 import TopBar from '@/components/TopBar';
 import ChildTab from '@/components/ChildTab';
 import EntryCard from '@/components/EntryCard';
@@ -28,10 +28,11 @@ import FloatingFireflies from '@/components/FloatingFireflies';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useSubscription } from '@/hooks/useSubscription';
 import { storageService } from '@/services/storage.service';
+import { capture } from '@/lib/posthog';
 
-// ─── Core Memories Screen ─────────────────────────────────
+// ─── Firefly Jar Screen ──────────────────────────────────
 
-export default function CoreMemoriesScreen() {
+export default function FireflyJarScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const children = useChildrenStore((s) => s.children);
@@ -44,6 +45,8 @@ export default function CoreMemoriesScreen() {
   const { hasAccess } = useSubscription();
 
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  useEffect(() => { capture('firefly_jar_viewed'); }, []);
 
   // ─── Single shared audio player ─────────────────────────
   // Like a boombox shared by the whole class — only one card
@@ -80,17 +83,29 @@ export default function CoreMemoriesScreen() {
   // Build child lookup
   const childMap = useMemo(() => buildChildMap(children), [children]);
 
+  // All non-deleted entries — used to determine "first" globally, not just among favorites
+  const allActiveEntries = useMemo(
+    () => entries.filter((e) => !e.isDeleted),
+    [entries],
+  );
+
+  // Identify each child's earliest entry for "first memory" badges
+  const firstMemoryBadges = useMemo(
+    () => getFirstEntryBadges(allActiveEntries, childMap),
+    [allActiveEntries, childMap],
+  );
+
   // All favorited, non-deleted entries (reverse chronological — newest first)
-  const coreMemories = useMemo(
+  const favorites = useMemo(
     () => entries.filter((e) => e.isFavorited && !e.isDeleted),
     [entries],
   );
 
   // Filtered by child tab
   const filteredMemories = useMemo(() => {
-    if (!activeFilter) return coreMemories;
-    return coreMemories.filter((e) => e.childIds.includes(activeFilter));
-  }, [coreMemories, activeFilter]);
+    if (!activeFilter) return favorites;
+    return favorites.filter((e) => e.childIds.includes(activeFilter));
+  }, [favorites, activeFilter]);
 
   const isMultiChild = children.length >= 2;
 
@@ -124,8 +139,8 @@ export default function CoreMemoriesScreen() {
       <View style={styles.countRow}>
         <Ionicons name="heart" size={14} color={colors.heartFilled} />
         <Text style={styles.countText}>
-          {coreMemories.length}{' '}
-          {coreMemories.length === 1 ? 'memory' : 'memories'} saved
+          {favorites.length}{' '}
+          {favorites.length === 1 ? 'memory' : 'memories'} saved
         </Text>
       </View>
 
@@ -164,7 +179,7 @@ export default function CoreMemoriesScreen() {
         showsVerticalScrollIndicator={false}
         renderItem={({ item, index }) => (
           <EntryCard
-            entry={entryToCard(item, childMap)}
+            entry={entryToCard(item, childMap, 'short', firstMemoryBadges)}
             variant="coreMemory"
             index={index}
             onPress={() => router.push({ pathname: '/(main)/entry-detail', params: { entryId: item.id } })}

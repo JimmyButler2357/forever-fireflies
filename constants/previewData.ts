@@ -78,7 +78,7 @@ export const PREVIEW_FEED_ENTRIES: PreviewEntry[] = [
 ];
 
 // Favorited entries (for "Your favorite moments" section)
-export const PREVIEW_CORE_MEMORIES: PreviewEntry[] = [
+export const PREVIEW_FAVORITES: PreviewEntry[] = [
   {
     childNames: ['Nora'],
     childColors: [PREVIEW_CHILDREN.nora.color],

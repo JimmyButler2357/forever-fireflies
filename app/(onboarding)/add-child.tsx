@@ -32,6 +32,7 @@ import { formatDate } from '@/lib/dateUtils';
 import PrimaryButton from '@/components/PrimaryButton';
 import BirthdayPicker from '@/components/BirthdayPicker';
 import ColorPicker from '@/components/ColorPicker';
+import { capture } from '@/lib/posthog';
 
 // ─── Add Child Screen ─────────────────────────────────────
 //
@@ -64,12 +65,13 @@ export default function AddChildScreen() {
   const [name, setName] = useState('');
   const [nickname, setNickname] = useState('');
   const [birthday, setBirthday] = useState('');
-  const [colorIndex, setColorIndex] = useState(children.length % 6);
+  const [colorIndex, setColorIndex] = useState(children.length % childColors.length);
   const [isLoading, setIsLoading] = useState(false);
   const [showForm, setShowForm] = useState(true);
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
 
   const hasChildren = children.length > 0;
+  const isAtLimit = children.length >= 15;
   const nameEntered = name.trim().length > 0;
   const birthdaySet = !!birthday;
   const formReady = nameEntered && birthdaySet;
@@ -121,7 +123,7 @@ export default function AddChildScreen() {
         updateChildLocal(editingChildId, {
           name: updates.name,
           birthday: updates.birthday,
-          nickname: updates.nickname,
+          nickname: updates.nickname ?? undefined,
           colorIndex: updates.color_index,
         });
       } else {
@@ -140,6 +142,7 @@ export default function AddChildScreen() {
         // Convert the snake_case database row to our camelCase UI shape
         // and add it to the local store for instant display.
         addChildLocal(mapSupabaseChild(row));
+        capture('child_added', { childIndex: children.length });
       }
 
       // Reset form fields and collapse it. LayoutAnimation makes
@@ -148,7 +151,7 @@ export default function AddChildScreen() {
       setName('');
       setNickname('');
       setBirthday('');
-      setColorIndex((children.length + 1) % 6);
+      setColorIndex((children.length + 1) % childColors.length);
       setEditingChildId(null);
       setShowForm(false);
       return true;
@@ -333,10 +336,15 @@ export default function AddChildScreen() {
           />
 
           {/* When form is hidden and not editing: offer to add another child */}
-          {hasChildren && !showForm && !editingChildId && (
+          {hasChildren && !showForm && !editingChildId && !isAtLimit && (
             <Pressable onPress={handleShowForm}>
               <Text style={styles.addAnotherLink}>+ Add another child</Text>
             </Pressable>
+          )}
+
+          {/* At the 15-child limit — show a gentle note */}
+          {isAtLimit && !showForm && (
+            <Text style={styles.limitNote}>Maximum of 15 children reached</Text>
           )}
 
           {/* When form is open and children exist: offer to cancel */}
@@ -471,6 +479,10 @@ const styles = StyleSheet.create({
   },
   cancelLink: {
     ...typography.formLabel,
+    color: colors.textMuted,
+  },
+  limitNote: {
+    ...typography.caption,
     color: colors.textMuted,
   },
 });

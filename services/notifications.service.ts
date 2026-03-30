@@ -5,23 +5,18 @@
 import { supabase } from '@/lib/supabase';
 
 export const notificationsService = {
-  /** Register or update a device's push token */
-  async registerDevice(profileId: string, pushToken: string, platform: 'ios' | 'android', deviceName?: string) {
-    const { data, error } = await supabase
-      .from('user_devices')
-      .upsert(
-        {
-          profile_id: profileId,
-          push_token: pushToken,
-          platform,
-          device_name: deviceName,
-          is_active: true,
-          last_active_at: new Date().toISOString(),
-        },
-        { onConflict: 'push_token' }
-      )
-      .select()
-      .single();
+  /** Register or update a device's push token.
+   *  Uses an RPC (database function) instead of a direct upsert because
+   *  push tokens belong to physical devices, not users. If user A logs out
+   *  and user B logs in on the same phone, the token is the same — but RLS
+   *  would block user B from updating user A's row. The RPC runs as the
+   *  DB owner so it can safely reassign the token to the current user. */
+  async registerDevice(pushToken: string, platform: 'ios' | 'android', deviceName?: string) {
+    const { data, error } = await supabase.rpc('register_device', {
+      p_push_token: pushToken,
+      p_platform: platform,
+      p_device_name: deviceName,
+    });
 
     if (error) throw new Error(`Failed to register device: ${error.message}`, { cause: error });
     return data;

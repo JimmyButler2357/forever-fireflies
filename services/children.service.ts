@@ -29,9 +29,9 @@ export const childrenService = {
     const { data, error } = await supabase.rpc('create_child', {
       p_name: child.name,
       p_birthday: child.birthday,
-      p_nickname: child.nickname ?? null,
-      p_color_index: child.color_index,
-      p_display_order: child.display_order,
+      p_nickname: child.nickname ?? '',
+      p_color_index: child.color_index ?? 0,
+      p_display_order: child.display_order ?? 0,
     });
 
     if (error) throw new Error(`Failed to create child: ${error.message}`, { cause: error });

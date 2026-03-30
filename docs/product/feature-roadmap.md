@@ -12,11 +12,8 @@ Everything needed to ship a working app to the App Store. The core journaling ex
 
 ### Before You Start
 
-- [ ] Enroll in **Apple Developer Program** ($99/yr) — approval takes 24-48 hours
-- [ ] Install **Xcode** (required even with Expo)
-- [ ] Install **EAS CLI** (`npm install -g eas-cli`)
-- [ ] Have a **physical iPhone** available — Simulator can't do voice recording, social auth, or notifications
-- [ ] Expo Go won't work for this app — speech recognition requires a custom dev client (`npx expo prebuild`). This is standard.
+- Expo Go won't work for this app — speech recognition requires a custom dev client (`npx expo prebuild`). This is standard.
+- Developer accounts, hardware, and tooling are tracked in **Phase 10A** below.
 
 ### Dev Testing
 
@@ -133,7 +130,7 @@ Browse, search, and curate entries with real data.
 - [x] Heart toggle syncs to Supabase
 - [x] Empty states for no results and no favorites
 
-### Phase 7: Notifications & Prompts
+### Phase 7: Notifications & Prompts ✅
 
 Daily habit loop drives nightly recording.
 
@@ -141,72 +138,163 @@ Daily habit loop drives nightly recording.
 - [x] Personalized prompt with child name + age (e.g., "What made Emma smile today?")
 - [x] "Record" action → Recording screen; "Remind Me Later" → 30-minute snooze
 - [x] Tapping notification body → Home screen
-- [ ] Prompt cards on Recording screen shuffled by child age range
+- [x] Browsable Prompts screen with category filters (All, Everyday, Baby, Toddler, Preschool+), shuffle, and age-based filtering — accessible via dropdown menu
 - [x] Notification time configurable in Settings
 - [x] Notification backoff logic — if `notification_log` shows 5+ ignored days, reduce frequency (edge function)
-- [ ] "No memories yet" nudge — if a child has zero entries by day 2-3 after being added, send a gentle notification (e.g., "Emma doesn't have any memories yet — capture your first one tonight!")
+- [x] ~~"No memories yet" nudge~~ — moved to Phase 10 welcome email series (better as a soft email follow-up than a second push notification)
 
-### Phase 8: Subscription & Paywall
+### Phase 8: Subscription & Paywall ✅
 
 Trial → paid conversion via RevenueCat.
 
-- [ ] RevenueCat integration
-- [ ] Paywall after first recording in onboarding (annual pre-selected, 7-day trial, dismiss button)
-- [ ] Post-trial paywall — entries visible but locked *(see Product Spec §5)*
-- [ ] Subscription status shown in Settings
-- [ ] Apply for Apple Small Business Program (15% commission) before first sale
+- [x] RevenueCat SDK integration with dev/preview bypass mode (`lib/revenueCat.ts`)
+- [x] 7-day free trial tracked via `trial_started_at` in profiles table
+- [x] Idempotent `start_trial` RPC — fires on first entry save
+- [x] Guard trigger protects `trial_started_at` from client tampering
+- [x] Subscription store with 3-gate access check: dev bypass → RevenueCat → trial (`stores/subscriptionStore.ts`)
+- [x] Post-trial read-only state — browse entries but no recording, editing, or audio playback
+- [x] Subscribe banner replaces mic button when trial lapses; Firefly Jar icon hidden
+- [x] `PostTrialPaywall` modal with plan selection (annual/monthly)
+- [x] Onboarding paywall wired to RevenueCat restore flow
+- [x] Subscription status shown in Settings (trial countdown / active / expired)
+- [x] Defense-in-depth redirects on Recording and Firefly Jar screens
+- [ ] ~~Connect RevenueCat to App Store / Google Play~~ — moved to Phase 10A (requires accounts first)
+- [ ] ~~Apply for Apple Small Business Program~~ — moved to Phase 10B (before first public sale)
 
 ### Phase 9: Analytics & Delight
 
 Measure what matters. Add warmth.
 
-- [ ] Sentry error tracking — crash reports, error context, performance monitoring (free tier: 5K errors/mo)
-- [ ] PostHog event tracking across all features
-- [ ] Key funnel: install → account → first child → first entry → day 7 → converted
-- [ ] First Entry Celebration — Home banner + glowing card *(see Product Spec §4.2)*
-- [ ] Memory Saved animation in onboarding (heart scale-in)
-- [ ] First Memory Marker badge per child
-- [ ] Age stamps on entries (auto-calculated from child birthday)
-- [ ] Track: 60s cap hit rate, voice vs. text ratio, Firefly Jar usage, notification tap-through, share card generation rate, Memory of the Day tap-through + share rate, Memory Calendar views + day-tap rate (V2)
+- [x] Sentry error tracking — crash reports, user context, navigation breadcrumbs (`lib/sentry.ts`)
+- [x] PostHog event tracking — 8 key events across onboarding, recording, browsing, and subscription (`lib/posthog.ts`)
+- [x] Key funnels configured in PostHog dashboard: Onboarding → Subscription + Trial Engagement (avg memories in first 7 days)
+- [x] Idle fireflies animation (`components/IdleFireflies.tsx`)
+- [x] Jar glow header (`components/JarGlowHeader.tsx`)
+- [x] Milestone celebration component (`components/MilestoneCelebration.tsx`)
+- [x] Favorite animation — amber burst on heart tap (`components/FavoriteAnimation.tsx`). Burst-only (rising firefly removed — no jar visible on Entry Detail where favoriting happens)
+- [x] First Entry Celebration — Home banner + glowing card border *(see Product Spec §4.2)*
+- [x] Memory Saved animation in onboarding — heart scale-in with gentle overshoot (`memory-saved.tsx`)
+- [x] First Memory Marker badge per child
+- [x] Age stamps on Entry Detail (auto-calculated from child birthday) — intentionally not on EntryCards to keep the timeline clean
+- [ ] Additional tracking (add as features ship): 60s cap hit rate, notification tap-through, share card generation rate, Memory of the Day tap-through + share rate, Memory Calendar views + day-tap rate (V2) — ongoing, not blocking launch
 
-### Phase 10: Pre-Launch
+### Phase 10A: Before Beta
 
-App Store ready.
+Everything needed before real parents touch the app. Their memories must be safe and the app must work end-to-end.
 
-- [ ] **Rebrand cleanup — remove all "Core Memories" references**
-  - [ ] **Critical (affects functionality):**
-    - [x] Update deep link scheme from `core-memories://` to `forever-fireflies://` in `app.json`
-    - [x] Update iOS bundle ID from `com.corememories.app` → `com.foreverfireflies.app` in `app.json`
-    - [x] Update Android package from `com.corememories.app` → `com.foreverfireflies.app` in `app.json`
-    - [ ] Update OAuth redirects in `services/auth.service.ts` (Apple, Google, password reset)
-    - [ ] Update Supabase redirect allowlist in `supabase/config.toml`
-    - [ ] Push updated Supabase config to remote project
-  - [ ] **Code cleanup:**
-    - [ ] Rename `app/(main)/core-memories.tsx` → `firefly-jar.tsx`
-    - [ ] Update Stack.Screen registration in `app/(main)/_layout.tsx`
-    - [ ] Update navigation route in `app/(main)/home.tsx`
-    - [ ] Update NPM package name in `package.json`
-    - [ ] Update Supabase local project ID in `supabase/config.toml`
-    - [ ] Update code comments referencing old scheme (`_layout.tsx`, `entryHelpers.ts`)
-  - [ ] **Documentation:**
-    - [ ] Update doc titles in `docs/business/scaling.md`, `docs/product/functional-requirements.md`
-    - [ ] Update example project names in `scaling.md`, `product-spec.md`
-    - [ ] Update `docs/product/implementation-plan-phases-4-5.md` references
-    - [ ] Update PDF output filename in `docs/business/financial-summary.py`
-    - [ ] Update `architecture-explorer.html` label
-  - [ ] **External (manual):**
-    - [ ] Rename GitHub repository
-    - [ ] Update Supabase project display name on dashboard
+#### Rebrand Cleanup — remove all "Core Memories" references
+
+Do this first so all new infrastructure (prod Supabase, RevenueCat, store listings) is set up with the correct name from the start.
+
+- [x] **Critical (affects functionality):**
+  - [x] Update deep link scheme from `core-memories://` to `forever-fireflies://` in `app.json`
+  - [x] Update iOS bundle ID from `com.corememories.app` → `com.foreverfireflies.app` in `app.json`
+  - [x] Update Android package from `com.corememories.app` → `com.foreverfireflies.app` in `app.json`
+  - [x] Update OAuth redirects in `services/auth.service.ts` (Apple, Google, password reset)
+  - [x] Update Supabase redirect allowlist in `supabase/config.toml`
+  - [x] Push updated Supabase config to remote project
+- [x] **Code cleanup:**
+  - [x] Rename `app/(main)/core-memories.tsx` → `firefly-jar.tsx`
+  - [x] Update Stack.Screen registration in `app/(main)/_layout.tsx`
+  - [x] Update navigation route in `app/(main)/home.tsx`
+  - [x] Update NPM package name in `package.json`
+  - [x] Update Supabase local project ID in `supabase/config.toml`
+  - [x] Update code comments referencing old scheme (`_layout.tsx`, `entryHelpers.ts`)
+- [x] **External (manual):**
+  - [x] Rename GitHub repository → `forever-fireflies`
+  - [x] Update Supabase project display name → `Forever Fireflies`
+
+#### Developer Accounts & Hardware
+
+- [ ] Enroll in **Apple Developer Program** ($99/yr) — approval takes 24-48 hours
+- [ ] Create **Google Play Console** account ($25 one-time)
+- [ ] Install **Xcode** on Mac (required for iOS builds, even with Expo)
+- [ ] Get a **physical iPhone** for testing — Simulator can't do voice recording, social auth, or notifications
+- [ ] Install **EAS CLI** (`npm install -g eas-cli`) on Mac
+
+#### Supabase Dev/Prod Split
+
+Right now there's one Supabase project for everything. Before beta testers record real memories, split into dev and prod so test data and real data never mix.
+
+- [ ] Create **Supabase prod project** (new project, free tier)
+- [ ] Apply all migrations to prod (`supabase db push --linked`)
+- [ ] Seed prod with system tags and prompts (not test entries)
+- [ ] Deploy edge functions to prod (`process-entry`, `send-notifications`, `purge-deleted`)
+- [ ] Set edge function secrets on prod (`ANTHROPIC_API_KEY`)
+- [ ] Insert Vault secrets on prod (for pg_cron → edge function calls)
+- [ ] Set up **environment files**: `.env.local` → dev, `.env.production` → prod
+- [ ] Wire **EAS build profiles** to correct env: `development` → dev keys, `preview`/`production` → prod keys
+- [ ] Smoke-test a full flow on prod: sign up → add child → record → save → browse → search → favorite
+
+#### RevenueCat Setup
+
+- [ ] Create **RevenueCat account** at revenuecat.com
+- [ ] Create a project for Forever Fireflies
+- [ ] **Connect to App Store Connect** (requires Apple Developer enrollment)
+- [ ] **Connect to Google Play Console**
+- [ ] Create **products** in App Store Connect and Google Play Console (monthly + annual plans)
+- [ ] Map products to **Offerings** in RevenueCat
+- [ ] Add RevenueCat **API keys** (Apple + Google) to prod environment config
+- [ ] Remove dev/preview bypass in `lib/revenueCat.ts` for production builds (keep for dev)
+- [ ] Test purchase flow end-to-end with **sandbox accounts** (Apple) and **test cards** (Google)
+
+#### Beta Distribution
+
+- [ ] Build **iOS beta** via EAS (`preview` profile) → upload to **TestFlight**
+- [ ] Build **Android beta** via EAS (`preview` profile, AAB) → upload to **Google Play Internal Testing** track
+  - Update `eas.json` preview profile: change `buildType` from `"apk"` to `"app-bundle"`
+  - Create app listing in Google Play Console (basics only — name + placeholder description)
+  - Add testers by email → they get a Play Store install link (auto-updates, no sideloading)
+- [ ] Recruit **15-25 real parents** as beta testers (mix of iOS + Android)
+- [ ] Collect feedback → fix → rebuild → repeat
+
+### Phase 10B: Before Public Launch
+
+Polish, legal, and marketing — everything needed between "beta works" and "App Store submission."
+
+#### Legal & Compliance
+
+- [ ] Privacy policy (required for App Store and Play Store)
+- [ ] Terms of service
+- [ ] **COPPA compliance review** *(see Product Spec §8)* — app records children's info; Lifestyle category helps but still needs careful handling
+- [ ] Apply for **Apple Small Business Program** (15% commission) before first sale
+
+#### App Store Assets & Listing
+
+- [ ] App icon (1024×1024 for store + all device sizes)
+- [ ] Splash screen design
+- [ ] App Store screenshots (6.7" and 6.1" iPhone sizes minimum)
+- [ ] Google Play Store screenshots
+- [ ] App Store listing copy — description, keywords, subtitle (Lifestyle category, NOT Kids)
+
+#### Accessibility & Performance
+
 - [ ] Accessibility audit (labels, touch targets ≥44pt, contrast ≥4.5:1, Dynamic Type)
 - [ ] Performance targets (cold start <2s, transcription <5s, first entry <90s from install)
-- [ ] App icon, splash screen, App Store screenshots
-- [ ] Privacy policy + terms of service
-- [ ] COPPA compliance review *(see Product Spec §8)*
-- [ ] App Store listing (Lifestyle category — NOT Kids)
-- [ ] Data export endpoint — edge function or RPC to export all user entries + audio as downloadable archive
-- [ ] Welcome email series configured and tested (see marketing-plan.md — Email Strategy)
-- [ ] Email marketing tool integrated with auth flow (trigger welcome sequence on account creation)
-- [ ] TestFlight beta with 15-25 real parents → feedback → fixes → submission
+
+#### Data Export
+
+- [ ] Edge function or RPC to export all user entries + audio as downloadable archive (privacy compliance)
+
+#### Email Marketing
+
+- [ ] Pick email tool (e.g., Resend, Loops, Mailchimp)
+- [ ] Integrate with auth flow — trigger welcome sequence on account creation
+- [ ] Welcome email series (includes "no memories yet" nudge for users who didn't record during onboarding)
+
+#### Documentation Cleanup
+
+- [ ] Update doc titles in `docs/business/scaling.md`, `docs/product/functional-requirements.md`
+- [ ] Update example project names in `scaling.md`, `product-spec.md`
+- [ ] Update `docs/product/implementation-plan-phases-4-5.md` references
+- [ ] Update PDF output filename in `docs/business/financial-summary.py`
+- [ ] Update `architecture-explorer.html` label
+
+#### Submit
+
+- [ ] Final round of fixes from beta feedback
+- [ ] Submit to **App Store** (Apple review ~24-48 hours)
+- [ ] Submit to **Google Play Store**
 
 ### Milestones
 
@@ -218,10 +306,11 @@ App Store ready.
 | M4 | Can record | Voice recording, breathing circle, 60s auto-stop, transcript | 5 ✅ |
 | M5 | Core loop | Record → auto-detect child → save → browse → search → playback | 5–6 ✅ |
 | M6 | Favorites | Firefly Jar with elevated cards, inline audio play | 6 ✅ |
-| M7 | Habit loop | Personalized notifications drive daily recording | 7 |
-| M8 | Money works | Trial → paywall → subscribe via RevenueCat | 8 |
-| M9 | Beta | TestFlight in real parents' hands | 10 |
-| M10 | Ship | App Store submission | 10 |
+| M7 | Habit loop | Personalized notifications drive daily recording | 7 ✅ |
+| M8 | Money works | Trial → paywall → subscribe via RevenueCat | 8 ✅ |
+| M9 | Beta ready | Dev/prod split, RevenueCat live, rebrand done | 10A |
+| M10 | Beta | TestFlight + APK in real parents' hands | 10A |
+| M11 | Ship | App Store + Google Play submission | 10B |
 
 ---
 
@@ -322,7 +411,7 @@ These fields exist in the database schema now even though their full features sh
 
 | Field | On Table | Used By | Ships In |
 |-------|----------|---------|----------|
-| `title` | entries | AI-generated titles | V1.5 |
+| `title` | entries | AI-generated titles | ~~V1.5~~ V1.0 ✅ |
 | `recorded_by` | entries | Parent merge / linked accounts | V2 |
 | `location_text` | entries | Location capture + search | V1.0 (capture), V2 (search) |
 | `media_type` | entry_media | Video clips (column accepts `'video'` from day one) | V1.5 (photos), V2 (video) |

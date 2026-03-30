@@ -34,8 +34,8 @@ import { useReduceMotion } from '@/hooks/useReduceMotion';
 interface Particle {
   size: number;
   opacity: number;
-  startX: string;    // percentage across container
-  startY: string;    // percentage down container
+  startX: `${number}%`;    // percentage across container
+  startY: `${number}%`;    // percentage down container
   driftX: number;    // px to move on X
   driftY: number;    // px to move on Y
   duration: number;  // ms for one full drift cycle
