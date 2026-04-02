@@ -2,7 +2,7 @@
   "expo": {
     "name": "Forever Fireflies",
     "slug": "forever-fireflies",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "scheme": "forever-fireflies",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -28,6 +28,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#E8724A"
       },
+      "versionCode": 2,
       "package": "com.foreverfireflies.app",
       "permissions": [
         "RECORD_AUDIO",

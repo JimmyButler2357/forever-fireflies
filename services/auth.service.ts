@@ -62,7 +62,7 @@ export const authService = {
    *  email exists (so attackers can't check if someone has an account). */
   async resetPasswordForEmail(email: string) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'forever-fireflies://reset-password',
+      redirectTo: 'https://foreverfireflies.app/auth/callback',
     });
     if (error) throw new Error(`Failed to send reset email: ${error.message}`, { cause: error });
   },

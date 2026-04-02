@@ -57,3 +57,6 @@ gallery/
 
 # Claude Code plans (session-specific)
 .claude/plans/
+
+# Competitor reference images (research only)
+references/
