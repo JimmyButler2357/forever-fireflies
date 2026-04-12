@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entry Detail — Transcript Container Variations</title>
+<style>
+  :root {
+    --ui-bg: #1a1a1a;
+    --ui-surface: #242424;
+    --ui-border: #333;
+    --ui-text: #e0e0e0;
+    --ui-text-dim: #888;
+    --ui-accent: #E8724A;
+
+    --app-bg: #FAF8F5;
+    --app-card: #FEFCF9;
+    --app-text: #2C2420;
+    --app-textSoft: #8C7E74;
+    --app-textMuted: #B5AAA0;
+    --app-accent: #E8724A;
+    --app-border: #EDE8E3;
+    --app-tag: #F3EDE8;
+    --app-childBlue: #7BAFD4;
+    --app-childAmber: #D4A07B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .layout { display: flex; height: 100vh; }
+
+  /* ─── Controls ─── */
+  .controls {
+    width: 380px;
+    min-width: 380px;
+    background: var(--ui-surface);
+    border-right: 1px solid var(--ui-border);
+    overflow-y: auto;
+    padding: 16px;
+    flex-shrink: 0;
+    transition: margin-left 0.25s ease;
+  }
+  .controls.collapsed { margin-left: -380px; }
+  .controls h1 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .controls .subtitle { font-size: 11px; color: var(--ui-text-dim); margin-bottom: 16px; }
+
+  .control-group {
+    margin-bottom: 12px;
+    border: 1px solid var(--ui-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .control-group-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    cursor: pointer; user-select: none;
+    font-size: 12px; font-weight: 600;
+  }
+  .control-group-header:hover { background: rgba(255,255,255,0.06); }
+  .control-group-header .arrow {
+    font-size: 10px; color: var(--ui-text-dim); transition: transform 0.2s;
+  }
+  .control-group-header.open .arrow { transform: rotate(90deg); }
+  .control-group-body { display: none; padding: 10px 12px; }
+  .control-group-body.open { display: block; }
+
+  .option {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 6px 0; cursor: pointer; font-size: 11px; line-height: 1.5;
+  }
+  .option input[type="radio"] { margin-top: 3px; accent-color: var(--ui-accent); }
+  .option label { cursor: pointer; }
+  .option label strong { color: var(--ui-accent); font-weight: 600; }
+  .option label .desc { color: var(--ui-text-dim); }
+
+  .slider-row {
+    display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 11px;
+  }
+  .slider-row label { min-width: 90px; color: var(--ui-text-dim); }
+  .slider-row input[type="range"] { flex: 1; accent-color: var(--ui-accent); }
+  .slider-row .val {
+    min-width: 36px; text-align: right; color: var(--ui-accent);
+    font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+
+  .section-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--ui-text-dim); margin: 14px 0 8px; font-weight: 700;
+  }
+
+  /* ─── Preview ─── */
+  .preview-area {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; overflow-y: auto; padding: 24px;
+  }
+
+  .toggle-controls-btn {
+    position: fixed; top: 12px; left: 12px; z-index: 100;
+    background: var(--ui-surface); border: 1px solid var(--ui-border);
+    color: var(--ui-text); font-size: 11px; padding: 6px 12px;
+    border-radius: 6px; cursor: pointer; font-family: inherit;
+  }
+  .toggle-controls-btn:hover { background: rgba(255,255,255,0.08); }
+
+  .phone-frame {
+    width: 375px; min-height: 740px;
+    background: var(--app-bg);
+    border-radius: 40px; border: 8px solid #1a1a1a;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  .phone-content { height: 100%; overflow-y: auto; }
+
+  /* ─── App Elements (locked-in baseline) ─── */
+  .app-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 52px 20px 12px;
+  }
+  .app-topbar-right { display: flex; align-items: center; gap: 12px; }
+  .app-icon-btn {
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .back-chevron { font-size: 22px; color: var(--app-text); font-weight: 300; }
+  .heart-icon { font-size: 22px; color: var(--app-accent); }
+
+  .app-scroll { padding: 0 20px 40px; }
+
+  .app-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 22px; font-weight: 800;
+    color: var(--app-text); line-height: 1.3; margin-bottom: 8px;
+  }
+  .gradient-divider {
+    height: 2px; border-radius: 2px;
+    background: linear-gradient(to right, var(--app-childBlue), var(--app-childAmber));
+    margin-top: 4px; margin-bottom: 12px;
+  }
+  .child-line {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 4px;
+  }
+  .mini-pill {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 12px; gap: 4px;
+  }
+  .mini-pill-dot { width: 6px; height: 6px; border-radius: 3px; }
+  .mini-pill-name { font-size: 12px; font-weight: 600; }
+  .mini-pill-age { font-size: 11px; font-weight: 400; }
+  .mini-pill-remove { font-size: 11px; opacity: 0.6; font-weight: 700; margin-left: 2px; }
+  .add-child-btn {
+    width: 24px; height: 24px; border-radius: 12px;
+    border: 1px solid var(--app-textMuted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--app-textMuted); background: none; line-height: 1;
+  }
+  .meta-line {
+    display: flex; flex-wrap: wrap; align-items: center;
+    margin-bottom: 4px; min-height: 44px;
+  }
+  .meta-text { font-size: 12px; color: var(--app-textMuted); line-height: 16px; }
+  .meta-location-add { font-size: 12px; color: var(--app-textMuted); line-height: 16px; font-style: italic; }
+
+  /* ─── Transcript (the star of this playground) ─── */
+  .transcript-wrap {
+    margin-top: 12px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+  }
+  .transcript-text {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 15px; font-weight: 400;
+    line-height: 1.65; color: var(--app-text);
+    min-height: 140px;
+  }
+
+  .saved-indicator {
+    font-size: 11px; font-weight: 500;
+    color: var(--app-textMuted); text-align: right;
+    margin-top: 4px; margin-bottom: 16px;
+  }
+  .tags-row {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    margin-top: 16px; margin-bottom: 16px;
+  }
+  .add-tag-pill {
+    display: inline-flex; align-items: center;
+    padding: 3px 8px; border-radius: 8px;
+    font-size: 11px; font-weight: 500;
+    color: var(--app-textMuted); background: var(--app-tag); border: none;
+  }
+  .add-photos-link {
+    font-size: 11px; font-weight: 500; color: var(--app-textMuted);
+    margin-top: 8px;
+  }
+
+  /* ─── Prompt Output ─── */
+  .prompt-area {
+    width: 375px; margin-top: 20px;
+    background: var(--ui-surface); border: 1px solid var(--ui-border);
+    border-radius: 10px; padding: 14px;
+  }
+  .prompt-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+  }
+  .prompt-header span { font-size: 11px; font-weight: 600; color: var(--ui-text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .copy-btn {
+    background: var(--ui-accent); color: #fff; border: none;
+    border-radius: 5px; padding: 4px 10px;
+    font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .copy-btn:hover { opacity: 0.85; }
+  .prompt-text {
+    font-size: 12px; line-height: 1.6; color: var(--ui-text);
+    white-space: pre-wrap;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* Presets */
+  .presets-row { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .preset-btn {
+    background: rgba(255,255,255,0.06); border: 1px solid var(--ui-border);
+    color: var(--ui-text); padding: 5px 10px; border-radius: 6px;
+    font-size: 10px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .preset-btn:hover { background: rgba(232,114,74,0.15); border-color: var(--ui-accent); }
+  .preset-btn.active { background: var(--ui-accent); border-color: var(--ui-accent); color: #fff; }
+</style>
+</head>
+<body>
+
+<button class="toggle-controls-btn" onclick="toggleControls()">
+  <span id="toggleLabel">Hide Controls</span>
+</button>
+
+<div class="layout">
+  <div class="controls" id="controlsPanel">
+    <h1>Transcript Container — Deep Dive</h1>
+    <p class="subtitle">All other entry detail elements locked to your chosen baseline. Only the transcript container varies.</p>
+
+    <div class="presets-row">
+      <button class="preset-btn" onclick="applyPreset('original')">Original Card</button>
+      <button class="preset-btn" onclick="applyPreset('subtle')">Subtle Shadow</button>
+      <button class="preset-btn" onclick="applyPreset('inset')">Inset Well</button>
+      <button class="preset-btn" onclick="applyPreset('thinBorder')">Thin Border</button>
+      <button class="preset-btn" onclick="applyPreset('leftAccent')">Left Accent</button>
+      <button class="preset-btn" onclick="applyPreset('topBottom')">Top+Bottom Lines</button>
+      <button class="preset-btn" onclick="applyPreset('softFloat')">Soft Float</button>
+      <button class="preset-btn" onclick="applyPreset('journalPage')">Journal Page</button>
+      <button class="preset-btn" onclick="applyPreset('bare')">Bare (no card)</button>
+    </div>
+
+    <div class="section-label">Container Style</div>
+
+    <!-- Background -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span>Background</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="bg" value="card" checked onchange="update()"><label><strong>Card white</strong> <span class="desc">— #FEFCF9, warm off-white</span></label></div>
+        <div class="option"><input type="radio" name="bg" value="transparent" onchange="update()"><label><strong>Transparent</strong> <span class="desc">— flows on page #FAF8F5</span></label></div>
+        <div class="option"><input type="radio" name="bg" value="inset" onchange="update()"><label><strong>Inset warm</strong> <span class="desc">— #F5F0EB, slightly darker than page</span></label></div>
+        <div class="option"><input type="radio" name="bg" value="insetLight" onchange="update()"><label><strong>Inset light</strong> <span class="desc">— #F7F4F1 (cardPressed), barely there</span></label></div>
+        <div class="option"><input type="radio" name="bg" value="tag" onchange="update()"><label><strong>Tag tone</strong> <span class="desc">— #F3EDE8, matches tag pill bg</span></label></div>
+      </div>
+    </div>
+
+    <!-- Border -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span>Border</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="border" value="full" onchange="update()"><label><strong>Full border</strong> <span class="desc">— 1px #EDE8E3 all sides</span></label></div>
+        <div class="option"><input type="radio" name="border" value="thin" onchange="update()"><label><strong>Thin border</strong> <span class="desc">— 0.5px #EDE8E3 all sides (hairline)</span></label></div>
+        <div class="option"><input type="radio" name="border" value="none" checked onchange="update()"><label><strong>No border</strong></label></div>
+        <div class="option"><input type="radio" name="border" value="bottom" onchange="update()"><label><strong>Bottom only</strong> <span class="desc">— 1px bottom line</span></label></div>
+        <div class="option"><input type="radio" name="border" value="topbottom" onchange="update()"><label><strong>Top + bottom</strong> <span class="desc">— horizontal rules framing the text</span></label></div>
+        <div class="option"><input type="radio" name="border" value="left" onchange="update()"><label><strong>Left accent</strong> <span class="desc">— 3px left border, child-colored gradient</span></label></div>
+      </div>
+    </div>
+
+    <!-- Shadow -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span>Shadow</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="shadow" value="none" checked onchange="update()"><label><strong>None</strong></label></div>
+        <div class="option"><input type="radio" name="shadow" value="whisper" onchange="update()"><label><strong>Whisper</strong> <span class="desc">— 0 1px 2px rgba(44,36,32,0.03)</span></label></div>
+        <div class="option"><input type="radio" name="shadow" value="sm" onchange="update()"><label><strong>Small (sm)</strong> <span class="desc">— 0 1px 3px rgba(44,36,32,0.06)</span></label></div>
+        <div class="option"><input type="radio" name="shadow" value="md" onchange="update()"><label><strong>Medium</strong> <span class="desc">— 0 2px 8px rgba(44,36,32,0.08)</span></label></div>
+        <div class="option"><input type="radio" name="shadow" value="inset" onchange="update()"><label><strong>Inset</strong> <span class="desc">— inset 0 1px 3px rgba(44,36,32,0.06)</span></label></div>
+      </div>
+    </div>
+
+    <div class="section-label">Shape & Spacing</div>
+
+    <!-- Radius -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span>Border Radius</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="radius" value="0" onchange="update()"><label><strong>0px</strong> <span class="desc">— sharp, editorial</span></label></div>
+        <div class="option"><input type="radio" name="radius" value="8" onchange="update()"><label><strong>sm (8px)</strong></label></div>
+        <div class="option"><input type="radio" name="radius" value="12" onchange="update()"><label><strong>md (12px)</strong></label></div>
+        <div class="option"><input type="radio" name="radius" value="14" checked onchange="update()"><label><strong>card (14px)</strong> <span class="desc">— matches entry cards elsewhere</span></label></div>
+        <div class="option"><input type="radio" name="radius" value="16" onchange="update()"><label><strong>lg (16px)</strong></label></div>
+      </div>
+    </div>
+
+    <!-- Padding -->
+    <div class="control-group">
+      <div class="control-group-header" onclick="toggleGroup(this)">
+        <span>Padding</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body">
+        <div class="slider-row">
+          <label>Horizontal</label>
+          <input type="range" min="0" max="24" step="4" value="16" id="padH" oninput="update(); this.nextElementSibling.textContent=this.value+'px'" />
+          <span class="val">16px</span>
+        </div>
+        <div class="slider-row">
+          <label>Vertical</label>
+          <input type="range" min="0" max="24" step="4" value="16" id="padV" oninput="update(); this.nextElementSibling.textContent=this.value+'px'" />
+          <span class="val">16px</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Margin from metadata -->
+    <div class="control-group">
+      <div class="control-group-header" onclick="toggleGroup(this)">
+        <span>Top Margin (from metadata)</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body">
+        <div class="slider-row">
+          <label>Gap above</label>
+          <input type="range" min="4" max="24" step="4" value="12" id="topMargin" oninput="update(); this.nextElementSibling.textContent=this.value+'px'" />
+          <span class="val">12px</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Special Effects</div>
+
+    <!-- Left accent style (only visible when border=left) -->
+    <div class="control-group">
+      <div class="control-group-header" onclick="toggleGroup(this)">
+        <span>Left Accent Color</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body">
+        <div class="option"><input type="radio" name="leftcolor" value="child" checked onchange="update()"><label><strong>Child gradient</strong> <span class="desc">— blue→amber (matches divider)</span></label></div>
+        <div class="option"><input type="radio" name="leftcolor" value="accent" onchange="update()"><label><strong>Accent orange</strong> <span class="desc">— #E8724A solid</span></label></div>
+        <div class="option"><input type="radio" name="leftcolor" value="muted" onchange="update()"><label><strong>Muted border</strong> <span class="desc">— #EDE8E3 (subtle, structural)</span></label></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-area">
+    <div class="phone-frame">
+      <div class="phone-content" id="phoneContent"></div>
+    </div>
+
+    <div class="prompt-area">
+      <div class="prompt-header">
+        <span>Implementation Prompt</span>
+        <button class="copy-btn" onclick="copyPrompt()">Copy</button>
+      </div>
+      <div class="prompt-text" id="promptOutput"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = {
+  bg: 'card',
+  border: 'none',
+  shadow: 'none',
+  radius: '14',
+  padH: 16,
+  padV: 16,
+  topMargin: 12,
+  leftcolor: 'child',
+};
+
+const presets = {
+  original:    { bg:'card', border:'full', shadow:'none', radius:'14', padH:16, padV:16, topMargin:12, leftcolor:'child' },
+  subtle:      { bg:'card', border:'none', shadow:'sm', radius:'14', padH:16, padV:16, topMargin:12, leftcolor:'child' },
+  inset:       { bg:'inset', border:'none', shadow:'inset', radius:'14', padH:16, padV:16, topMargin:12, leftcolor:'child' },
+  thinBorder:  { bg:'card', border:'thin', shadow:'none', radius:'14', padH:16, padV:16, topMargin:12, leftcolor:'child' },
+  leftAccent:  { bg:'card', border:'left', shadow:'whisper', radius:'14', padH:16, padV:16, topMargin:12, leftcolor:'child' },
+  topBottom:   { bg:'transparent', border:'topbottom', shadow:'none', radius:'0', padH:0, padV:16, topMargin:12, leftcolor:'child' },
+  softFloat:   { bg:'card', border:'none', shadow:'md', radius:'16', padH:16, padV:16, topMargin:12, leftcolor:'child' },
+  journalPage: { bg:'insetLight', border:'none', shadow:'whisper', radius:'12', padH:16, padV:16, topMargin:12, leftcolor:'child' },
+  bare:        { bg:'transparent', border:'none', shadow:'none', radius:'0', padH:0, padV:16, topMargin:12, leftcolor:'child' },
+};
+
+function applyPreset(name) {
+  Object.assign(state, presets[name]);
+  syncControls();
+  update();
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function syncControls() {
+  for (const [key, val] of Object.entries(state)) {
+    if (key === 'padH') { const el = document.getElementById('padH'); el.value = val; el.nextElementSibling.textContent = val + 'px'; continue; }
+    if (key === 'padV') { const el = document.getElementById('padV'); el.value = val; el.nextElementSibling.textContent = val + 'px'; continue; }
+    if (key === 'topMargin') { const el = document.getElementById('topMargin'); el.value = val; el.nextElementSibling.textContent = val + 'px'; continue; }
+    const radio = document.querySelector(`input[name="${key}"][value="${val}"]`);
+    if (radio) radio.checked = true;
+  }
+}
+
+function toggleControls() {
+  const panel = document.getElementById('controlsPanel');
+  const label = document.getElementById('toggleLabel');
+  panel.classList.toggle('collapsed');
+  label.textContent = panel.classList.contains('collapsed') ? 'Show Controls' : 'Hide Controls';
+}
+
+function toggleGroup(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+function readState() {
+  ['bg','border','shadow','radius','leftcolor'].forEach(name => {
+    const checked = document.querySelector(`input[name="${name}"]:checked`);
+    if (checked) state[name] = checked.value;
+  });
+  state.padH = parseInt(document.getElementById('padH').value);
+  state.padV = parseInt(document.getElementById('padV').value);
+  state.topMargin = parseInt(document.getElementById('topMargin').value);
+}
+
+function update() {
+  readState();
+  renderPreview();
+  updatePrompt();
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+}
+
+function getTranscriptStyles() {
+  let css = '';
+
+  // Background
+  const bgs = { card:'#FEFCF9', transparent:'transparent', inset:'#F5F0EB', insetLight:'#F7F4F1', tag:'#F3EDE8' };
+  css += `background:${bgs[state.bg]};`;
+
+  // Padding
+  css += `padding:${state.padV}px ${state.padH}px;`;
+
+  // Border radius
+  css += `border-radius:${state.radius}px;`;
+
+  // Margin
+  css += `margin-top:${state.topMargin}px; margin-bottom:8px;`;
+
+  // Border
+  if (state.border === 'full') css += 'border:1px solid #EDE8E3;';
+  else if (state.border === 'thin') css += 'border:0.5px solid #EDE8E3;';
+  else if (state.border === 'bottom') css += 'border:none; border-bottom:1px solid #EDE8E3;';
+  else if (state.border === 'topbottom') css += 'border:none; border-top:1px solid #EDE8E3; border-bottom:1px solid #EDE8E3;';
+  else if (state.border === 'left') {
+    if (state.leftcolor === 'child') css += 'border:none; border-left:3px solid #7BAFD4; border-image:linear-gradient(to bottom, #7BAFD4, #D4A07B) 1;';
+    else if (state.leftcolor === 'accent') css += 'border:none; border-left:3px solid #E8724A;';
+    else css += 'border:none; border-left:3px solid #EDE8E3;';
+    // border-image kills border-radius on the left, so if using gradient we need a different approach
+    if (state.leftcolor === 'child' && parseInt(state.radius) > 0) {
+      // Use a pseudo-element approach via wrapper
+      css += `border-left:none; position:relative; overflow:hidden;`;
+    }
+  }
+  else css += 'border:none;';
+
+  // Shadow
+  const shadows = {
+    none: 'none',
+    whisper: '0 1px 2px rgba(44,36,32,0.03)',
+    sm: '0 1px 3px rgba(44,36,32,0.06)',
+    md: '0 2px 8px rgba(44,36,32,0.08)',
+    inset: 'inset 0 1px 3px rgba(44,36,32,0.06)',
+  };
+  css += `box-shadow:${shadows[state.shadow]};`;
+
+  return css;
+}
+
+function renderPreview() {
+  const phone = document.getElementById('phoneContent');
+  const tStyles = getTranscriptStyles();
+  const needsLeftBar = state.border === 'left' && state.leftcolor === 'child' && parseInt(state.radius) > 0;
+
+  let leftBarHtml = '';
+  if (needsLeftBar) {
+    leftBarHtml = `<div style="position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(to bottom, #7BAFD4, #D4A07B); border-radius:${state.radius}px 0 0 ${state.radius}px;"></div>`;
+  }
+
+  let html = `
+    <div class="app-topbar">
+      <div class="app-icon-btn"><span class="back-chevron">&#8249;</span></div>
+      <div class="app-topbar-right">
+        <div class="app-icon-btn"><span class="heart-icon">&#9829;</span></div>
+        <div class="app-icon-btn">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="4" cy="10" r="1.8" fill="#2C2420"/>
+            <circle cx="10" cy="10" r="1.8" fill="#2C2420"/>
+            <circle cx="16" cy="10" r="1.8" fill="#2C2420"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="app-scroll">
+      <div class="app-title">Playing Chase at Grammy's</div>
+      <div class="gradient-divider"></div>
+      <div class="child-line">
+        <span class="mini-pill" style="background:rgba(123,175,212,0.12)">
+          <span class="mini-pill-dot" style="background:#7BAFD4"></span>
+          <span class="mini-pill-name" style="color:#7BAFD4">Joseph</span>
+          <span class="mini-pill-age" style="color:rgba(123,175,212,0.6)">2mo</span>
+          <span class="mini-pill-remove" style="color:#7BAFD4">&times;</span>
+        </span>
+        <span class="mini-pill" style="background:rgba(212,160,123,0.12)">
+          <span class="mini-pill-dot" style="background:#D4A07B"></span>
+          <span class="mini-pill-name" style="color:#D4A07B">Silas</span>
+          <span class="mini-pill-age" style="color:rgba(212,160,123,0.6)">2mo</span>
+          <span class="mini-pill-remove" style="color:#D4A07B">&times;</span>
+        </span>
+        <button class="add-child-btn">+</button>
+      </div>
+      <div class="meta-line">
+        <span class="meta-text">Mar 29, 2026 &middot; 9:56 PM</span>
+        <span class="meta-location-add"> &middot; + Add location</span>
+      </div>
+
+      <div class="transcript-wrap" style="${tStyles}">
+        ${leftBarHtml}
+        <div class="transcript-text">today Silas Joseph and I played Chase in the front yard after dinner at Grammy Grampy's and they kept darting between my legs and I would jump over them and pretend to grab them and we all had a great time</div>
+      </div>
+      <div class="saved-indicator">All changes saved</div>
+
+      <div class="add-photos-link">+ Add photos</div>
+
+      <div class="tags-row"><span class="add-tag-pill">+ add tag</span></div>
+    </div>
+  `;
+
+  phone.innerHTML = html;
+}
+
+function updatePrompt() {
+  const parts = [];
+
+  // Background
+  const bgLabels = {
+    card: 'backgroundColor: colors.card (#FEFCF9)',
+    transparent: 'no backgroundColor (transparent, flows on page bg)',
+    inset: 'backgroundColor: "#F5F0EB" (warm inset, slightly darker than page)',
+    insetLight: 'backgroundColor: colors.cardPressed (#F7F4F1)',
+    tag: 'backgroundColor: colors.tag (#F3EDE8)',
+  };
+  parts.push(`Background: ${bgLabels[state.bg]}`);
+
+  // Border
+  const borderLabels = {
+    full: '1px solid colors.border (#EDE8E3) on all sides',
+    thin: '0.5px solid colors.border (hairline) on all sides — use borderWidth: StyleSheet.hairlineWidth',
+    none: 'no border',
+    bottom: 'borderBottomWidth: 1, borderBottomColor: colors.border',
+    topbottom: 'borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border',
+    left: `borderLeftWidth: 3, borderLeftColor: ${state.leftcolor === 'child' ? 'first child color (use an absolute-positioned View with LinearGradient for the gradient effect)' : state.leftcolor === 'accent' ? 'colors.accent' : 'colors.border'}`,
+  };
+  parts.push(`Border: ${borderLabels[state.border]}`);
+
+  // Shadow
+  if (state.shadow !== 'none') {
+    const shadowLabels = {
+      whisper: 'shadows.whisper — { shadowColor: "rgb(44,36,32)", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 2, elevation: 1 }',
+      sm: 'shadows.sm — { shadowColor: "rgb(44,36,32)", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3, elevation: 2 }',
+      md: '{ shadowColor: "rgb(44,36,32)", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 }',
+      inset: 'Note: React Native does not support inset shadows natively. Use the darker background color (#F5F0EB) to simulate the pressed-in feel instead.',
+    };
+    parts.push(`Shadow: ${shadowLabels[state.shadow]}`);
+  } else {
+    parts.push('Shadow: none');
+  }
+
+  // Radius
+  const radiusNames = { '0':'0', '8':'radii.sm (8)', '12':'radii.md (12)', '14':'radii.card (14)', '16':'radii.lg (16)' };
+  parts.push(`Border radius: ${radiusNames[state.radius]}px`);
+
+  // Padding
+  parts.push(`Padding: ${state.padV}px vertical, ${state.padH}px horizontal`);
+
+  // Margin
+  parts.push(`Top margin from metadata: ${state.topMargin}px`);
+
+  const output = document.getElementById('promptOutput');
+  output.textContent = `Update the transcriptCard style in app/(main)/entry-detail.tsx:\n\n${parts.join('\n')}`;
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptOutput').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+}
+
+// Init
+renderPreview();
+updatePrompt();
+</script>
+</body>
+</html>

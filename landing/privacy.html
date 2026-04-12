@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Forever Fireflies</title>
+  <meta name="description" content="Privacy Policy for the Forever Fireflies app.">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FAF8F5;
+      --card: #FEFCF9;
+      --text: #2C2420;
+      --text-muted: #B5AAA0;
+      --accent: #E8724A;
+      --accent-pressed: #CC6441;
+      --ember-bg: #3D322C;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--ember-bg);
+      color: var(--bg);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 0;
+    }
+
+    .back-link {
+      display: inline-block;
+      font-size: 14px;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: 32px;
+      transition: color 0.2s ease;
+    }
+
+    .back-link:hover {
+      color: var(--accent);
+    }
+
+    .page-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(32px, 6vw, 48px);
+      font-weight: 300;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .effective-date {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 48px;
+    }
+
+    /* Summary box */
+    .summary {
+      background: rgba(250, 248, 245, 0.05);
+      border: 1px solid rgba(250, 248, 245, 0.1);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 48px;
+    }
+
+    .summary h2 {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .summary ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .summary li {
+      font-size: 15px;
+      line-height: 1.6;
+      color: rgba(250, 248, 245, 0.85);
+      padding: 4px 0 4px 20px;
+      position: relative;
+    }
+
+    .summary li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 12px;
+      width: 6px;
+      height: 6px;
+      border-radius: 9999px;
+      background: var(--accent);
+      opacity: 0.6;
+    }
+
+    /* Sections */
+    h2.section-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 24px;
+      font-weight: 400;
+      margin-top: 48px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(250, 248, 245, 0.08);
+    }
+
+    h3 {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      margin-top: 24px;
+      margin-bottom: 8px;
+    }
+
+    p {
+      font-size: 15px;
+      line-height: 1.7;
+      color: rgba(250, 248, 245, 0.8);
+      margin-bottom: 16px;
+    }
+
+    ul, ol {
+      font-size: 15px;
+      line-height: 1.7;
+      color: rgba(250, 248, 245, 0.8);
+      margin-bottom: 16px;
+      padding-left: 24px;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    /* Data table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 14px;
+    }
+
+    .data-table th {
+      text-align: left;
+      font-weight: 500;
+      color: var(--accent);
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(250, 248, 245, 0.15);
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(250, 248, 245, 0.05);
+      color: rgba(250, 248, 245, 0.8);
+      vertical-align: top;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    strong {
+      color: var(--bg);
+      font-weight: 500;
+    }
+
+    .footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(250, 248, 245, 0.08);
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      .data-table { font-size: 13px; }
+      .data-table th, .data-table td { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <a href="/" class="back-link">&larr; Back to Forever Fireflies</a>
+
+  <h1 class="page-title">Privacy Policy</h1>
+  <p class="effective-date">Effective date: March 27, 2026 &middot; Last updated: March 27, 2026</p>
+
+  <!-- Quick summary -->
+  <div class="summary">
+    <h2>The Short Version</h2>
+    <ul>
+      <li>Forever Fireflies is a journal app for <strong>parents</strong> to record everyday moments with their kids</li>
+      <li>We collect what we need to make the app work &mdash; your account info, your children's names and birthdays, your voice recordings and journal entries</li>
+      <li>Your data is <strong>never sold</strong>, never used for advertising, and never shared with data brokers</li>
+      <li>Journal text is processed by AI (Anthropic Claude) to generate titles and tags &mdash; audio files are never sent to any AI service</li>
+      <li>You can delete your data at any time from the app settings</li>
+    </ul>
+  </div>
+
+  <!-- 1. Who We Are -->
+  <h2 class="section-title">1. Who We Are</h2>
+  <p>Forever Fireflies ("we," "us," "our") is a mobile application operated by Forever Fireflies. If you have questions about this policy or your data, contact us at <a href="mailto:foreverfirefliesapp@gmail.com">foreverfirefliesapp@gmail.com</a>.</p>
+
+  <!-- 2. What We Collect -->
+  <h2 class="section-title">2. Information We Collect</h2>
+
+  <h3>Information you provide</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Why</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Email address</td>
+        <td>Account creation and sign-in</td>
+      </tr>
+      <tr>
+        <td>Children's names and birthdays</td>
+        <td>Organize entries by child, show age-appropriate prompts, and calculate age stamps on entries</td>
+      </tr>
+      <tr>
+        <td>Voice recordings</td>
+        <td>Store your spoken memories for playback. Audio is transcribed on your device and the recording is saved so you can listen back</td>
+      </tr>
+      <tr>
+        <td>Journal text</td>
+        <td>Your written or transcribed memory entries</td>
+      </tr>
+      <tr>
+        <td>Location (optional)</td>
+        <td>Tag where a memory happened. Only captured when you record an entry, and only with your permission</td>
+      </tr>
+      <tr>
+        <td>Notification preferences</td>
+        <td>Send your daily reminder at the time you choose</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Information collected automatically</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Why</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Device type and OS version</td>
+        <td>Fix bugs and ensure the app works on your device</td>
+      </tr>
+      <tr>
+        <td>Push notification token</td>
+        <td>Deliver your daily recording reminders</td>
+      </tr>
+      <tr>
+        <td>App usage events</td>
+        <td>Understand which features are used so we can improve the app (e.g., "user tapped record," "user opened settings")</td>
+      </tr>
+      <tr>
+        <td>Crash reports</td>
+        <td>Identify and fix errors quickly</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 3. How We Use Your Information -->
+  <h2 class="section-title">3. How We Use Your Information</h2>
+  <ul>
+    <li><strong>Provide the app experience</strong> &mdash; store your entries, play back recordings, sync across devices</li>
+    <li><strong>AI-assisted features</strong> &mdash; journal entry text (not audio) is sent to Anthropic's Claude API to generate titles, clean up transcripts, and suggest tags. Because parents naturally say their children's names in recordings, transcripts sent for processing may contain children's names and personal details. We do not send child records, user IDs, or audio files to any AI service. Anthropic does not use your data to train their models. See <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener">Anthropic's Privacy Policy</a></li>
+    <li><strong>Send notifications</strong> &mdash; your daily recording reminder at the time you set</li>
+    <li><strong>Improve the app</strong> &mdash; analytics help us understand what's working and what needs fixing</li>
+    <li><strong>Process payments</strong> &mdash; manage your subscription through RevenueCat and the app stores</li>
+  </ul>
+
+  <!-- 4. Third-Party Services -->
+  <h2 class="section-title">4. Third-Party Services</h2>
+  <p>We use a small number of trusted services to run the app. Each receives only the data it needs to do its job.</p>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Service</th>
+        <th>Purpose</th>
+        <th>Data received</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase</a></td>
+        <td>Database, authentication, file storage</td>
+        <td>All account and entry data</td>
+      </tr>
+      <tr>
+        <td><a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener">Anthropic</a></td>
+        <td>AI title generation, transcript cleanup, tag suggestions</td>
+        <td>Entry text only (may include children's names naturally spoken in recordings; never audio files, child records, or user IDs)</td>
+      </tr>
+      <tr>
+        <td><a href="https://www.revenuecat.com/privacy" target="_blank" rel="noopener">RevenueCat</a></td>
+        <td>Subscription and payment management</td>
+        <td>User ID, purchase history</td>
+      </tr>
+      <tr>
+        <td><a href="https://posthog.com/privacy" target="_blank" rel="noopener">PostHog</a></td>
+        <td>Product analytics</td>
+        <td>Usage events, device info</td>
+      </tr>
+      <tr>
+        <td><a href="https://sentry.io/privacy/" target="_blank" rel="noopener">Sentry</a></td>
+        <td>Error and crash reporting</td>
+        <td>Device info, error context</td>
+      </tr>
+      <tr>
+        <td><a href="https://expo.dev/privacy" target="_blank" rel="noopener">Expo</a></td>
+        <td>Push notification delivery</td>
+        <td>Push tokens, device info</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>We do <strong>not</strong> sell your data. We do <strong>not</strong> share your data with advertisers. We do <strong>not</strong> use your data for targeted advertising.</p>
+
+  <!-- 5. Children's Privacy -->
+  <h2 class="section-title">5. Children's Privacy</h2>
+  <p>Forever Fireflies is designed for <strong>parents and guardians</strong>, not for children. Only the parent or guardian creates an account, enters children's information, and uses the app.</p>
+  <p>We collect children's names and birthdays so the app can organize entries by child and show age-appropriate prompts. Voice recordings may naturally include children's voices when a parent records a memory.</p>
+  <p>Here's how we protect children's information:</p>
+  <ul>
+    <li>Children's personal information is <strong>never shared with third parties</strong> for advertising or commercial purposes</li>
+    <li>Children's names and birthdays are stored securely in our database and are only accessible to the parent who entered them</li>
+    <li>We do not knowingly send children's names to analytics or crash-reporting services</li>
+    <li>Audio files (which may contain children's voices) are stored in private, user-isolated storage &mdash; no other user can access them</li>
+    <li>Parents can view, edit, or delete all of their children's information at any time from the app</li>
+  </ul>
+  <p>If you believe a child under 13 has created an account without parental consent, please contact us at <a href="mailto:foreverfirefliesapp@gmail.com">foreverfirefliesapp@gmail.com</a> and we will delete the account promptly.</p>
+
+  <!-- 6. Data Storage & Security -->
+  <h2 class="section-title">6. Data Storage and Security</h2>
+  <ul>
+    <li>All data is encrypted in transit (TLS) and at rest</li>
+    <li>Audio recordings are stored in private, user-isolated storage buckets &mdash; only you can access your files</li>
+    <li>Database access is protected by row-level security &mdash; each user can only read and modify their own data</li>
+    <li>Voice recordings are transcribed on your device. The raw audio is uploaded only to our secure storage for your playback &mdash; it is never sent to any AI or analytics service</li>
+    <li>Authentication is handled by Supabase Auth with support for Apple Sign-In, Google Sign-In, and email</li>
+  </ul>
+
+  <!-- 7. Data Retention -->
+  <h2 class="section-title">7. How Long We Keep Your Data</h2>
+  <ul>
+    <li><strong>Account data:</strong> kept as long as your account is active</li>
+    <li><strong>Deleted entries:</strong> moved to "Recently Deleted" for 30 days, then permanently erased (including audio files)</li>
+    <li><strong>Account deletion:</strong> when you delete your account, all associated data (entries, recordings, children's profiles) is permanently removed. You can <a href="/delete-account.html">delete your account</a> from the app settings or via our web form</li>
+    <li><strong>Analytics data:</strong> retained according to PostHog's and Sentry's standard retention periods</li>
+  </ul>
+
+  <!-- 8. Your Rights -->
+  <h2 class="section-title">8. Your Rights</h2>
+  <p>You have the right to:</p>
+  <ul>
+    <li><strong>Access</strong> your data &mdash; your entries, recordings, and children's profiles are all visible in the app</li>
+    <li><strong>Correct</strong> your data &mdash; edit entries, update children's info, and change your account details at any time</li>
+    <li><strong>Delete</strong> your data &mdash; delete individual entries or your entire account from the app settings</li>
+    <li><strong>Export</strong> your data &mdash; request a copy of all your entries and recordings by emailing us</li>
+    <li><strong>Opt out of analytics</strong> &mdash; contact us to opt out of non-essential tracking</li>
+  </ul>
+  <p>To exercise any of these rights, use the settings within the app or email us at <a href="mailto:foreverfirefliesapp@gmail.com">foreverfirefliesapp@gmail.com</a>.</p>
+
+  <!-- 9. California Residents -->
+  <h2 class="section-title">9. For California Residents</h2>
+  <p>Under the California Consumer Privacy Act (CCPA), you have the right to know what personal information we collect, request its deletion, and opt out of its sale. <strong>We do not sell personal information.</strong> To make a request, email <a href="mailto:foreverfirefliesapp@gmail.com">foreverfirefliesapp@gmail.com</a>.</p>
+
+  <!-- 10. International Users -->
+  <h2 class="section-title">10. International Users</h2>
+  <p>If you are located outside the United States, your data may be transferred to and processed in the United States where our service providers operate. By using the app, you consent to this transfer. If you are in the European Economic Area or United Kingdom, our legal basis for processing your data is your consent (when you create an account and enter information) and our legitimate interest in providing and improving the app.</p>
+
+  <!-- 11. Changes -->
+  <h2 class="section-title">11. Changes to This Policy</h2>
+  <p>We may update this policy from time to time. If we make significant changes, we will notify you through the app or by email. The "last updated" date at the top of this page will always reflect the most recent version.</p>
+
+  <!-- 12. Contact -->
+  <h2 class="section-title">12. Contact Us</h2>
+  <p>If you have questions, concerns, or requests about your privacy, reach out to us:</p>
+  <p>
+    Email: <a href="mailto:foreverfirefliesapp@gmail.com">foreverfirefliesapp@gmail.com</a>
+  </p>
+
+  <div class="footer">
+    &copy; 2026 Forever Fireflies. All rights reserved.
+  </div>
+</div>
+
+</body>
+</html>

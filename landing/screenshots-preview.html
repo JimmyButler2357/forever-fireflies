@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Screenshots Preview — 1080x1920</title>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --bg: #FAF8F5;
+      --card: #FEFCF9;
+      --text: #2C2420;
+      --textSoft: #8C7E74;
+      --textMuted: #B5AAA0;
+      --accent: #E8724A;
+      --accentSoft: rgba(232,114,74,0.08);
+      --border: #EDE8E3;
+      --tag: #F3EDE8;
+      --glow: #F2C94C;
+      --glowSoft: #FDF6E3;
+      --childBlue: #7BAFD4;
+      --childAmber: #D4A07B;
+      --childGreen: #9BC49B;
+      --heartEmpty: #D9D2CB;
+      --heartFilled: #E8724A;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #e8e0d8;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      color: var(--text);
+      padding: 40px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 20px;
+      color: var(--textSoft);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 14px;
+      color: var(--textMuted);
+      margin-bottom: 32px;
+    }
+
+    .screens {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .screen-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .screen-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--textSoft);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .download-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      padding: 8px 20px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 9999px;
+      cursor: pointer;
+    }
+
+    /* Phone frame — 1080x1920 scaled to 270x480 for preview */
+    .phone {
+      width: 270px;
+      height: 480px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(44,36,32,0.15);
+      position: relative;
+    }
+
+    /* Actual render target at full res — hidden, used for export */
+    .render-target {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+    }
+
+    .screen {
+      width: 1080px;
+      height: 1920px;
+      background: var(--bg);
+      padding: 120px 60px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .phone .screen {
+      transform: scale(0.25);
+      transform-origin: top left;
+    }
+
+    /* Status bar */
+    .status-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 100px;
+      padding: 40px 60px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text);
+      background: var(--bg);
+      z-index: 10;
+    }
+
+    .status-icons {
+      display: flex;
+      gap: 12px;
+      font-size: 24px;
+      color: var(--textSoft);
+    }
+
+    /* ===== SCREEN 1: HOME ===== */
+    .home-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 48px;
+    }
+
+    .home-title {
+      font-family: 'Merriweather', serif;
+      font-size: 52px;
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    .home-icons {
+      display: flex;
+      gap: 24px;
+    }
+
+    .home-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 9999px;
+      background: var(--tag);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--textSoft);
+    }
+
+    .child-tabs {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .child-tab {
+      padding: 16px 32px;
+      border-radius: 9999px;
+      font-size: 30px;
+      font-weight: 600;
+    }
+
+    .child-tab.active {
+      background: var(--text);
+      color: var(--bg);
+    }
+
+    .child-tab.inactive {
+      background: var(--tag);
+      color: var(--textSoft);
+    }
+
+    .entry-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 32px;
+      padding: 40px;
+      margin-bottom: 28px;
+      position: relative;
+    }
+
+    .entry-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .entry-title {
+      font-family: 'Merriweather', serif;
+      font-size: 36px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text);
+      flex: 1;
+      margin-right: 16px;
+    }
+
+    .entry-heart {
+      font-size: 36px;
+      color: var(--heartEmpty);
+    }
+
+    .entry-heart.filled {
+      color: var(--heartFilled);
+    }
+
+    .entry-preview {
+      font-family: 'Merriweather', serif;
+      font-size: 30px;
+      font-weight: 400;
+      line-height: 1.55;
+      color: var(--textSoft);
+      margin-bottom: 24px;
+    }
+
+    .entry-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .entry-date {
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--textMuted);
+    }
+
+    .child-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      border-radius: 9999px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .child-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 9999px;
+    }
+
+    .tag-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .tag-pill {
+      padding: 8px 20px;
+      border-radius: 9999px;
+      background: var(--tag);
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--textSoft);
+    }
+
+    .entry-audio {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 20px;
+      padding: 16px 24px;
+      background: var(--accentSoft);
+      border-radius: 16px;
+    }
+
+    .audio-play {
+      width: 44px;
+      height: 44px;
+      border-radius: 9999px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+    }
+
+    .audio-bar {
+      flex: 1;
+      height: 8px;
+      background: var(--border);
+      border-radius: 9999px;
+      position: relative;
+    }
+
+    .audio-bar-fill {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 35%;
+      background: var(--accent);
+      border-radius: 9999px;
+    }
+
+    .audio-time {
+      font-size: 22px;
+      color: var(--textMuted);
+    }
+
+    /* Mic button */
+    .mic-btn {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 140px;
+      height: 140px;
+      border-radius: 9999px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px rgba(232,114,74,0.35);
+    }
+
+    .mic-icon {
+      font-size: 56px;
+      color: white;
+    }
+
+    /* ===== SCREEN 2: RECORDING ===== */
+    .recording-bg {
+      background: var(--bg);
+      position: relative;
+    }
+
+    .recording-bg::after {
+      content: '';
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 160%;
+      height: 100%;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(244,226,214,0.45) 0%,
+        transparent 60%
+      );
+      pointer-events: none;
+    }
+
+    .recording-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding-top: 80px;
+    }
+
+    .prompt-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 32px;
+      padding: 48px 56px;
+      margin-bottom: 72px;
+      max-width: 800px;
+    }
+
+    .prompt-text {
+      font-family: 'Merriweather', serif;
+      font-size: 40px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .breathing-circle-outer {
+      width: 360px;
+      height: 360px;
+      border-radius: 9999px;
+      background: rgba(232,114,74,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 56px;
+    }
+
+    .breathing-circle-inner {
+      width: 260px;
+      height: 260px;
+      border-radius: 9999px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 40px rgba(232,114,74,0.3);
+    }
+
+    .rec-mic-icon {
+      font-size: 80px;
+      color: white;
+    }
+
+    .timer {
+      font-size: 56px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 32px;
+    }
+
+    .transcript-live {
+      font-family: 'Merriweather', serif;
+      font-size: 34px;
+      font-weight: 400;
+      line-height: 1.6;
+      color: var(--textSoft);
+      max-width: 750px;
+      font-style: italic;
+    }
+
+    /* ===== SCREEN 3: ENTRY DETAIL ===== */
+    .detail-back {
+      font-size: 32px;
+      color: var(--accent);
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .detail-title {
+      font-family: 'Merriweather', serif;
+      font-size: 52px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+
+    .detail-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 12px;
+    }
+
+    .detail-meta-label {
+      font-size: 26px;
+      color: var(--textMuted);
+    }
+
+    .detail-meta-value {
+      font-size: 26px;
+      color: var(--textSoft);
+      font-weight: 500;
+    }
+
+    .detail-children {
+      display: flex;
+      gap: 12px;
+      margin: 32px 0;
+    }
+
+    .detail-child-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 28px;
+      border-radius: 9999px;
+      font-size: 28px;
+      font-weight: 600;
+    }
+
+    .detail-transcript {
+      font-family: 'Merriweather', serif;
+      font-size: 34px;
+      font-weight: 400;
+      line-height: 1.65;
+      color: var(--text);
+      margin: 40px 0;
+    }
+
+    .detail-tags {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 32px;
+    }
+
+    .detail-tag {
+      padding: 12px 28px;
+      border-radius: 9999px;
+      background: var(--tag);
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--textSoft);
+    }
+
+    /* ===== SCREEN 4: FIREFLY JAR ===== */
+    .jar-bg {
+      background: linear-gradient(180deg, var(--glowSoft) 0%, var(--bg) 40%);
+    }
+
+    .jar-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .jar-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .jar-title {
+      font-family: 'Merriweather', serif;
+      font-size: 44px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .jar-count {
+      font-size: 28px;
+      color: var(--textMuted);
+    }
+
+    .jar-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 32px;
+      padding: 44px;
+      margin-bottom: 32px;
+      box-shadow: 0 4px 20px rgba(232,114,74,0.08);
+    }
+
+    .jar-card-title {
+      font-family: 'Merriweather', serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .jar-card-preview {
+      font-family: 'Merriweather', serif;
+      font-size: 30px;
+      font-weight: 400;
+      line-height: 1.6;
+      color: var(--textSoft);
+      margin-bottom: 24px;
+    }
+
+    .jar-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .jar-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>App Screenshots — 1080 x 1920px</h1>
+  <p class="subtitle">Click "Download PNG" under each screen to save at full resolution</p>
+
+  <div class="screens">
+
+    <!-- SCREEN 1: HOME -->
+    <div class="screen-wrapper">
+      <span class="screen-label">Home</span>
+      <div class="phone">
+        <div class="screen" id="home-preview" style="transform:scale(0.25);transform-origin:top left;">
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <span>●●●●</span>
+              <span>WiFi</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          <div class="home-header">
+            <div class="home-title">Forever Fireflies</div>
+            <div class="home-icons">
+              <div class="home-icon">🔍</div>
+              <div class="home-icon">⚙️</div>
+            </div>
+          </div>
+
+          <div class="child-tabs">
+            <div class="child-tab active">All</div>
+            <div class="child-tab inactive" style="background:rgba(123,175,212,0.12);color:#7BAFD4;">Emma</div>
+            <div class="child-tab inactive" style="background:rgba(212,160,123,0.12);color:#D4A07B;">Liam</div>
+          </div>
+
+          <!-- Entry 1 -->
+          <div class="entry-card">
+            <div class="entry-card-header">
+              <div class="entry-title">More Than the Moon</div>
+              <div class="entry-heart filled">♥</div>
+            </div>
+            <div class="entry-preview">She whispered "I love you more than the moon" at bedtime. Then added, "but not more than waffles."</div>
+            <div class="entry-meta">
+              <span class="entry-date">Mar 27 · 8:42 PM</span>
+              <div class="child-pill" style="background:rgba(123,175,212,0.12);color:#7BAFD4;">
+                <div class="child-dot" style="background:#7BAFD4;"></div>
+                Emma
+              </div>
+            </div>
+            <div class="tag-row">
+              <span class="tag-pill">Bedtime</span>
+              <span class="tag-pill">Sweet Moment</span>
+            </div>
+            <div class="entry-audio">
+              <div class="audio-play">▶</div>
+              <div class="audio-bar"><div class="audio-bar-fill"></div></div>
+              <span class="audio-time">0:34</span>
+            </div>
+          </div>
+
+          <!-- Entry 2 -->
+          <div class="entry-card">
+            <div class="entry-card-header">
+              <div class="entry-title">A Gentleman Like Daddy</div>
+              <div class="entry-heart">♡</div>
+            </div>
+            <div class="entry-preview">He held the door open for an old woman at Target and said, "I'm being a gentleman like Daddy."</div>
+            <div class="entry-meta">
+              <span class="entry-date">Mar 26 · 7:15 PM</span>
+              <div class="child-pill" style="background:rgba(212,160,123,0.12);color:#D4A07B;">
+                <div class="child-dot" style="background:#D4A07B;"></div>
+                Liam
+              </div>
+            </div>
+            <div class="tag-row">
+              <span class="tag-pill">Proud Moment</span>
+              <span class="tag-pill">Outing</span>
+            </div>
+          </div>
+
+          <!-- Mic button -->
+          <div class="mic-btn">
+            <svg class="mic-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+        </div>
+      </div>
+      <button class="download-btn" onclick="downloadScreen('home')">Download PNG</button>
+    </div>
+
+    <!-- SCREEN 2: RECORDING -->
+    <div class="screen-wrapper">
+      <span class="screen-label">Recording</span>
+      <div class="phone">
+        <div class="screen recording-bg" id="recording-preview" style="transform:scale(0.25);transform-origin:top left;">
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <span>●●●●</span>
+              <span>WiFi</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          <div class="recording-content">
+            <div class="prompt-card">
+              <div class="prompt-text">What's one thing Liam said today that you don't want to forget?</div>
+            </div>
+
+            <div class="breathing-circle-outer">
+              <div class="breathing-circle-inner">
+                <svg class="rec-mic-icon" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+            </div>
+
+            <div class="timer">0:18</div>
+
+            <div class="transcript-live">"So Liam told me his imaginary friend moved to Florida because it's too cold here for him..."</div>
+          </div>
+        </div>
+      </div>
+      <button class="download-btn" onclick="downloadScreen('recording')">Download PNG</button>
+    </div>
+
+    <!-- SCREEN 3: ENTRY DETAIL -->
+    <div class="screen-wrapper">
+      <span class="screen-label">Entry Detail</span>
+      <div class="phone">
+        <div class="screen" id="detail-preview" style="transform:scale(0.25);transform-origin:top left;">
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <span>●●●●</span>
+              <span>WiFi</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          <div class="detail-back">← Back</div>
+
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div class="detail-title" style="flex:1;">Singing to Baby Brother</div>
+            <div class="entry-heart filled" style="font-size:48px;padding-top:8px;">♥</div>
+          </div>
+
+          <div class="detail-meta-row">
+            <span class="detail-meta-label">📅</span>
+            <span class="detail-meta-value">March 25, 2026 · 7:30 PM</span>
+          </div>
+          <div class="detail-meta-row">
+            <span class="detail-meta-label">📍</span>
+            <span class="detail-meta-value">Home</span>
+          </div>
+          <div class="detail-meta-row">
+            <span class="detail-meta-label">👶</span>
+            <span class="detail-meta-value">Emma · 3 years, 2 months</span>
+          </div>
+
+          <div class="detail-children">
+            <div class="detail-child-pill" style="background:rgba(123,175,212,0.12);color:#7BAFD4;">
+              <div class="child-dot" style="background:#7BAFD4;width:18px;height:18px;border-radius:9999px;"></div>
+              Emma
+            </div>
+            <div class="detail-child-pill" style="background:rgba(212,160,123,0.12);color:#D4A07B;">
+              <div class="child-dot" style="background:#D4A07B;width:18px;height:18px;border-radius:9999px;"></div>
+              Liam
+            </div>
+          </div>
+
+          <div class="entry-audio" style="margin:32px 0;">
+            <div class="audio-play">▶</div>
+            <div class="audio-bar"><div class="audio-bar-fill" style="width:60%;"></div></div>
+            <span class="audio-time">0:52</span>
+          </div>
+
+          <div class="detail-transcript">I walked past the nursery and Emma was standing at the crib singing the whole ABCs to Liam. She got to Q and just kind of made something up, but she kept going like it didn't matter. He was just staring at her the whole time, totally quiet. When she finished she said, "Now you know your letters." She's the best big sister.</div>
+
+          <div class="detail-tags">
+            <span class="detail-tag">Siblings</span>
+            <span class="detail-tag">Sweet Moment</span>
+            <span class="detail-tag">Milestone</span>
+          </div>
+        </div>
+      </div>
+      <button class="download-btn" onclick="downloadScreen('detail')">Download PNG</button>
+    </div>
+
+    <!-- SCREEN 4: FIREFLY JAR -->
+    <div class="screen-wrapper">
+      <span class="screen-label">Firefly Jar</span>
+      <div class="phone">
+        <div class="screen jar-bg" id="jar-preview" style="transform:scale(0.25);transform-origin:top left;">
+          <div class="status-bar" style="background:var(--glowSoft);">
+            <span>9:41</span>
+            <div class="status-icons">
+              <span>●●●●</span>
+              <span>WiFi</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          <div class="jar-header">
+            <div class="jar-icon">✨</div>
+            <div class="jar-title">Firefly Jar</div>
+            <div class="jar-count">4 favorite memories</div>
+          </div>
+
+          <!-- Jar card 1 -->
+          <div class="jar-card">
+            <div class="jar-card-title">More Than the Moon</div>
+            <div class="jar-card-preview">She whispered "I love you more than the moon." Then added, "but not more than waffles."</div>
+            <div class="jar-card-footer">
+              <div class="jar-card-meta">
+                <span class="entry-date">Mar 27</span>
+                <div class="child-pill" style="background:rgba(123,175,212,0.12);color:#7BAFD4;">
+                  <div class="child-dot" style="background:#7BAFD4;"></div>
+                  Emma
+                </div>
+              </div>
+              <span class="entry-heart filled" style="font-size:32px;">♥</span>
+            </div>
+          </div>
+
+          <!-- Jar card 2 -->
+          <div class="jar-card">
+            <div class="jar-card-title">Singing to Baby Brother</div>
+            <div class="jar-card-preview">She sang the whole ABCs to Liam in his crib. Got Q wrong but kept going.</div>
+            <div class="jar-card-footer">
+              <div class="jar-card-meta">
+                <span class="entry-date">Mar 25</span>
+                <div class="child-pill" style="background:rgba(123,175,212,0.12);color:#7BAFD4;">
+                  <div class="child-dot" style="background:#7BAFD4;"></div>
+                  Emma
+                </div>
+              </div>
+              <span class="entry-heart filled" style="font-size:32px;">♥</span>
+            </div>
+          </div>
+
+          <!-- Jar card 3 -->
+          <div class="jar-card">
+            <div class="jar-card-title">A Gentleman Like Daddy</div>
+            <div class="jar-card-preview">He held the door open at Target and said, "I'm being a gentleman like Daddy."</div>
+            <div class="jar-card-footer">
+              <div class="jar-card-meta">
+                <span class="entry-date">Mar 24</span>
+                <div class="child-pill" style="background:rgba(212,160,123,0.12);color:#D4A07B;">
+                  <div class="child-dot" style="background:#D4A07B;"></div>
+                  Liam
+                </div>
+              </div>
+              <span class="entry-heart filled" style="font-size:32px;">♥</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="download-btn" onclick="downloadScreen('jar')">Download PNG</button>
+    </div>
+
+  </div>
+
+  <!-- Hidden full-res render targets -->
+  <div class="render-target" id="render-container"></div>
+
+  <script>
+    function downloadScreen(name) {
+      const previewId = name + '-preview';
+      const source = document.getElementById(previewId);
+
+      // Clone the screen at full size
+      const clone = source.cloneNode(true);
+      clone.style.transform = 'none';
+      clone.style.position = 'absolute';
+      clone.style.left = '0';
+      clone.style.top = '0';
+
+      const container = document.getElementById('render-container');
+      container.innerHTML = '';
+      container.appendChild(clone);
+
+      html2canvas(clone, {
+        width: 1080,
+        height: 1920,
+        scale: 1,
+        useCORS: true,
+        backgroundColor: null
+      }).then(function(canvas) {
+        const link = document.createElement('a');
+        link.download = 'forever-fireflies-' + name + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        container.innerHTML = '';
+      });
+    }
+  </script>
+
+</body>
+</html>

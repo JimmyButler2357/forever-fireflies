@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "883489910851",
+    "project_id": "forever-fireflies",
+    "storage_bucket": "forever-fireflies.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:883489910851:android:c209203ebf25a526f624f6",
+        "android_client_info": {
+          "package_name": "com.foreverfireflies.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6pqDLazLIZlwmfYmDzk2rJZPI99a9XZE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

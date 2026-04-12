@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "label": "Classic / Funny quote / Short / 1 child",
+    "description": "Kid says something absurd about food",
+    "transcript": "We're eating lunch and Lila picks up a piece of broccoli and holds it next to a piece of chicken and says this one is the tree and this one is the dinosaur and the dinosaur is going to eat the tree and then she just chomps it down and goes that's the circle of life mama"
+  },
+  {
+    "id": 2,
+    "label": "Classic / Milestone / Short / 1 child",
+    "description": "First time reading a word on their own",
+    "transcript": "Noah was looking at a stop sign from the car and he goes mama that says stop and I was like wait you just read that and he said yeah S T O P stop and it was like this light went on in his face like he just unlocked a superpower"
+  },
+  {
+    "id": 3,
+    "label": "Classic / Everyday sweet / Medium / 1 child",
+    "description": "Helping with laundry together",
+    "transcript": "Nothing exciting but Lila helped me fold laundry today and she was terrible at it like every towel was just a ball but she was trying so hard and she'd hold up each one and go is this right and I'd say perfect every time and she arranged all the washcloths by color and was so proud of her little rainbow stack"
+  },
+  {
+    "id": 4,
+    "label": "Classic / Bedtime / Short / 1 child",
+    "description": "Sweet thing said during bedtime routine",
+    "transcript": "I was singing Noah's goodnight song and he stopped me halfway through and said mama can you sing it slower I want it to last longer and honestly I almost fell apart right there"
+  },
+  {
+    "id": 5,
+    "label": "Classic / Sibling love / Short / 2 children",
+    "description": "Older sibling being protective",
+    "transcript": "Some kid at the playground pushed Noah and before I could even react Lila marched right over and stood in front of Noah with her hands on her hips and said hey that's my brother you don't push my brother and the other kid just walked away and Noah looked up at Lila like she was a superhero"
+  },
+  {
+    "id": 6,
+    "label": "Classic / Sentimental / Medium / 1 child",
+    "description": "Parent watching kid sleep",
+    "transcript": "I know I should be sleeping right now but I just came in to check on Lila and she's lying there with her mouth wide open and her arm thrown over her stuffed elephant and her hair is all crazy and she looks so peaceful and so small and I just stood in the doorway for like five minutes because sometimes I forget how little she still is during the day when she's running around being so independent but right now she's just my baby"
+  },
+  {
+    "id": 7,
+    "label": "Classic / Humor / Short / 1 child",
+    "description": "Kid logic that makes zero sense",
+    "transcript": "Noah told me he can't eat his peas because they're too green today and yesterday they were the right amount of green but today the green is wrong and I asked what the right green looks like and he said lighter and also happier"
+  },
+  {
+    "id": 8,
+    "label": "Classic / Friendship / Medium / 1 child",
+    "description": "Kid's first real friendship moment",
+    "transcript": "Lila's been talking about this girl Sophie from school nonstop and today Sophie came over for a playdate and they immediately ran to Lila's room and shut the door and I could hear them in there giggling for like an hour and at one point Sophie told Lila you're my favorite person and Lila said you're my favorite person too and they made friendship bracelets out of yarn and when Sophie left Lila waved from the window until the car disappeared"
+  },
+  {
+    "id": 9,
+    "label": "Classic / Outdoors / Short / 1 child",
+    "description": "Simple moment at the park",
+    "transcript": "Noah found a ladybug at the park today and he was so gentle with it he let it crawl on his hand and he whispered to it don't worry little guy I won't hurt you and he named it Spot and carried it around for twenty minutes and then set it on a leaf and said okay Spot go home to your family"
+  },
+  {
+    "id": 10,
+    "label": "Classic / Pride / Short / 1 child",
+    "description": "Kid does something kind without being asked",
+    "transcript": "We were at the coffee shop and there was an older woman struggling to carry her things and without me saying anything Lila walked up and held the door open for her and the woman said oh what a sweet girl and Lila just smiled and came back and didn't even mention it"
+  },
+  {
+    "id": 11,
+    "label": "Edge / 4 children / Long / Chaotic",
+    "description": "Family with four kids trying to take a holiday photo",
+    "transcript": "We tried to take a Christmas card photo today with all four kids and it was a complete disaster like Emma wouldn't stop making silly faces and Lila kept pulling at her dress saying it was itchy and Noah wandered off to look at a squirrel and baby Jude was just screaming the whole time and we took like fifty photos and in every single one at least two kids are not looking at the camera and the best one we got has Emma mid sneeze Lila with her eyes closed Noah looking at the squirrel and Jude with his finger up his nose and my husband said that's the one that's our Christmas card and honestly it's perfect"
+  },
+  {
+    "id": 12,
+    "label": "Edge / Nonverbal baby / Short / Sentimental",
+    "description": "Pre-verbal baby does something that feels intentional",
+    "transcript": "Jude can't talk yet obviously he's only eight months but this morning he crawled over to me and pulled himself up using my legs and just stood there holding onto my knees looking up at me and he reached up and patted my face and then just laid his head against my leg and I know he doesn't know what he's doing but it really felt like he was saying I love you"
+  },
+  {
+    "id": 13,
+    "label": "Edge / Single dad perspective / Medium / 1 child",
+    "description": "Dad navigating doing daughter's hair",
+    "transcript": "Okay so Sarah wanted a French braid today and I have watched like fifteen YouTube videos on this and I still cannot do it and she was so patient with me she sat there for twenty minutes while I tried and failed and tried again and what I ended up with was definitely not a French braid it was more like a lumpy rope but she looked in the mirror and said daddy it's beautiful and she wore it all day and even showed her friends and told them her dad did it and I have never tried harder at anything in my life"
+  },
+  {
+    "id": 14,
+    "label": "Edge / Adopted child / Medium / Tender",
+    "description": "Newly adopted child calls them mom for the first time",
+    "transcript": "We've had Maya for three months now and she's been calling us by our first names which is totally fine we told her there's no pressure and tonight I was reading her a bedtime story and she was getting sleepy and I went to leave and she said wait and I turned around and she said goodnight mom and it was the first time and I held it together until I got to the hallway and then I just slid down the wall and cried"
+  },
+  {
+    "id": 15,
+    "label": "Edge / Child with speech delay / Short / Milestone",
+    "description": "Child who struggles with speech says a clear sentence",
+    "transcript": "For context Oliver has a speech delay and we've been working with a therapist for months and most of his words are still hard to understand but today at dinner he looked right at me and clear as day said I want more please and every word was perfect and the whole table went silent and his big sister started clapping and he looked so confused about why everyone was making such a big deal but it is a big deal it's the biggest deal"
+  },
+  {
+    "id": 16,
+    "label": "Edge / Teenager / Short / Bittersweet",
+    "description": "Rare tender moment with a teenager",
+    "transcript": "Emma is fourteen and she basically communicates in grunts and eye rolls these days and tonight I was cleaning up the kitchen and she came in and just started helping without being asked and we washed dishes together in silence for like ten minutes and then she said thanks for dinner mom it was good and then she went back to her room and I know that doesn't sound like much but from a fourteen year old that's basically a love letter"
+  },
+  {
+    "id": 17,
+    "label": "Edge / Twins / Medium / Funny divergence",
+    "description": "Identical twins with completely different personalities",
+    "transcript": "The twins had their birthday party today and it's hilarious how different they are like Mason wanted a dinosaur cake and Miles wanted a space cake so we got both and Mason spent the whole party running around roaring at everyone and Miles sat in the corner quietly building a rocket out of cardboard boxes and at the end Mason was covered in frosting from head to toe and Miles didn't have a single spot on him and they're literally the same DNA and I don't understand how they're such different humans"
+  },
+  {
+    "id": 18,
+    "label": "Edge / Military parent / Short / Reunion",
+    "description": "Parent returning from deployment",
+    "transcript": "I just got home after seven months and Noah didn't recognize me at first and he hid behind his mom and that hurt but then she showed him a picture and said see that's daddy and he looked at the picture and looked at me and then he ran and I picked him up and he just kept saying daddy daddy daddy and he wouldn't let go and I'm not letting go either not for a long time"
+  },
+  {
+    "id": 19,
+    "label": "Edge / Blended family / Medium / Sweet",
+    "description": "Step-sibling bond forming for the first time",
+    "transcript": "We've been a blended family for six months now and Lila and my husband's son Ethan have been polite but kind of distant with each other and tonight I heard them in the living room and Ethan was showing Lila how to play his favorite video game and she was terrible at it and they were both laughing so hard and then Lila said you're actually a pretty cool brother and Ethan got really quiet and said you think I'm your brother and she said obviously and he had this look on his face like he'd been waiting for someone to say that"
+  },
+  {
+    "id": 20,
+    "label": "Edge / Grief / Short / Tender",
+    "description": "Child comforting parent who lost someone",
+    "transcript": "I was looking at old photos of my dad who passed last month and I didn't realize Lila was watching me and she came over and climbed in my lap and looked at the photo and said is that your daddy and I said yeah and she said he looks nice and then she said it's okay to be sad mama your daddy loved you and she's five and somehow she knew exactly what I needed to hear"
+  }
+]

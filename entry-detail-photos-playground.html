@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entry Detail — Photo Layout Iterations</title>
+<style>
+  :root {
+    --ui-bg: #1a1a1a;
+    --ui-surface: #242424;
+    --ui-border: #333;
+    --ui-text: #e0e0e0;
+    --ui-text-dim: #888;
+    --ui-accent: #E8724A;
+
+    --app-bg: #FAF8F5;
+    --app-card: #FEFCF9;
+    --app-text: #2C2420;
+    --app-textSoft: #8C7E74;
+    --app-textMuted: #B5AAA0;
+    --app-accent: #E8724A;
+    --app-border: #EDE8E3;
+    --app-tag: #F3EDE8;
+    --app-heartEmpty: #D9D2CB;
+    --app-success: #4CAF7C;
+    --app-childBlue: #7BAFD4;
+    --app-childAmber: #D4A07B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .layout { display: flex; height: 100vh; }
+
+  /* ─── Controls Panel ─── */
+  .controls {
+    width: 360px;
+    min-width: 360px;
+    background: var(--ui-surface);
+    border-right: 1px solid var(--ui-border);
+    overflow-y: auto;
+    padding: 16px;
+    flex-shrink: 0;
+    transition: margin-left 0.25s ease;
+  }
+  .controls.collapsed { margin-left: -360px; }
+  .controls h1 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .controls .subtitle { font-size: 11px; color: var(--ui-text-dim); margin-bottom: 6px; }
+  .controls .baseline-note {
+    font-size: 10px;
+    color: var(--ui-accent);
+    background: rgba(232,114,74,0.08);
+    border: 1px solid rgba(232,114,74,0.2);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .control-group {
+    margin-bottom: 12px;
+    border: 1px solid var(--ui-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .control-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    cursor: pointer;
+    user-select: none;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .control-group-header:hover { background: rgba(255,255,255,0.06); }
+  .control-group-header .tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+  }
+  .control-group-header .tag.new { background: rgba(76,175,124,0.2); color: #4CAF7C; }
+  .control-group-header .tag.tweak { background: rgba(232,169,74,0.2); color: #E8A94A; }
+  .control-group-header .arrow {
+    font-size: 10px;
+    color: var(--ui-text-dim);
+    transition: transform 0.2s;
+  }
+  .control-group-header.open .arrow { transform: rotate(90deg); }
+  .control-group-body { display: none; padding: 10px 12px; }
+  .control-group-body.open { display: block; }
+
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .option input[type="radio"] { margin-top: 2px; accent-color: var(--ui-accent); }
+  .option input[type="checkbox"] { margin-top: 2px; accent-color: var(--ui-accent); }
+  .option label { cursor: pointer; color: var(--ui-text); }
+  .option label strong { color: var(--ui-accent); font-weight: 600; }
+  .option label .desc { color: var(--ui-text-dim); }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 11px;
+  }
+  .slider-row label { min-width: 80px; color: var(--ui-text-dim); }
+  .slider-row input[type="range"] { flex: 1; accent-color: var(--ui-accent); }
+  .slider-row .val { min-width: 28px; text-align: right; color: var(--ui-accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ─── Preview Area ─── */
+  .preview-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .toggle-controls-btn {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 100;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    color: var(--ui-text);
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .toggle-controls-btn:hover { background: rgba(255,255,255,0.08); }
+
+  .phone-frame {
+    width: 375px;
+    min-height: 780px;
+    background: var(--app-bg);
+    border-radius: 40px;
+    border: 8px solid #1a1a1a;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  .phone-content { height: 100%; overflow-y: auto; }
+
+  /* ─── App Elements (baseline = user's chosen design) ─── */
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 52px 20px 12px;
+  }
+  .app-topbar-right { display: flex; align-items: center; gap: 12px; }
+  .app-icon-btn {
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border: none; background: none;
+  }
+  .back-chevron { font-size: 22px; color: var(--app-text); font-weight: 300; }
+  .heart-icon { font-size: 22px; color: var(--app-accent); }
+
+  .app-scroll { padding: 0 20px 40px; }
+
+  /* Title */
+  .app-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 22px; font-weight: 800;
+    color: var(--app-text); line-height: 1.3;
+    margin-bottom: 8px;
+  }
+
+  /* Gradient divider — baseline: 2px, 4px top margin */
+  .gradient-divider {
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(to right, var(--app-childBlue), var(--app-childAmber));
+    margin-top: 4px;
+    margin-bottom: 12px; /* grouped spacing */
+  }
+
+  /* Child pills — baseline: 12px radius, grouped spacing */
+  .child-line {
+    display: flex; flex-wrap: wrap;
+    align-items: center; gap: 8px;
+    margin-bottom: 4px;
+  }
+  .mini-pill {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 12px; gap: 4px;
+  }
+  .mini-pill-dot { width: 6px; height: 6px; border-radius: 3px; }
+  .mini-pill-name { font-size: 12px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .mini-pill-age { font-size: 11px; font-weight: 400; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .mini-pill-remove { font-size: 11px; opacity: 0.6; font-weight: 700; margin-left: 2px; }
+
+  .add-child-btn {
+    width: 24px; height: 24px; border-radius: 12px;
+    border: 1px solid var(--app-textMuted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--app-textMuted);
+    cursor: pointer; background: none; line-height: 1;
+  }
+
+  /* Meta line — baseline: grouped 4px mb */
+  .meta-line {
+    display: flex; flex-wrap: wrap; align-items: center;
+    margin-bottom: 4px; min-height: 44px;
+  }
+  .meta-text { font-size: 12px; color: var(--app-textMuted); line-height: 16px; }
+  .meta-location-add { font-size: 12px; color: var(--app-textMuted); line-height: 16px; font-style: italic; }
+
+  /* ─── Photo Grid ─── */
+  .photo-grid {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+    margin-bottom: 4px;
+  }
+  .photo-grid.cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .photo-grid.cols-1-hero {
+    grid-template-columns: 1fr;
+  }
+  .photo-grid.cols-1-3 {
+    grid-template-columns: 1fr;
+  }
+  .photo-grid.cols-mosaic {
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .photo-thumb {
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    background: var(--app-border);
+  }
+  .photo-thumb.round-sm { border-radius: 8px; }
+  .photo-thumb.round-lg { border-radius: 16px; }
+
+  .photo-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .photo-thumb .placeholder {
+    width: 100%;
+    padding-bottom: 100%;
+    background: linear-gradient(135deg, #EDE8E3 0%, #F3EDE8 50%, #EDE8E3 100%);
+    position: relative;
+  }
+  .photo-thumb .placeholder.landscape { padding-bottom: 56%; }
+  .photo-thumb .placeholder.tall { padding-bottom: 130%; }
+  .photo-thumb .placeholder-icon {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--app-textMuted);
+    font-size: 24px;
+    opacity: 0.5;
+  }
+  .photo-thumb .photo-count-badge {
+    position: absolute;
+    bottom: 8px; right: 8px;
+    background: rgba(44,36,32,0.6);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Add photo button */
+  .add-photo-btn {
+    border: 1.5px dashed var(--app-border);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    background: none;
+    min-height: 80px;
+  }
+  .add-photo-btn .plus { font-size: 20px; color: var(--app-textMuted); line-height: 1; }
+  .add-photo-btn .label { font-size: 10px; color: var(--app-textMuted); font-weight: 500; }
+
+  /* Mosaic: first item spans 2 rows */
+  .photo-grid.cols-mosaic .photo-thumb:first-child {
+    grid-row: 1 / 3;
+  }
+  .photo-grid.cols-mosaic .photo-thumb:first-child .placeholder { padding-bottom: 130%; }
+
+  /* Transcript — baseline: bottom border only */
+  .transcript-area {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--app-border);
+    margin-bottom: 4px;
+  }
+  .transcript-text {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 15px; font-weight: 400;
+    line-height: 1.65; color: var(--app-text);
+  }
+
+  /* Saved indicator — baseline: tight */
+  .saved-indicator {
+    font-size: 11px; font-weight: 500;
+    color: var(--app-textMuted); text-align: right;
+    margin-top: 4px; margin-bottom: 16px;
+  }
+
+  /* Tags — baseline: solid bg */
+  .tags-row {
+    display: flex; flex-wrap: wrap;
+    align-items: center; gap: 6px;
+    margin-top: 16px; margin-bottom: 16px;
+  }
+  .add-tag-pill {
+    display: inline-flex; align-items: center;
+    padding: 3px 8px; border-radius: 8px;
+    font-size: 11px; font-weight: 500;
+    color: var(--app-textMuted);
+    background: var(--app-tag);
+    border: none; cursor: pointer;
+  }
+
+  /* ─── Prompt Output ─── */
+  .prompt-area {
+    width: 375px;
+    margin-top: 20px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .prompt-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .prompt-header span { font-size: 11px; font-weight: 600; color: var(--ui-text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .copy-btn {
+    background: var(--ui-accent); color: #fff; border: none;
+    border-radius: 5px; padding: 4px 10px;
+    font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .copy-btn:hover { opacity: 0.85; }
+  .prompt-text {
+    font-size: 12px; line-height: 1.6; color: var(--ui-text);
+    white-space: pre-wrap;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* Presets */
+  .presets-row { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .preset-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--ui-border);
+    color: var(--ui-text); padding: 5px 10px;
+    border-radius: 6px; font-size: 10px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .preset-btn:hover { background: rgba(232,114,74,0.15); border-color: var(--ui-accent); }
+  .preset-btn.active { background: var(--ui-accent); border-color: var(--ui-accent); color: #fff; }
+
+  .section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--ui-text-dim);
+    margin: 12px 0 8px;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<button class="toggle-controls-btn" onclick="toggleControls()">
+  <span id="toggleLabel">Hide Controls</span>
+</button>
+
+<div class="layout">
+  <div class="controls" id="controlsPanel">
+    <h1>Entry Detail — Photo Layout Iterations</h1>
+    <p class="subtitle">Building on your chosen baseline + exploring photo placement</p>
+    <div class="baseline-note">
+      <strong>Baseline locked in:</strong> bottom-border transcript, 2px divider, grouped spacing, solid tag pill, 24px add-child btn, tight saved indicator, SVG overflow icon, 12px pill radius
+    </div>
+
+    <div class="presets-row">
+      <button class="preset-btn" onclick="applyPreset('classic')">Classic Grid</button>
+      <button class="preset-btn" onclick="applyPreset('hero')">Hero Photo</button>
+      <button class="preset-btn" onclick="applyPreset('mosaic')">Mosaic</button>
+      <button class="preset-btn" onclick="applyPreset('compact')">Compact Strip</button>
+      <button class="preset-btn" onclick="applyPreset('nophotos')">No Photos</button>
+    </div>
+
+    <div class="section-label">Photo Layout</div>
+
+    <!-- Photo count -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span>Photo Count <span class="tag new">new</span></span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="photocount" value="0" onchange="update()"><label><strong>0</strong> <span class="desc">— no photos (text-only entry)</span></label></div>
+        <div class="option"><input type="radio" name="photocount" value="1" onchange="update()"><label><strong>1 photo</strong></label></div>
+        <div class="option"><input type="radio" name="photocount" value="2" onchange="update()"><label><strong>2 photos</strong></label></div>
+        <div class="option"><input type="radio" name="photocount" value="3" onchange="update()"><label><strong>3 photos</strong></label></div>
+        <div class="option"><input type="radio" name="photocount" value="4" checked onchange="update()"><label><strong>4 photos</strong> <span class="desc">— max</span></label></div>
+      </div>
+    </div>
+
+    <!-- Photo grid style -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span>Grid Style <span class="tag new">new</span></span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="gridstyle" value="2col" checked onchange="update()"><label><strong>A) 2×2 Grid</strong> <span class="desc">— equal squares, clean and simple</span></label></div>
+        <div class="option"><input type="radio" name="gridstyle" value="hero" onchange="update()"><label><strong>B) Hero + row</strong> <span class="desc">— first photo wide/landscape, rest below as row</span></label></div>
+        <div class="option"><input type="radio" name="gridstyle" value="mosaic" onchange="update()"><label><strong>C) Mosaic</strong> <span class="desc">— first photo tall (2 rows), rest stacked right</span></label></div>
+        <div class="option"><input type="radio" name="gridstyle" value="strip" onchange="update()"><label><strong>D) Horizontal strip</strong> <span class="desc">— single scrollable row, small thumbs</span></label></div>
+      </div>
+    </div>
+
+    <!-- Photo placement (where in the vertical flow) -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span>Photo Placement <span class="tag new">new</span></span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="placement" value="above" checked onchange="update()"><label><strong>A) Above transcript</strong> <span class="desc">— photos sit between metadata and text (journal style)</span></label></div>
+        <div class="option"><input type="radio" name="placement" value="below" onchange="update()"><label><strong>B) Below transcript</strong> <span class="desc">— text first, photos as supporting media</span></label></div>
+        <div class="option"><input type="radio" name="placement" value="hero-top" onchange="update()"><label><strong>C) Hero above title</strong> <span class="desc">— first photo full-bleed above title (immersive)</span></label></div>
+      </div>
+    </div>
+
+    <!-- Photo thumb radius -->
+    <div class="control-group">
+      <div class="control-group-header" onclick="toggleGroup(this)">
+        <span>Photo Radius <span class="tag tweak">tweak</span></span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body">
+        <div class="option"><input type="radio" name="photoradius" value="8" onchange="update()"><label><strong>sm (8px)</strong> <span class="desc">— matches tags</span></label></div>
+        <div class="option"><input type="radio" name="photoradius" value="14" checked onchange="update()"><label><strong>card (14px)</strong> <span class="desc">— matches entry cards</span></label></div>
+        <div class="option"><input type="radio" name="photoradius" value="16" onchange="update()"><label><strong>lg (16px)</strong> <span class="desc">— softer, prominent</span></label></div>
+      </div>
+    </div>
+
+    <!-- Grid gap -->
+    <div class="control-group">
+      <div class="control-group-header" onclick="toggleGroup(this)">
+        <span>Grid Gap <span class="tag tweak">tweak</span></span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body">
+        <div class="slider-row">
+          <label>Gap</label>
+          <input type="range" min="4" max="16" step="4" value="8" oninput="update(); this.nextElementSibling.textContent=this.value+'px'" />
+          <span class="val">8px</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Show add-photo button -->
+    <div class="control-group">
+      <div class="control-group-header" onclick="toggleGroup(this)">
+        <span>Add Photo Button <span class="tag tweak">tweak</span></span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body">
+        <div class="option"><input type="radio" name="addphoto" value="inline" checked onchange="update()"><label><strong>A) Inline in grid</strong> <span class="desc">— dashed placeholder in the next grid slot</span></label></div>
+        <div class="option"><input type="radio" name="addphoto" value="below" onchange="update()"><label><strong>B) Link below grid</strong> <span class="desc">— "+ Add photos" text link</span></label></div>
+        <div class="option"><input type="radio" name="addphoto" value="none" onchange="update()"><label><strong>C) Hidden</strong> <span class="desc">— only show in edit/overflow menu</span></label></div>
+      </div>
+    </div>
+
+    <div class="section-label">Divider Position (with photos)</div>
+
+    <!-- Divider placement relative to photos -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span>Divider + Photos <span class="tag new">new</span></span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="dividerpos" value="after-title" checked onchange="update()"><label><strong>A) After title (current)</strong> <span class="desc">— divider stays between title and identity cluster</span></label></div>
+        <div class="option"><input type="radio" name="dividerpos" value="after-meta" onchange="update()"><label><strong>B) After metadata</strong> <span class="desc">— between identity cluster and photos</span></label></div>
+        <div class="option"><input type="radio" name="dividerpos" value="after-photos" onchange="update()"><label><strong>C) After photos</strong> <span class="desc">— between photos and transcript</span></label></div>
+        <div class="option"><input type="radio" name="dividerpos" value="removed" onchange="update()"><label><strong>D) Removed</strong> <span class="desc">— photos provide enough visual break</span></label></div>
+      </div>
+    </div>
+
+    <div class="section-label">Transcript Refinements</div>
+
+    <!-- Transcript top margin (with vs without photos above) -->
+    <div class="control-group">
+      <div class="control-group-header" onclick="toggleGroup(this)">
+        <span>Transcript Spacing <span class="tag tweak">tweak</span></span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body">
+        <div class="slider-row">
+          <label>Top gap</label>
+          <input type="range" min="4" max="24" step="4" value="12" id="transcriptGap" oninput="update(); this.nextElementSibling.textContent=this.value+'px'" />
+          <span class="val">12px</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-area">
+    <div class="phone-frame">
+      <div class="phone-content" id="phoneContent"></div>
+    </div>
+
+    <div class="prompt-area">
+      <div class="prompt-header">
+        <span>Implementation Prompt</span>
+        <button class="copy-btn" onclick="copyPrompt()">Copy</button>
+      </div>
+      <div class="prompt-text" id="promptOutput"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = {
+  photocount: '4',
+  gridstyle: '2col',
+  placement: 'above',
+  photoradius: '14',
+  gridgap: 8,
+  addphoto: 'inline',
+  dividerpos: 'after-title',
+  transcriptgap: 12,
+};
+
+const presets = {
+  classic: { photocount:'4', gridstyle:'2col', placement:'above', photoradius:'14', gridgap:8, addphoto:'inline', dividerpos:'after-title', transcriptgap:12 },
+  hero: { photocount:'3', gridstyle:'hero', placement:'above', photoradius:'14', gridgap:8, addphoto:'below', dividerpos:'after-meta', transcriptgap:16 },
+  mosaic: { photocount:'3', gridstyle:'mosaic', placement:'above', photoradius:'16', gridgap:8, addphoto:'none', dividerpos:'after-photos', transcriptgap:16 },
+  compact: { photocount:'4', gridstyle:'strip', placement:'above', photoradius:'8', gridgap:8, addphoto:'inline', dividerpos:'after-title', transcriptgap:12 },
+  nophotos: { photocount:'0', gridstyle:'2col', placement:'above', photoradius:'14', gridgap:8, addphoto:'inline', dividerpos:'after-title', transcriptgap:12 },
+};
+
+function applyPreset(name) {
+  Object.assign(state, presets[name]);
+  syncControls();
+  update();
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function syncControls() {
+  for (const [key, val] of Object.entries(state)) {
+    if (typeof val === 'number') {
+      if (key === 'gridgap') {
+        const slider = document.querySelector('.slider-row input[type="range"]');
+        if (slider && slider.parentElement.querySelector('label').textContent === 'Gap') {
+          slider.value = val;
+          slider.nextElementSibling.textContent = val + 'px';
+        }
+      }
+      if (key === 'transcriptgap') {
+        const el = document.getElementById('transcriptGap');
+        if (el) { el.value = val; el.nextElementSibling.textContent = val + 'px'; }
+      }
+    } else {
+      const radio = document.querySelector(`input[name="${key}"][value="${val}"]`);
+      if (radio) radio.checked = true;
+    }
+  }
+}
+
+function toggleControls() {
+  const panel = document.getElementById('controlsPanel');
+  const label = document.getElementById('toggleLabel');
+  panel.classList.toggle('collapsed');
+  label.textContent = panel.classList.contains('collapsed') ? 'Show Controls' : 'Hide Controls';
+}
+
+function toggleGroup(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+function readState() {
+  ['photocount','gridstyle','placement','photoradius','addphoto','dividerpos'].forEach(name => {
+    const checked = document.querySelector(`input[name="${name}"]:checked`);
+    if (checked) state[name] = checked.value;
+  });
+  const gapSlider = document.querySelector('.slider-row input[type="range"]');
+  if (gapSlider && gapSlider.parentElement.querySelector('label').textContent === 'Gap') {
+    state.gridgap = parseInt(gapSlider.value);
+  }
+  const tgap = document.getElementById('transcriptGap');
+  if (tgap) state.transcriptgap = parseInt(tgap.value);
+}
+
+function update() {
+  readState();
+  renderPreview();
+  updatePrompt();
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+}
+
+// ─── Photo rendering helpers ─────────────────────────
+function photoPlaceholder(aspectClass, radius, showBadge, badgeNum) {
+  const r = radius + 'px';
+  const badge = showBadge ? `<span class="photo-count-badge">+${badgeNum}</span>` : '';
+  return `<div class="photo-thumb" style="border-radius:${r}">
+    <div class="placeholder ${aspectClass}">
+      <span class="placeholder-icon">&#9653;</span>
+      ${badge}
+    </div>
+  </div>`;
+}
+
+function addPhotoCell(radius) {
+  return `<div class="add-photo-btn" style="border-radius:${radius}px">
+    <span class="plus">+</span>
+    <span class="label">Photo</span>
+  </div>`;
+}
+
+function buildPhotoGrid() {
+  const count = parseInt(state.photocount);
+  if (count === 0) return '';
+
+  const r = parseInt(state.photoradius);
+  const gap = state.gridgap;
+  const style = state.gridstyle;
+  const showAdd = state.addphoto === 'inline';
+
+  let html = '';
+
+  if (style === '2col') {
+    html += `<div class="photo-grid cols-2" style="gap:${gap}px">`;
+    for (let i = 0; i < count; i++) {
+      html += photoPlaceholder('', r, false, 0);
+    }
+    if (showAdd && count < 4) html += addPhotoCell(r);
+    html += '</div>';
+  }
+  else if (style === 'hero') {
+    // First photo wide landscape
+    html += `<div style="margin-bottom:${gap}px">`;
+    html += `<div class="photo-thumb" style="border-radius:${r}px"><div class="placeholder landscape"><span class="placeholder-icon">&#9653;</span></div></div>`;
+    html += '</div>';
+    // Rest in a row
+    if (count > 1) {
+      const restCount = count - 1;
+      html += `<div class="photo-grid" style="grid-template-columns:repeat(${Math.min(restCount + (showAdd && count < 4 ? 1 : 0), 3)}, 1fr); gap:${gap}px">`;
+      for (let i = 1; i < count; i++) {
+        html += photoPlaceholder('', r, false, 0);
+      }
+      if (showAdd && count < 4) html += addPhotoCell(r);
+      html += '</div>';
+    }
+  }
+  else if (style === 'mosaic') {
+    html += `<div class="photo-grid cols-mosaic" style="gap:${gap}px">`;
+    html += `<div class="photo-thumb" style="border-radius:${r}px; grid-row: 1 / ${Math.min(count, 3)}"><div class="placeholder tall"><span class="placeholder-icon">&#9653;</span></div></div>`;
+    for (let i = 1; i < count; i++) {
+      html += photoPlaceholder('', r, false, 0);
+    }
+    if (showAdd && count < 4) html += addPhotoCell(r);
+    html += '</div>';
+  }
+  else if (style === 'strip') {
+    html += `<div style="display:flex; gap:${gap}px; overflow-x:auto; padding-bottom:4px">`;
+    for (let i = 0; i < count; i++) {
+      html += `<div class="photo-thumb" style="border-radius:${r}px; flex-shrink:0; width:80px; height:80px"><div class="placeholder" style="padding-bottom:100%"><span class="placeholder-icon" style="font-size:16px">&#9653;</span></div></div>`;
+    }
+    if (showAdd && count < 4) {
+      html += `<div class="add-photo-btn" style="border-radius:${r}px; flex-shrink:0; width:80px; height:80px; min-height:auto">
+        <span class="plus" style="font-size:16px">+</span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  // "Add photos" link below
+  if (state.addphoto === 'below') {
+    html += `<div style="margin-top:8px"><span style="font-size:11px; color:${getComputedStyle(document.documentElement).getPropertyValue('--app-textMuted')}; font-weight:500; cursor:pointer">+ Add photos</span></div>`;
+  }
+
+  return html;
+}
+
+function buildDivider() {
+  return `<div class="gradient-divider"></div>`;
+}
+
+function renderPreview() {
+  const phone = document.getElementById('phoneContent');
+  const count = parseInt(state.photocount);
+  const tGap = state.transcriptgap;
+
+  let html = '';
+
+  // Top bar
+  html += `
+    <div class="app-topbar">
+      <div class="app-icon-btn"><span class="back-chevron">&#8249;</span></div>
+      <div class="app-topbar-right">
+        <div class="app-icon-btn"><span class="heart-icon">&#9829;</span></div>
+        <div class="app-icon-btn">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="4" cy="10" r="1.8" fill="#2C2420"/>
+            <circle cx="10" cy="10" r="1.8" fill="#2C2420"/>
+            <circle cx="16" cy="10" r="1.8" fill="#2C2420"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="app-scroll">
+  `;
+
+  // Hero-top photo placement (above title)
+  if (state.placement === 'hero-top' && count > 0) {
+    // First photo full-bleed-ish above title
+    const r = parseInt(state.photoradius);
+    html += `<div style="margin: 0 -20px 12px; border-radius:0; overflow:hidden">
+      <div style="background:linear-gradient(135deg, #EDE8E3 0%, #F3EDE8 50%, #EDE8E3 100%); padding-bottom:56%; position:relative">
+        <span style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#B5AAA0; font-size:32px; opacity:0.5">&#9653;</span>
+      </div>
+    </div>`;
+    // Remaining photos in a small row below title? We'll put them after metadata
+  }
+
+  // Title
+  html += `<div class="app-title">Playing Chase at Grammy's</div>`;
+
+  // Divider after title
+  if (state.dividerpos === 'after-title') html += buildDivider();
+
+  // Child pills
+  html += `
+    <div class="child-line">
+      <span class="mini-pill" style="background:rgba(123,175,212,0.12)">
+        <span class="mini-pill-dot" style="background:#7BAFD4"></span>
+        <span class="mini-pill-name" style="color:#7BAFD4">Joseph</span>
+        <span class="mini-pill-age" style="color:rgba(123,175,212,0.6)">2mo</span>
+        <span class="mini-pill-remove" style="color:#7BAFD4">&times;</span>
+      </span>
+      <span class="mini-pill" style="background:rgba(212,160,123,0.12)">
+        <span class="mini-pill-dot" style="background:#D4A07B"></span>
+        <span class="mini-pill-name" style="color:#D4A07B">Silas</span>
+        <span class="mini-pill-age" style="color:rgba(212,160,123,0.6)">2mo</span>
+        <span class="mini-pill-remove" style="color:#D4A07B">&times;</span>
+      </span>
+      <button class="add-child-btn">+</button>
+    </div>
+  `;
+
+  // Meta line
+  html += `
+    <div class="meta-line">
+      <span class="meta-text">Mar 29, 2026 &middot; 9:56 PM</span>
+      <span class="meta-location-add"> &middot; + Add location</span>
+    </div>
+  `;
+
+  // Divider after metadata
+  if (state.dividerpos === 'after-meta') html += buildDivider();
+
+  // Photos above transcript
+  if (state.placement === 'above' && count > 0) {
+    html += `<div style="margin-top:${tGap}px">${buildPhotoGrid()}</div>`;
+  }
+  // Hero-top: remaining photos (2-4) in small row after metadata
+  if (state.placement === 'hero-top' && count > 1) {
+    const r = parseInt(state.photoradius);
+    const gap = state.gridgap;
+    html += `<div style="display:flex; gap:${gap}px; margin-top:8px">`;
+    for (let i = 1; i < count; i++) {
+      html += `<div class="photo-thumb" style="border-radius:${r}px; flex:1"><div class="placeholder" style="padding-bottom:100%"><span class="placeholder-icon" style="font-size:16px">&#9653;</span></div></div>`;
+    }
+    html += '</div>';
+  }
+
+  // Divider after photos
+  if (state.dividerpos === 'after-photos' && count > 0) {
+    html += `<div style="margin-top:12px">${buildDivider()}</div>`;
+  }
+
+  // Transcript
+  const transcriptMargin = (state.placement === 'above' && count > 0) ? tGap : tGap;
+  html += `
+    <div class="transcript-area" style="margin-top:${transcriptMargin}px">
+      <div class="transcript-text">today Silas Joseph and I played Chase in the front yard after dinner at Grammy Grampy's and they kept darting between my legs and I would jump over them and pretend to grab them and we all had a great time</div>
+    </div>
+    <div class="saved-indicator">All changes saved</div>
+  `;
+
+  // Photos below transcript
+  if (state.placement === 'below' && count > 0) {
+    html += `<div style="margin-top:4px; margin-bottom:8px">${buildPhotoGrid()}</div>`;
+  }
+
+  // Tags
+  html += `<div class="tags-row"><span class="add-tag-pill">+ add tag</span></div>`;
+
+  html += '</div>'; // close app-scroll
+  phone.innerHTML = html;
+}
+
+function updatePrompt() {
+  const parts = [];
+  const count = parseInt(state.photocount);
+
+  if (count > 0) {
+    // Placement
+    const placementDesc = {
+      above: 'between the metadata line and the transcript',
+      below: 'below the transcript and saved indicator, above the tags row',
+      'hero-top': 'with the first photo full-bleed above the title (edge-to-edge, no padding) and remaining thumbnails in a row after the metadata line',
+    };
+    parts.push(`Add a photo grid zone ${placementDesc[state.placement]}. Max 4 photos per entry.`);
+
+    // Grid style
+    const gridDesc = {
+      '2col': `Use a 2-column equal grid (each thumb is (screenWidth - 40px - ${state.gridgap}px) / 2 square).`,
+      hero: `Use a hero layout: first photo full-width landscape (56% aspect ratio), remaining photos in an equal row below with ${state.gridgap}px gap.`,
+      mosaic: `Use a mosaic layout: first photo tall (spans 2 rows, 2fr column), remaining photos stacked in a 1fr column beside it. Gap ${state.gridgap}px.`,
+      strip: `Use a horizontal scrollable strip: 80×80px square thumbnails in a row, flex-shrink: 0, overflow-x: auto. Gap ${state.gridgap}px.`,
+    };
+    parts.push(gridDesc[state.gridstyle]);
+
+    // Radius
+    const radiusNames = { '8': 'radii.sm (8px)', '14': 'radii.card (14px)', '16': 'radii.lg (16px)' };
+    parts.push(`Photo thumbnail border-radius: ${radiusNames[state.photoradius]}.`);
+
+    // Add photo button
+    const addDesc = {
+      inline: 'Show a dashed-border "+" placeholder in the next empty grid slot when fewer than 4 photos are attached.',
+      below: 'Show a "+ Add photos" text link below the photo grid (11px, textMuted).',
+      none: 'No visible add-photo button in the layout — use the overflow menu to add photos.',
+    };
+    parts.push(addDesc[state.addphoto]);
+  }
+
+  // Divider position
+  if (state.dividerpos !== 'after-title') {
+    const divDesc = {
+      'after-meta': 'Move the gradient divider to after the metadata line — it now separates the identity cluster (title + pills + date) from the content area (photos/transcript).',
+      'after-photos': 'Move the gradient divider to after the photo grid — it separates the visual media from the written transcript.',
+      removed: 'Remove the gradient divider — the photo grid provides enough visual separation between metadata and transcript.',
+    };
+    if (divDesc[state.dividerpos]) parts.push(divDesc[state.dividerpos]);
+  }
+
+  if (state.transcriptgap !== 12) {
+    parts.push(`Set the transcript area top margin to ${state.transcriptgap}px.`);
+  }
+
+  const output = document.getElementById('promptOutput');
+  if (parts.length === 0) {
+    output.textContent = 'Current baseline (no photos, divider after title). Toggle photo count and options to generate implementation instructions.';
+  } else {
+    output.textContent = 'In app/(main)/entry-detail.tsx, add photo support to the Entry Detail screen:\n\n' + parts.map((p, i) => `${i + 1}. ${p}`).join('\n\n');
+  }
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptOutput').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+}
+
+renderPreview();
+updatePrompt();
+</script>
+</body>
+</html>

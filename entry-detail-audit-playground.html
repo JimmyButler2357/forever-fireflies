@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entry Detail — Design Audit Playground</title>
+<style>
+  :root {
+    --ui-bg: #1a1a1a;
+    --ui-surface: #242424;
+    --ui-border: #333;
+    --ui-text: #e0e0e0;
+    --ui-text-dim: #888;
+    --ui-accent: #E8724A;
+
+    /* App palette */
+    --app-bg: #FAF8F5;
+    --app-card: #FEFCF9;
+    --app-text: #2C2420;
+    --app-textSoft: #8C7E74;
+    --app-textMuted: #B5AAA0;
+    --app-accent: #E8724A;
+    --app-border: #EDE8E3;
+    --app-tag: #F3EDE8;
+    --app-heartEmpty: #D9D2CB;
+    --app-success: #4CAF7C;
+    --app-childBlue: #7BAFD4;
+    --app-childAmber: #D4A07B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .layout {
+    display: flex;
+    height: 100vh;
+  }
+
+  /* ─── Controls Panel ─── */
+  .controls {
+    width: 340px;
+    min-width: 340px;
+    background: var(--ui-surface);
+    border-right: 1px solid var(--ui-border);
+    overflow-y: auto;
+    padding: 16px;
+    flex-shrink: 0;
+    transition: margin-left 0.25s ease;
+  }
+  .controls.collapsed {
+    margin-left: -340px;
+  }
+  .controls h1 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--ui-text);
+  }
+  .controls .subtitle {
+    font-size: 11px;
+    color: var(--ui-text-dim);
+    margin-bottom: 16px;
+  }
+
+  .control-group {
+    margin-bottom: 16px;
+    border: 1px solid var(--ui-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .control-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    cursor: pointer;
+    user-select: none;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .control-group-header:hover { background: rgba(255,255,255,0.06); }
+  .control-group-header .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: var(--ui-accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  .control-group-header .arrow {
+    font-size: 10px;
+    color: var(--ui-text-dim);
+    transition: transform 0.2s;
+  }
+  .control-group-header.open .arrow { transform: rotate(90deg); }
+  .control-group-body {
+    display: none;
+    padding: 10px 12px;
+  }
+  .control-group-body.open { display: block; }
+
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .option input[type="radio"] {
+    margin-top: 2px;
+    accent-color: var(--ui-accent);
+  }
+  .option label {
+    cursor: pointer;
+    color: var(--ui-text);
+  }
+  .option label strong { color: var(--ui-accent); font-weight: 600; }
+  .option label .desc { color: var(--ui-text-dim); }
+
+  /* ─── Preview Area ─── */
+  .preview-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    padding: 24px;
+    position: relative;
+  }
+
+  .toggle-controls-btn {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 100;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    color: var(--ui-text);
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .toggle-controls-btn:hover { background: rgba(255,255,255,0.08); }
+
+  /* Phone frame */
+  .phone-frame {
+    width: 375px;
+    min-height: 700px;
+    background: var(--app-bg);
+    border-radius: 40px;
+    border: 8px solid #1a1a1a;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    overflow: hidden;
+    position: relative;
+  }
+  .phone-content {
+    padding: 0;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  /* ─── App Elements ─── */
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 52px 20px 12px;
+  }
+  .app-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .app-icon-btn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    background: none;
+  }
+  .back-chevron {
+    font-size: 22px;
+    color: var(--app-text);
+    font-weight: 300;
+  }
+  .heart-icon {
+    font-size: 22px;
+    color: var(--app-accent);
+  }
+  .overflow-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--app-text);
+    letter-spacing: 2px;
+  }
+  .overflow-icon svg {
+    display: block;
+  }
+
+  .app-scroll {
+    padding: 0 20px 40px;
+  }
+
+  /* Title */
+  .app-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--app-text);
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+
+  /* Gradient divider */
+  .gradient-divider {
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(to right, var(--app-childBlue), var(--app-childAmber));
+    margin-bottom: 8px;
+  }
+  .gradient-divider.relocated {
+    margin-bottom: 0;
+    margin-top: 8px;
+  }
+  .gradient-divider.thinner {
+    height: 2px;
+    margin-top: 4px;
+  }
+
+  /* Child pills row */
+  .child-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .mini-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 10px;
+    gap: 4px;
+  }
+  .mini-pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+  }
+  .mini-pill-name {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .mini-pill-age {
+    font-size: 11px;
+    font-weight: 400;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .mini-pill-remove {
+    font-size: 11px;
+    opacity: 0.6;
+    font-weight: 700;
+    margin-left: 2px;
+  }
+
+  .add-child-btn {
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    border: 1px solid var(--app-textMuted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--app-textMuted);
+    cursor: pointer;
+    background: none;
+    line-height: 1;
+  }
+
+  /* Meta line */
+  .meta-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 8px;
+    min-height: 44px;
+  }
+  .meta-text {
+    font-size: 12px;
+    color: var(--app-textMuted);
+    line-height: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .meta-location-add {
+    font-size: 12px;
+    color: var(--app-textMuted);
+    line-height: 16px;
+    font-style: italic;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* Transcript */
+  .transcript-card {
+    background: var(--app-card);
+    border: 1px solid var(--app-border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 12px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+  }
+  .transcript-card.no-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    padding-top: 12px;
+    box-shadow: none !important;
+  }
+  .transcript-card.subtle {
+    border: none;
+    box-shadow: 0 1px 3px rgba(44,36,32,0.04);
+  }
+  .transcript-card.inset {
+    background: #F5F0EB;
+    border: none;
+    border-radius: 14px;
+    box-shadow: inset 0 1px 3px rgba(44,36,32,0.06);
+  }
+  .transcript-card.bottom-border {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .transcript-text {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.65;
+    color: var(--app-text);
+    min-height: 140px;
+  }
+
+  /* Saved indicator */
+  .saved-indicator {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--app-textMuted);
+    text-align: right;
+    margin-bottom: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .saved-indicator.tight {
+    margin-top: 4px;
+    margin-bottom: 16px;
+  }
+
+  /* Tags row */
+  .tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 20px;
+    margin-bottom: 16px;
+  }
+
+  .add-tag-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 8px;
+    border: 1px dashed var(--app-border);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--app-textMuted);
+    cursor: pointer;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: none;
+  }
+  .add-tag-pill.solid-bg {
+    background: var(--app-tag);
+    border: none;
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+  .add-tag-pill.ghost {
+    border: none;
+    background: none;
+    padding: 2px 0;
+    font-size: 11px;
+  }
+
+  /* ─── Prompt Output ─── */
+  .prompt-area {
+    width: 375px;
+    margin-top: 20px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .prompt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .prompt-header span {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ui-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .copy-btn {
+    background: var(--ui-accent);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+  }
+  .copy-btn:hover { opacity: 0.85; }
+  .prompt-text {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ui-text);
+    white-space: pre-wrap;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  /* Presets row */
+  .presets-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .preset-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--ui-border);
+    color: var(--ui-text);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover {
+    background: rgba(232,114,74,0.15);
+    border-color: var(--ui-accent);
+  }
+  .preset-btn.active {
+    background: var(--ui-accent);
+    border-color: var(--ui-accent);
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<button class="toggle-controls-btn" onclick="toggleControls()">
+  <span id="toggleLabel">Hide Controls</span>
+</button>
+
+<div class="layout">
+  <!-- Controls Panel -->
+  <div class="controls" id="controlsPanel">
+    <h1>Entry Detail — Design Audit</h1>
+    <p class="subtitle">Toggle each variation to see changes live in the phone preview</p>
+
+    <!-- Presets -->
+    <div class="presets-row">
+      <button class="preset-btn" onclick="applyPreset('current')">Current</button>
+      <button class="preset-btn" onclick="applyPreset('spec')">Spec-Perfect</button>
+      <button class="preset-btn" onclick="applyPreset('refined')">Refined Card</button>
+      <button class="preset-btn" onclick="applyPreset('minimal')">Minimal</button>
+      <button class="preset-btn" onclick="applyPreset('cozy')">Cozy</button>
+    </div>
+
+    <!-- #1 Transcript Container -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span><span class="num">1</span>Transcript Container</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="transcript" value="card" checked onchange="update()"><label><strong>A) Current card</strong> <span class="desc">— white bg, 1px border, 16px radius</span></label></div>
+        <div class="option"><input type="radio" name="transcript" value="nocard" onchange="update()"><label><strong>B) No card (spec)</strong> <span class="desc">— text flows on page bg</span></label></div>
+        <div class="option"><input type="radio" name="transcript" value="subtle" onchange="update()"><label><strong>C) Subtle card</strong> <span class="desc">— card bg, no border, faint shadow</span></label></div>
+        <div class="option"><input type="radio" name="transcript" value="inset" onchange="update()"><label><strong>D) Inset well</strong> <span class="desc">— darker bg (#F5F0EB), pressed-in feel</span></label></div>
+        <div class="option"><input type="radio" name="transcript" value="bottomborder" onchange="update()"><label><strong>E) Bottom border only</strong> <span class="desc">— no card, just a subtle bottom line</span></label></div>
+      </div>
+    </div>
+
+    <!-- #4 Gradient Divider -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span><span class="num">4</span>Gradient Divider</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="divider" value="current" checked onchange="update()"><label><strong>A) Current</strong> <span class="desc">— 3px, between title & pills</span></label></div>
+        <div class="option"><input type="radio" name="divider" value="removed" onchange="update()"><label><strong>B) Removed</strong> <span class="desc">— no divider at all</span></label></div>
+        <div class="option"><input type="radio" name="divider" value="relocated" onchange="update()"><label><strong>C) Relocated</strong> <span class="desc">— after metadata, before content</span></label></div>
+        <div class="option"><input type="radio" name="divider" value="thinner" onchange="update()"><label><strong>D) Thinner (2px)</strong> <span class="desc">— 2px + 4px top margin</span></label></div>
+      </div>
+    </div>
+
+    <!-- #5 Header Spacing -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span><span class="num">5</span>Header Spacing</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="spacing" value="current" checked onchange="update()"><label><strong>A) Current</strong> <span class="desc">— title:8, divider:8, child:4, meta:8</span></label></div>
+        <div class="option"><input type="radio" name="spacing" value="uniform" onchange="update()"><label><strong>B) Uniform 8px</strong> <span class="desc">— all gaps 8px</span></label></div>
+        <div class="option"><input type="radio" name="spacing" value="grouped" onchange="update()"><label><strong>C) Grouped</strong> <span class="desc">— child+meta tight (4px), 12px after divider</span></label></div>
+      </div>
+    </div>
+
+    <!-- #6 Add Tag Pill -->
+    <div class="control-group">
+      <div class="control-group-header open" onclick="toggleGroup(this)">
+        <span><span class="num">6</span>Add Tag Pill</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body open">
+        <div class="option"><input type="radio" name="tagpill" value="current" checked onchange="update()"><label><strong>A) Current</strong> <span class="desc">— 10px, dashed border</span></label></div>
+        <div class="option"><input type="radio" name="tagpill" value="solid" onchange="update()"><label><strong>B) Solid bg</strong> <span class="desc">— 11px, tag bg, no border</span></label></div>
+        <div class="option"><input type="radio" name="tagpill" value="ghost" onchange="update()"><label><strong>C) Ghost text</strong> <span class="desc">— plain text, no pill</span></label></div>
+      </div>
+    </div>
+
+    <!-- #7 Add Child Button -->
+    <div class="control-group">
+      <div class="control-group-header" onclick="toggleGroup(this)">
+        <span><span class="num">7</span>Add Child Button</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body">
+        <div class="option"><input type="radio" name="addbtn" value="current" checked onchange="update()"><label><strong>A) Current (18px)</strong> <span class="desc">— small circle, 12px icon</span></label></div>
+        <div class="option"><input type="radio" name="addbtn" value="larger" onchange="update()"><label><strong>B) Larger (24px)</strong> <span class="desc">— matches pill height, 14px icon</span></label></div>
+      </div>
+    </div>
+
+    <!-- #8 Saved Indicator -->
+    <div class="control-group">
+      <div class="control-group-header" onclick="toggleGroup(this)">
+        <span><span class="num">8</span>Saved Indicator</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body">
+        <div class="option"><input type="radio" name="saved" value="current" checked onchange="update()"><label><strong>A) Current</strong> <span class="desc">— below card, normal gap</span></label></div>
+        <div class="option"><input type="radio" name="saved" value="tight" onchange="update()"><label><strong>B) Tight</strong> <span class="desc">— 4px margin, hugs transcript</span></label></div>
+      </div>
+    </div>
+
+    <!-- #9 Overflow Menu -->
+    <div class="control-group">
+      <div class="control-group-header" onclick="toggleGroup(this)">
+        <span><span class="num">9</span>Overflow Menu</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body">
+        <div class="option"><input type="radio" name="overflow" value="current" checked onchange="update()"><label><strong>A) Current (···)</strong> <span class="desc">— styled text, bold, spaced</span></label></div>
+        <div class="option"><input type="radio" name="overflow" value="icon" onchange="update()"><label><strong>B) Icon (SVG)</strong> <span class="desc">— three-dot icon, consistent</span></label></div>
+      </div>
+    </div>
+
+    <!-- #10 Pill Radius -->
+    <div class="control-group">
+      <div class="control-group-header" onclick="toggleGroup(this)">
+        <span><span class="num">10</span>Mini Pill Radius</span>
+        <span class="arrow">&#9654;</span>
+      </div>
+      <div class="control-group-body">
+        <div class="option"><input type="radio" name="pillradius" value="current" checked onchange="update()"><label><strong>A) Current (10px)</strong> <span class="desc">— not in the tier system</span></label></div>
+        <div class="option"><input type="radio" name="pillradius" value="system" onchange="update()"><label><strong>B) System md (12px)</strong> <span class="desc">— matches design spec</span></label></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview Area -->
+  <div class="preview-area">
+    <div class="phone-frame">
+      <div class="phone-content" id="phoneContent">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Prompt Output -->
+    <div class="prompt-area">
+      <div class="prompt-header">
+        <span>Implementation Prompt</span>
+        <button class="copy-btn" onclick="copyPrompt()">Copy</button>
+      </div>
+      <div class="prompt-text" id="promptOutput"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────
+const DEFAULTS = {
+  transcript: 'card',
+  divider: 'current',
+  spacing: 'current',
+  tagpill: 'current',
+  addbtn: 'current',
+  saved: 'current',
+  overflow: 'current',
+  pillradius: 'current',
+};
+
+const state = { ...DEFAULTS };
+
+// ─── Presets ─────────────────────────────────────────
+const presets = {
+  current: { ...DEFAULTS },
+  spec: {
+    transcript: 'nocard', divider: 'removed', spacing: 'uniform',
+    tagpill: 'solid', addbtn: 'larger', saved: 'tight',
+    overflow: 'icon', pillradius: 'system',
+  },
+  refined: {
+    transcript: 'subtle', divider: 'thinner', spacing: 'uniform',
+    tagpill: 'solid', addbtn: 'larger', saved: 'tight',
+    overflow: 'icon', pillradius: 'system',
+  },
+  minimal: {
+    transcript: 'nocard', divider: 'removed', spacing: 'grouped',
+    tagpill: 'ghost', addbtn: 'larger', saved: 'tight',
+    overflow: 'icon', pillradius: 'system',
+  },
+  cozy: {
+    transcript: 'inset', divider: 'relocated', spacing: 'uniform',
+    tagpill: 'solid', addbtn: 'larger', saved: 'tight',
+    overflow: 'icon', pillradius: 'system',
+  },
+};
+
+function applyPreset(name) {
+  Object.assign(state, presets[name]);
+  syncRadios();
+  update();
+  // Highlight active preset
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function syncRadios() {
+  for (const [key, val] of Object.entries(state)) {
+    const radio = document.querySelector(`input[name="${key}"][value="${val}"]`);
+    if (radio) radio.checked = true;
+  }
+}
+
+// ─── Controls ────────────────────────────────────────
+function toggleControls() {
+  const panel = document.getElementById('controlsPanel');
+  const label = document.getElementById('toggleLabel');
+  panel.classList.toggle('collapsed');
+  label.textContent = panel.classList.contains('collapsed') ? 'Show Controls' : 'Hide Controls';
+}
+
+function toggleGroup(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+function readState() {
+  const names = ['transcript', 'divider', 'spacing', 'tagpill', 'addbtn', 'saved', 'overflow', 'pillradius'];
+  names.forEach(name => {
+    const checked = document.querySelector(`input[name="${name}"]:checked`);
+    if (checked) state[name] = checked.value;
+  });
+}
+
+// ─── Render ──────────────────────────────────────────
+function update() {
+  readState();
+  renderPreview();
+  updatePrompt();
+  // Clear active preset
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+}
+
+function renderPreview() {
+  const phone = document.getElementById('phoneContent');
+
+  // Spacing config
+  let titleMb = 8, dividerMb = 8, childMb = 4, metaMb = 8;
+  if (state.spacing === 'uniform') { childMb = 8; }
+  if (state.spacing === 'grouped') { childMb = 4; metaMb = 4; dividerMb = 12; }
+
+  // Pill radius
+  const pillRadius = state.pillradius === 'system' ? 12 : 10;
+
+  // Add child btn
+  const btnSize = state.addbtn === 'larger' ? 24 : 18;
+  const btnIcon = state.addbtn === 'larger' ? 14 : 12;
+
+  // Overflow
+  let overflowHtml;
+  if (state.overflow === 'icon') {
+    overflowHtml = `<div class="app-icon-btn overflow-icon">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="4" cy="10" r="1.8" fill="#2C2420"/>
+        <circle cx="10" cy="10" r="1.8" fill="#2C2420"/>
+        <circle cx="16" cy="10" r="1.8" fill="#2C2420"/>
+      </svg>
+    </div>`;
+  } else {
+    overflowHtml = `<div class="app-icon-btn"><span class="overflow-text">···</span></div>`;
+  }
+
+  // Transcript card class
+  const transcriptClasses = {
+    card: '',
+    nocard: 'no-card',
+    subtle: 'subtle',
+    inset: 'inset',
+    bottomborder: 'bottom-border',
+  };
+  const tClass = transcriptClasses[state.transcript] || '';
+
+  // Tag pill
+  let tagPillHtml;
+  if (state.tagpill === 'solid') {
+    tagPillHtml = `<span class="add-tag-pill solid-bg">+ add tag</span>`;
+  } else if (state.tagpill === 'ghost') {
+    tagPillHtml = `<span class="add-tag-pill ghost">+ add tag</span>`;
+  } else {
+    tagPillHtml = `<span class="add-tag-pill">+ add tag</span>`;
+  }
+
+  // Saved indicator
+  const savedClass = state.saved === 'tight' ? 'saved-indicator tight' : 'saved-indicator';
+
+  // Divider position logic
+  const showDividerTop = state.divider === 'current' || state.divider === 'thinner';
+  const showDividerRelocated = state.divider === 'relocated';
+  const dividerTopHeight = state.divider === 'thinner' ? 2 : 3;
+  const dividerTopClass = state.divider === 'thinner' ? 'gradient-divider thinner' : 'gradient-divider';
+
+  // Build HTML
+  let html = '';
+
+  // Top bar
+  html += `
+    <div class="app-topbar">
+      <div class="app-icon-btn"><span class="back-chevron">&#8249;</span></div>
+      <div class="app-topbar-right">
+        <div class="app-icon-btn"><span class="heart-icon">&#9829;</span></div>
+        ${overflowHtml}
+      </div>
+    </div>
+    <div class="app-scroll">
+  `;
+
+  // Title
+  html += `<div class="app-title" style="margin-bottom:${titleMb}px">Playing Chase at Grammy's</div>`;
+
+  // Divider (top position)
+  if (showDividerTop) {
+    html += `<div class="${dividerTopClass}" style="height:${dividerTopHeight}px; margin-bottom:${dividerMb}px"></div>`;
+  }
+
+  // Child pills
+  html += `
+    <div class="child-line" style="margin-bottom:${childMb}px">
+      <span class="mini-pill" style="background:rgba(123,175,212,0.12); border-radius:${pillRadius}px">
+        <span class="mini-pill-dot" style="background:#7BAFD4"></span>
+        <span class="mini-pill-name" style="color:#7BAFD4">Joseph</span>
+        <span class="mini-pill-age" style="color:rgba(123,175,212,0.6)">2mo</span>
+        <span class="mini-pill-remove" style="color:#7BAFD4">&times;</span>
+      </span>
+      <span class="mini-pill" style="background:rgba(212,160,123,0.12); border-radius:${pillRadius}px">
+        <span class="mini-pill-dot" style="background:#D4A07B"></span>
+        <span class="mini-pill-name" style="color:#D4A07B">Silas</span>
+        <span class="mini-pill-age" style="color:rgba(212,160,123,0.6)">2mo</span>
+        <span class="mini-pill-remove" style="color:#D4A07B">&times;</span>
+      </span>
+      <button class="add-child-btn" style="width:${btnSize}px; height:${btnSize}px; border-radius:${btnSize/2}px; font-size:${btnIcon}px">+</button>
+    </div>
+  `;
+
+  // Meta line
+  html += `
+    <div class="meta-line" style="margin-bottom:${metaMb}px">
+      <span class="meta-text">Mar 29, 2026 &middot; 9:56 PM</span>
+      <span class="meta-location-add"> &middot; + Add location</span>
+    </div>
+  `;
+
+  // Divider (relocated position)
+  if (showDividerRelocated) {
+    html += `<div class="gradient-divider relocated"></div>`;
+  }
+
+  // Transcript
+  html += `
+    <div class="transcript-card ${tClass}">
+      <div class="transcript-text">today Silas Joseph and I played Chase in the front yard after dinner at Grammy Grampy's and they kept darting between my legs and I would jump over them and pretend to grab them and we all had a great time</div>
+    </div>
+  `;
+
+  // Saved indicator
+  html += `<div class="${savedClass}">All changes saved</div>`;
+
+  // Tags
+  html += `<div class="tags-row">${tagPillHtml}</div>`;
+
+  html += `</div>`; // close app-scroll
+
+  phone.innerHTML = html;
+}
+
+// ─── Prompt Output ───────────────────────────────────
+function updatePrompt() {
+  const parts = [];
+
+  if (state.transcript !== DEFAULTS.transcript) {
+    const labels = {
+      nocard: 'Remove the transcript card wrapper — let the Georgia serif text flow directly on the #FAF8F5 page background with no border, no background, no shadow. Keep 12px top margin.',
+      subtle: 'Remove the transcript card border. Keep the #FEFCF9 background but replace the border with a very faint shadow: 0 1px 3px rgba(44,36,32,0.04).',
+      inset: 'Change the transcript container to an inset well: background #F5F0EB, no border, border-radius 14px (radii.card), add inset shadow: inset 0 1px 3px rgba(44,36,32,0.06).',
+      bottomborder: 'Replace the transcript card with a borderless layout — no background, no side/top borders. Add only a subtle 1px bottom border in #EDE8E3 under the transcript area.',
+    };
+    if (labels[state.transcript]) parts.push(labels[state.transcript]);
+  }
+
+  if (state.divider !== DEFAULTS.divider) {
+    const labels = {
+      removed: 'Remove the gradient divider entirely — child pills already communicate identity through color.',
+      relocated: 'Move the gradient divider from between title/pills to AFTER the metadata line (between metadata and transcript content area). This creates a clear header vs. content section break.',
+      thinner: 'Make the gradient divider 2px tall (down from 3px) and add 4px top margin from the title for breathing room.',
+    };
+    if (labels[state.divider]) parts.push(labels[state.divider]);
+  }
+
+  if (state.spacing !== DEFAULTS.spacing) {
+    const labels = {
+      uniform: 'Normalize header spacing: set childLine marginBottom to spacing(2) (8px) to match all other header gaps. Consistent 8px rhythm throughout.',
+      grouped: 'Group header spacing: childLine and metaLine both get 4px bottom margin (tight identity cluster), then 12px gap after the divider to visually separate the title from the identity block.',
+    };
+    if (labels[state.spacing]) parts.push(labels[state.spacing]);
+  }
+
+  if (state.tagpill !== DEFAULTS.tagpill) {
+    const labels = {
+      solid: 'Change the "+ add tag" pill: remove the dashed border, use solid #F3EDE8 (tag) background matching regular tag pills. Bump text to 11px, padding 3px 8px.',
+      ghost: 'Change "+ add tag" to plain ghost text — 11px, textMuted color, no border, no background. Just text.',
+    };
+    if (labels[state.tagpill]) parts.push(labels[state.tagpill]);
+  }
+
+  if (state.addbtn !== DEFAULTS.addbtn) {
+    parts.push('Enlarge the add-child "+" button: 24×24px circle (up from 18), 14px icon (up from 12). This matches the child pill height better and makes the tap target visually obvious.');
+  }
+
+  if (state.saved !== DEFAULTS.saved) {
+    parts.push('Tighten the "All changes saved" indicator: set marginTop to 4px so it hugs directly under the transcript text.');
+  }
+
+  if (state.overflow !== DEFAULTS.overflow) {
+    parts.push('Replace the ··· overflow text with an <Ionicons name="ellipsis-horizontal" size={20} /> icon for consistent rendering across platforms.');
+  }
+
+  if (state.pillradius !== DEFAULTS.pillradius) {
+    parts.push('Change mini pill border-radius from 10px to radii.md (12px) to comply with the design system\'s 5-tier radius scale.');
+  }
+
+  const output = document.getElementById('promptOutput');
+  if (parts.length === 0) {
+    output.textContent = 'No changes from current implementation. Toggle options to generate an implementation prompt.';
+  } else {
+    output.textContent = 'In app/(main)/entry-detail.tsx, make these changes to the Entry Detail screen:\n\n' + parts.map((p, i) => `${i + 1}. ${p}`).join('\n\n');
+  }
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptOutput').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+  });
+}
+
+// ─── Init ────────────────────────────────────────────
+renderPreview();
+updatePrompt();
+</script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delete Your Account — Forever Fireflies</title>
+  <meta name="description" content="Request deletion of your Forever Fireflies account and all associated data.">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FAF8F5;
+      --card: #FEFCF9;
+      --text: #2C2420;
+      --text-muted: #B5AAA0;
+      --accent: #E8724A;
+      --accent-pressed: #CC6441;
+      --ember-bg: #3D322C;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--ember-bg);
+      color: var(--bg);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 0;
+    }
+
+    .back-link {
+      display: inline-block;
+      font-size: 14px;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: 32px;
+      transition: color 0.2s ease;
+    }
+
+    .back-link:hover {
+      color: var(--accent);
+    }
+
+    .page-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(32px, 6vw, 48px);
+      font-weight: 300;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: rgba(250, 248, 245, 0.7);
+      margin-bottom: 48px;
+      line-height: 1.6;
+    }
+
+    /* Summary box */
+    .summary {
+      background: rgba(250, 248, 245, 0.05);
+      border: 1px solid rgba(250, 248, 245, 0.1);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 48px;
+    }
+
+    .summary h2 {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .summary ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .summary li {
+      font-size: 15px;
+      line-height: 1.6;
+      color: rgba(250, 248, 245, 0.85);
+      padding: 4px 0 4px 20px;
+      position: relative;
+    }
+
+    .summary li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 12px;
+      width: 6px;
+      height: 6px;
+      border-radius: 9999px;
+      background: var(--accent);
+      opacity: 0.6;
+    }
+
+    /* Sections */
+    h2.section-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 24px;
+      font-weight: 400;
+      margin-top: 48px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(250, 248, 245, 0.08);
+    }
+
+    p {
+      font-size: 15px;
+      line-height: 1.7;
+      color: rgba(250, 248, 245, 0.8);
+      margin-bottom: 16px;
+    }
+
+    ul, ol {
+      font-size: 15px;
+      line-height: 1.7;
+      color: rgba(250, 248, 245, 0.8);
+      margin-bottom: 16px;
+      padding-left: 24px;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    strong {
+      color: var(--bg);
+      font-weight: 500;
+    }
+
+    .email-btn {
+      display: inline-block;
+      background: var(--accent);
+      color: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      padding: 14px 32px;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: background 0.2s ease;
+      margin-top: 8px;
+    }
+
+    .email-btn:hover {
+      background: var(--accent-pressed);
+      text-decoration: none;
+    }
+
+    .footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(250, 248, 245, 0.08);
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <a href="/" class="back-link">&larr; Back to Forever Fireflies</a>
+
+  <h1 class="page-title">Delete Your Account</h1>
+  <p class="subtitle">If you'd like to permanently delete your Forever Fireflies account and all associated data, you can do so from within the app or by contacting us below.</p>
+
+  <!-- What gets deleted -->
+  <div class="summary">
+    <h2>What Gets Deleted</h2>
+    <ul>
+      <li>All audio recordings</li>
+      <li>All text entries and memories</li>
+      <li>Children's names, birthdays, and profiles</li>
+      <li>Family settings and preferences</li>
+      <li>Your account and login credentials</li>
+      <li>Push notification tokens and history</li>
+    </ul>
+  </div>
+
+  <!-- How to delete from the app -->
+  <h2 class="section-title">Delete from the App</h2>
+  <p>The fastest way to delete your account is directly in the app:</p>
+  <ol>
+    <li>Open Forever Fireflies</li>
+    <li>Go to <strong>Settings</strong></li>
+    <li>Scroll to the bottom and tap <strong>Delete Account</strong></li>
+    <li>Confirm when prompted</li>
+  </ol>
+  <p>Your account and all data will be deleted immediately.</p>
+
+  <!-- How to request deletion by email -->
+  <h2 class="section-title">Already Uninstalled?</h2>
+  <p>If you've already uninstalled the app or can't access it, you can request account deletion by email.</p>
+  <p><strong>Important:</strong> For your security, you must send the request <strong>from the same email address</strong> you used to create your Forever Fireflies account. This is how we verify you're the account owner. Requests sent from a different email address will not be processed.</p>
+  <p>We'll process verified requests within 48 hours and send a confirmation when your account has been deleted.</p>
+
+  <a href="mailto:foreverfirefliesapp@gmail.com?subject=Account%20Deletion%20Request&body=Please%20delete%20my%20Forever%20Fireflies%20account%20and%20all%20associated%20data." class="email-btn">
+    Request Account Deletion
+  </a>
+
+  <!-- Subscriptions -->
+  <h2 class="section-title">About Subscriptions</h2>
+  <p>Deleting your account does <strong>not</strong> automatically cancel your subscription. If you have an active subscription, you'll need to cancel it separately:</p>
+  <ul>
+    <li><strong>iPhone / iPad:</strong> Settings &rarr; [your name] &rarr; Subscriptions</li>
+    <li><strong>Android:</strong> Google Play Store &rarr; Payments &amp; subscriptions &rarr; Subscriptions</li>
+  </ul>
+
+  <!-- Data retention -->
+  <h2 class="section-title">Data Retention</h2>
+  <p>When your account is deleted, <strong>all data is permanently removed</strong>. We do not retain any of your personal data, entries, recordings, or children's information after deletion.</p>
+  <p>Anonymous, aggregated analytics data (which cannot identify you) may remain in our analytics systems per their standard retention policies.</p>
+
+  <p>For more details, see our <a href="/privacy.html">Privacy Policy</a>.</p>
+
+  <div class="footer">
+    &copy; 2026 Forever Fireflies. All rights reserved.
+  </div>
+</div>
+
+</body>
+</html>

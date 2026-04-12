@@ -38,8 +38,8 @@ nul
 # Terminal Paste Image folder
 .cp-images/
 
-# Firebase credentials (contains API keys — never commit)
-google-services.json
+# iOS Firebase config (commit when needed for iOS builds)
+# google-services.json is safe to commit — contains only public keys that ship in the APK
 GoogleService-Info.plist
 
 # Test & coverage output
