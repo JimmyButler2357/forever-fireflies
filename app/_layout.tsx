@@ -19,6 +19,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { supabase } from '@/lib/supabase';
 import { initRevenueCat } from '@/lib/revenueCat';
 import { colors } from '@/constants/theme';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import * as Sentry from '@sentry/react-native';
 import { initSentry } from '@/lib/sentry';
 import { initPostHog } from '@/lib/posthog';
@@ -164,14 +165,16 @@ function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(onboarding)" />
-          <Stack.Screen name="(main)" />
-        </Stack>
-      </ErrorBoundary>
+      <KeyboardProvider>
+        <ErrorBoundary>
+          <StatusBar style="dark" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(onboarding)" />
+            <Stack.Screen name="(main)" />
+          </Stack>
+        </ErrorBoundary>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

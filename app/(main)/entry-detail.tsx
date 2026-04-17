@@ -3,17 +3,16 @@ import {
   View,
   Text,
   TextInput,
-  ScrollView,
   Pressable,
   Animated,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   GestureResponderEvent,
   Keyboard,
   Alert,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -1037,10 +1036,7 @@ export default function EntryDetailScreen() {
   const audioMissing = isVoiceEntry && !entry.hasAudio;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior="padding"
-    >
+    <View style={styles.container}>
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: insets.top + spacing(3) }]}>
         <Pressable
@@ -1075,10 +1071,11 @@ export default function EntryDetailScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + spacing(10) }]}
         keyboardShouldPersistTaps="handled"
+        bottomOffset={spacing(6)}
       >
         {/* Post-recording banner */}
         {showBanner && entry.hasAudio && (
@@ -1292,7 +1289,6 @@ export default function EntryDetailScreen() {
             placeholderTextColor={colors.textMuted}
             multiline
             textAlignVertical="top"
-            scrollEnabled
             editable={hasAccess}
           />
         </View>
@@ -1488,7 +1484,7 @@ export default function EntryDetailScreen() {
             </View>
           </FadeInUp>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Delete confirmation */}
       <ConfirmationDialog
@@ -1547,7 +1543,7 @@ export default function EntryDetailScreen() {
           onComplete={() => setFavAnimOrigin(null)}
         />
       )}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -1895,7 +1891,6 @@ const styles = StyleSheet.create({
     lineHeight: 25,
     color: colors.text,
     minHeight: 180,
-    maxHeight: 400,
   },
   savedIndicator: {
     ...typography.caption,
