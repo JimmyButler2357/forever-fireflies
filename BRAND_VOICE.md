@@ -313,7 +313,10 @@ For the full email strategy (sequences, timing, lifecycle triggers, and tooling)
 These 10 lines represent the Forever Fireflies voice at its best. When writing new copy and unsure of the tone, write toward these.
 
 1. **"60 seconds. One memory. Kept forever."**
-   *— Tagline energy. Three beats. No wasted words.*
+   *— Primary tagline. Three beats. No wasted words.*
+
+   Alternative: **"Life's little moments, cherished forever."**
+   *— Softer, reflective option. Emphasizes the everyday over the product.*
 
 2. **"She said it once. Now it's yours to keep."**
    *— The emotional core of the product in two sentences.*

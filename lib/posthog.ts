@@ -6,7 +6,13 @@
 // they press. You never see it working, but the museum knows what's popular.
 
 import PostHog from 'posthog-react-native';
-import { config } from '@/lib/config';
+
+// Read the API key directly from process.env instead of going through
+// config.ts. Metro's babel transform replaces process.env.EXPO_PUBLIC_*
+// at bundle time — but config.ts wasn't getting the replacement during
+// OTA builds (likely a Metro caching quirk). Reading it here directly
+// works reliably, same pattern Sentry uses for its DSN.
+const POSTHOG_API_KEY = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
 
 /** Property values PostHog accepts. We cast to `any` at the call site
  *  because PostHog's internal JsonType is not exported cleanly. */
@@ -19,25 +25,15 @@ let posthog: PostHog | null = null;
  *  other functions return early via the null check. */
 export function initPostHog() {
   if (__DEV__) return;
-  if (!config.posthogApiKey || config.posthogApiKey === 'PLACEHOLDER_POSTHOG_KEY') {
+  if (!POSTHOG_API_KEY) {
     console.warn('PostHog API key not set — analytics disabled');
     return;
   }
 
-  posthog = new PostHog(config.posthogApiKey, {
-    // PostHog's US cloud endpoint (default for new projects).
-    // If you create an EU project, change this to 'https://eu.i.posthog.com'.
+  posthog = new PostHog(POSTHOG_API_KEY, {
     host: 'https://us.i.posthog.com',
-
-    // Flush events every 30 seconds (default). Events are batched
-    // and sent together to save battery — like saving up letters
-    // and mailing them all at once instead of one at a time.
     flushInterval: 30,
-
-    // Keep up to 20 events in the queue before forcing a flush.
     flushAt: 20,
-
-    // Automatically capture app lifecycle events (app open, background, etc.).
     captureAppLifecycleEvents: true,
   });
 }

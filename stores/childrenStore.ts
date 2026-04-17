@@ -32,6 +32,7 @@ export interface Child {
   birthday: string; // ISO date string
   nickname?: string;
   colorIndex: number;
+  photoPath?: string;
 }
 
 // ─── Mapper ──────────────────────────────────────────────
@@ -48,6 +49,7 @@ export function mapSupabaseChild(row: SupabaseChild): Child {
     birthday: row.birthday,
     nickname: row.nickname ?? undefined,
     colorIndex: row.color_index,
+    photoPath: row.photo_url ?? undefined,
   };
 }
 

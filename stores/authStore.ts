@@ -22,7 +22,7 @@ import { profilesService } from '@/services/profiles.service';
 import { familiesService } from '@/services/families.service';
 import { notificationsService } from '@/services/notifications.service';
 import { setSentryUser, clearSentryUser } from '@/lib/sentry';
-import { identifyPostHogUser, resetPostHogUser } from '@/lib/posthog';
+import { identifyPostHogUser, resetPostHogUser, capture } from '@/lib/posthog';
 import { useSubscriptionStore } from '@/stores/subscriptionStore';
 import { identifyUser } from '@/lib/revenueCat';
 
@@ -89,15 +89,29 @@ export const useAuthStore = create<AuthState>()(
       // --- Actions ---
 
       initialize: async () => {
+        // Split into two phases:
+        //
+        // Phase 1 (critical): Check for an existing session and set
+        // isLoading to false so the app can render the right screen
+        // immediately. This is the "unlock the door" step.
+        //
+        // Phase 2 (background): Load profile, family, subscription,
+        // analytics — everything the user doesn't need to SEE the
+        // screen, just to USE premium features. This is the
+        // "stock the shelves" step that happens while they browse.
+        //
+        // Why? Because Phase 2 involves network calls (Supabase,
+        // RevenueCat) that can hang on first install. Without this
+        // split, a slow RevenueCat call blocks the entire app on
+        // a white spinner screen.
+        let session: Session | null = null;
+
         try {
-          const session = await authService.getSession();
+          session = await authService.getSession();
           if (session) {
-            await get().handleAuthChange(session);
+            set({ session, user: session.user });
           }
         } catch (error: any) {
-          // If the cached token is stale (e.g. user was deleted from
-          // Supabase dashboard), sign out cleanly so the app doesn't
-          // get stuck with a zombie session.
           const message = error?.message ?? '';
           if (message.includes('Refresh Token') || message.includes('Invalid')) {
             console.warn('Stale session detected, signing out:', message);
@@ -109,7 +123,14 @@ export const useAuthStore = create<AuthState>()(
             console.warn('Auth initialization failed:', error);
           }
         } finally {
+          // Phase 1 done — the router can now show the correct screen
           set({ isLoading: false });
+        }
+
+        // Phase 2: load the rest in the background (non-blocking).
+        // If this fails or hangs, the user still sees their screen.
+        if (session) {
+          get().handleAuthChange(session);
         }
       },
 
@@ -155,7 +176,11 @@ export const useAuthStore = create<AuthState>()(
           // are grouped under their ID. The properties help you
           // segment users later (e.g. "show me only users who
           // completed onboarding" or "users in family X").
+          const userEmail = session.user.email
+            ?? session.user.user_metadata?.email
+            ?? null;
           identifyPostHogUser(session.user.id, {
+            email: userEmail,
             familyId,
             onboardingCompleted: profile.onboarding_completed,
           });
@@ -193,6 +218,7 @@ export const useAuthStore = create<AuthState>()(
         const { session } = await authService.signInWithEmail(email, password);
         if (session) {
           await get().handleAuthChange(session);
+          capture('login', { method: 'email' });
         }
       },
 

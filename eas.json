@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 16.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -11,6 +11,7 @@
         "buildType": "apk"
       },
       "env": {
+        "APP_VARIANT": "development",
         "EXPO_PUBLIC_BYPASS_PAYWALL": "true"
       }
     },
@@ -22,14 +23,17 @@
       },
       "env": {
         "EXPO_PUBLIC_BYPASS_PAYWALL": "true",
-        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_5gwXzQt1qkcad7W7BADgwpBFf3sn5JqOagwafo5o0s3"
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_5gwXzQt1qkcad7W7BADgwpBFf3sn5JqOagwafo5o0s3",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://3a6ece58735f4bf10d1fa0c7e4596dee@o4511086273757184.ingest.us.sentry.io/4511086277689344",
+        "SENTRY_AUTH_TOKEN": "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"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "SENTRY_AUTH_TOKEN": "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",
-        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_5gwXzQt1qkcad7W7BADgwpBFf3sn5JqOagwafo5o0s3"
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_5gwXzQt1qkcad7W7BADgwpBFf3sn5JqOagwafo5o0s3",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://3a6ece58735f4bf10d1fa0c7e4596dee@o4511086273757184.ingest.us.sentry.io/4511086277689344"
       }
     }
   },

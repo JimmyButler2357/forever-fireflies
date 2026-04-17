@@ -58,10 +58,20 @@ export default function BirthdayPicker({ value, onChange }: BirthdayPickerProps)
 
   const daysInMonth = getDaysInMonth(selectedMonth, YEARS[selectedYear]);
 
+  // Check if selected date is in the future
+  const selectedDate = new Date(
+    YEARS[selectedYear],
+    selectedMonth,
+    Math.min(selectedDay + 1, daysInMonth),
+  );
+  const isFutureDate = selectedDate > new Date();
+
   const handleSetBirthday = () => {
+    if (isFutureDate) return;
     const month = selectedMonth + 1;
     const day = Math.min(selectedDay + 1, daysInMonth);
     const year = YEARS[selectedYear];
+
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     onChange(dateStr);
     setShowPicker(false);
@@ -93,6 +103,7 @@ export default function BirthdayPicker({ value, onChange }: BirthdayPickerProps)
             items={MONTHS}
             selectedIndex={selectedMonth}
             onSelect={setSelectedMonth}
+            loop
           />
         </View>
         <View style={{ flex: 25 }}>
@@ -100,6 +111,7 @@ export default function BirthdayPicker({ value, onChange }: BirthdayPickerProps)
             items={Array.from({ length: daysInMonth }, (_, i) => String(i + 1))}
             selectedIndex={Math.min(selectedDay, daysInMonth - 1)}
             onSelect={setSelectedDay}
+            loop
           />
         </View>
         <View style={{ flex: 30 }}>
@@ -107,14 +119,20 @@ export default function BirthdayPicker({ value, onChange }: BirthdayPickerProps)
             items={YEARS.map(String)}
             selectedIndex={selectedYear}
             onSelect={setSelectedYear}
+            loop
           />
         </View>
       </View>
+      {isFutureDate && (
+        <Text style={styles.futureHint}>Birthday can't be in the future</Text>
+      )}
       <Pressable
         onPress={handleSetBirthday}
+        disabled={isFutureDate}
         style={({ pressed }) => [
           styles.setBirthdayBtn,
-          pressed && { backgroundColor: colors.accentPressed },
+          isFutureDate && { opacity: 0.4 },
+          pressed && !isFutureDate && { backgroundColor: colors.accentPressed },
         ]}
       >
         <Text style={styles.setBirthdayLabel}>Set birthday</Text>
@@ -143,6 +161,11 @@ const styles = StyleSheet.create({
     ...typography.formLabel,
     color: colors.textMuted,
     paddingVertical: spacing(2),
+  },
+  futureHint: {
+    ...typography.caption,
+    color: colors.danger,
+    textAlign: 'center',
   },
   pickerContainer: {
     marginTop: spacing(3),

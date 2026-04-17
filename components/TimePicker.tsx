@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { colors, spacing } from '@/constants/theme';
+import { View, Pressable, Text, StyleSheet } from 'react-native';
+import { colors, spacing, radii } from '@/constants/theme';
 import ScrollColumn from '@/components/ScrollColumn';
 
 // 12-hour clock: 1, 2, 3, ... 12
@@ -34,26 +34,25 @@ function parseTime(display: string): { hourIdx: number; minuteIdx: number; perio
   };
 }
 
+/** Build the display string from column indices */
+function buildTime(h: number, m: number, p: number): string {
+  return `${HOURS[h]}:${MINUTES[m]} ${PERIODS[p]}`;
+}
+
 interface TimePickerProps {
   /** Current time in 12-hour format, e.g. "8:30 PM" */
   value: string;
-  /** Called whenever the user scrolls to a new time */
-  onChange: (displayTime: string) => void;
+  /** Called when the user taps "Set time" to confirm their selection */
+  onConfirm: (displayTime: string) => void;
+  /** Called when the user taps "Cancel" */
+  onCancel: () => void;
 }
 
-export default function TimePicker({ value, onChange }: TimePickerProps) {
+export default function TimePicker({ value, onConfirm, onCancel }: TimePickerProps) {
   const initial = parseTime(value);
   const [hourIdx, setHourIdx] = useState(initial.hourIdx);
   const [minuteIdx, setMinuteIdx] = useState(initial.minuteIdx);
   const [periodIdx, setPeriodIdx] = useState(initial.periodIdx);
-
-  // Recompose the display string and notify parent
-  const emitChange = (h: number, m: number, p: number) => {
-    const hour = HOURS[h];
-    const minute = MINUTES[m];
-    const period = PERIODS[p];
-    onChange(`${hour}:${minute} ${period}`);
-  };
 
   return (
     <View style={styles.container}>
@@ -62,32 +61,40 @@ export default function TimePicker({ value, onChange }: TimePickerProps) {
           <ScrollColumn
             items={HOURS}
             selectedIndex={hourIdx}
-            onSelect={(i) => {
-              setHourIdx(i);
-              emitChange(i, minuteIdx, periodIdx);
-            }}
+            onSelect={setHourIdx}
+            loop
           />
         </View>
         <View style={{ flex: 30 }}>
           <ScrollColumn
             items={MINUTES}
             selectedIndex={minuteIdx}
-            onSelect={(i) => {
-              setMinuteIdx(i);
-              emitChange(hourIdx, i, periodIdx);
-            }}
+            onSelect={setMinuteIdx}
+            loop
           />
         </View>
         <View style={{ flex: 25 }}>
           <ScrollColumn
             items={PERIODS}
             selectedIndex={periodIdx}
-            onSelect={(i) => {
-              setPeriodIdx(i);
-              emitChange(hourIdx, minuteIdx, i);
-            }}
+            onSelect={setPeriodIdx}
           />
         </View>
+      </View>
+
+      <View style={styles.buttons}>
+        <Pressable style={styles.cancelButton} onPress={onCancel}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [
+            styles.confirmButton,
+            pressed && styles.confirmButtonPressed,
+          ]}
+          onPress={() => onConfirm(buildTime(hourIdx, minuteIdx, periodIdx))}
+        >
+          <Text style={styles.confirmText}>Set time</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -102,5 +109,35 @@ const styles = StyleSheet.create({
   columns: {
     flexDirection: 'row',
     gap: spacing(2),
+  },
+  buttons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing(2),
+    marginTop: spacing(3),
+  },
+  cancelButton: {
+    paddingVertical: 10,
+    paddingHorizontal: spacing(4),
+    borderRadius: radii.card,
+  },
+  cancelText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textSoft,
+  },
+  confirmButton: {
+    backgroundColor: colors.accent,
+    paddingVertical: 10,
+    paddingHorizontal: spacing(5),
+    borderRadius: radii.card,
+  },
+  confirmButtonPressed: {
+    backgroundColor: colors.accentPressed,
+  },
+  confirmText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

@@ -10,7 +10,17 @@
       "mcp__plugin_context7_context7__query-docs",
       "WebFetch(domain:proofeditor.ai)",
       "WebFetch(domain:expo.dev)",
-      "WebFetch(domain:job-logs.eascdn.net)"
+      "WebFetch(domain:job-logs.eascdn.net)",
+      "Bash(grep -r \"enable\\\\|disable\\\\|stub\\\\|placeholder\\\\|not implemented\\\\|coming soon\" /c/Projects/forever-fireflies/app --include=*.tsx)",
+      "mcp__plugin_supabase_supabase__execute_sql",
+      "mcp__plugin_supabase_supabase__get_logs",
+      "mcp__plugin_sentry_sentry__whoami",
+      "mcp__plugin_sentry_sentry__find_projects",
+      "mcp__plugin_sentry_sentry__search_issues",
+      "WebFetch(domain:docs.sentry.io)",
+      "WebFetch(domain:mcp.sentry.dev)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:sentry.io)"
     ]
   }
 }

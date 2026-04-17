@@ -15,10 +15,11 @@ export const entriesService = {
   async getTimeline(familyId: string, page = 0, pageSize = 20) {
     const { data, error } = await supabase
       .from('entries')
-      .select('*, entry_children(child_id), entry_tags(tag_id, tags(name, slug))')
+      .select('*, entry_children(child_id), entry_tags(tag_id, tags(name, slug)), entry_media(id, storage_path, display_order, media_type)')
       .eq('family_id', familyId)
       .eq('is_deleted', false)
       .order('entry_date', { ascending: false })
+      .order('created_at', { ascending: false })
       .range(page * pageSize, (page + 1) * pageSize - 1);
 
     if (error) throw new Error(`Failed to fetch timeline: ${error.message}`, { cause: error });
@@ -29,7 +30,7 @@ export const entriesService = {
   async getEntry(entryId: string) {
     const { data, error } = await supabase
       .from('entries')
-      .select('*, entry_children(child_id, auto_detected), entry_tags(tag_id, tags(name, slug))')
+      .select('*, entry_children(child_id, auto_detected), entry_tags(tag_id, tags(name, slug)), entry_media(id, storage_path, display_order, media_type)')
       .eq('id', entryId)
       .eq('is_deleted', false)
       .single();
@@ -52,7 +53,7 @@ export const entriesService = {
       .single();
 
     if (error) throw new Error(`Failed to create entry: ${error.message}`, { cause: error });
-    capture('entry_created', { type: data.entry_type, hasAudio: !!data.audio_storage_path });
+    capture('entry_created', { type: data.entry_type, hasAudio: !!data.audio_storage_path, hour: new Date().getHours() });
     return data;
   },
 
@@ -116,7 +117,7 @@ export const entriesService = {
   async getDeleted(familyId: string, page = 0, pageSize = 20) {
     const { data, error } = await supabase
       .from('entries')
-      .select('*, entry_children(child_id), entry_tags(tag_id, tags(name, slug))')
+      .select('*, entry_children(child_id), entry_tags(tag_id, tags(name, slug)), entry_media(id, storage_path, display_order, media_type)')
       .eq('family_id', familyId)
       .eq('is_deleted', true)
       .order('deleted_at', { ascending: false })
@@ -130,11 +131,12 @@ export const entriesService = {
   async getFavorites(familyId: string, page = 0, pageSize = 20) {
     const { data, error } = await supabase
       .from('entries')
-      .select('*, entry_children(child_id), entry_tags(tag_id, tags(name, slug))')
+      .select('*, entry_children(child_id), entry_tags(tag_id, tags(name, slug)), entry_media(id, storage_path, display_order, media_type)')
       .eq('family_id', familyId)
       .eq('is_deleted', false)
       .eq('is_favorited', true)
       .order('entry_date', { ascending: false })
+      .order('created_at', { ascending: false })
       .range(page * pageSize, (page + 1) * pageSize - 1);
 
     if (error) throw new Error(`Failed to fetch favorites: ${error.message}`, { cause: error });
@@ -145,11 +147,12 @@ export const entriesService = {
   async search(familyId: string, query: string, page = 0, pageSize = 20) {
     const { data, error } = await supabase
       .from('entries')
-      .select('*, entry_children(child_id), entry_tags(tag_id, tags(name, slug))')
+      .select('*, entry_children(child_id), entry_tags(tag_id, tags(name, slug)), entry_media(id, storage_path, display_order, media_type)')
       .eq('family_id', familyId)
       .eq('is_deleted', false)
       .textSearch('transcript', query, { type: 'websearch', config: 'english' })
       .order('entry_date', { ascending: false })
+      .order('created_at', { ascending: false })
       .range(page * pageSize, (page + 1) * pageSize - 1);
 
     if (error) throw new Error(`Failed to search entries: ${error.message}`, { cause: error });
@@ -215,13 +218,15 @@ export const entriesService = {
    *
    *  Think of it like sending your journal to a helpful assistant who adds
    *  a nice title, tidies up the "um"s, and sticks the right labels on it. */
-  async processWithAI(entryId: string): Promise<{ title?: string; tags_applied?: number } | null> {
+  async processWithAI(entryId: string): Promise<{ title?: string; cleaned_transcript?: string; tags_applied?: number } | null> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Not authenticated — cannot process entry');
 
+    const start = Date.now();
     const { data, error } = await supabase.functions.invoke('process-entry', {
       body: { entry_id: entryId },
     });
+    const durationMs = Date.now() - start;
 
     if (error) {
       // FunctionsHttpError hides the real response body in error.context.
@@ -230,15 +235,72 @@ export const entriesService = {
       if (ctx && typeof ctx.text === 'function') {
         ctx.text().then((body: string) => console.warn('AI processing error body:', body)).catch(() => {});
       }
+      capture('ai_processing_completed', { durationMs, success: false });
       console.warn('AI processing failed:', error.message ?? error);
       return null;
     }
 
     if (data?.success === false) {
+      capture('ai_processing_completed', { durationMs, success: false });
       console.warn('AI processing returned success: false:', data);
       return null;
     }
 
+    capture('ai_processing_completed', { durationMs, success: true });
     return data;
+  },
+
+  /** Add one photo attachment row for an entry. */
+  async addEntryPhoto(
+    entryId: string,
+    photo: {
+      storage_path: string;
+      display_order: number;
+      width?: number | null;
+      height?: number | null;
+      file_size_bytes?: number | null;
+    },
+  ) {
+    const entryQuery = await supabase
+      .from('entries')
+      .select('family_id, user_id')
+      .eq('id', entryId)
+      .single();
+
+    if (entryQuery.error || !entryQuery.data) {
+      throw new Error(`Failed to resolve entry owner: ${entryQuery.error?.message ?? 'Entry not found'}`, { cause: entryQuery.error ?? undefined });
+    }
+
+    const insertQuery = await supabase
+      .from('entry_media' as any)
+      .insert({
+        entry_id: entryId,
+        family_id: entryQuery.data.family_id,
+        user_id: entryQuery.data.user_id,
+        media_type: 'photo',
+        storage_path: photo.storage_path,
+        display_order: photo.display_order,
+        width: photo.width ?? null,
+        height: photo.height ?? null,
+        file_size_bytes: photo.file_size_bytes ?? null,
+      })
+      .select('*')
+      .single();
+
+    if (insertQuery.error) {
+      throw new Error(`Failed to add entry photo: ${insertQuery.error.message}`, { cause: insertQuery.error });
+    }
+    return insertQuery.data as { id: string; storage_path: string; display_order: number };
+  },
+
+  /** Remove one photo attachment row from an entry. */
+  async removeEntryPhoto(photoId: string) {
+    const query = await supabase
+      .from('entry_media' as any)
+      .delete()
+      .eq('id', photoId);
+    if (query.error) {
+      throw new Error(`Failed to remove entry photo: ${query.error.message}`, { cause: query.error });
+    }
   },
 };

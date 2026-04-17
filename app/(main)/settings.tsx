@@ -9,13 +9,16 @@ import {
   TextInput,
   FlatList,
   Alert,
+  AppState,
   Linking,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { config } from '@/lib/config';
@@ -46,12 +49,15 @@ import { useLocationPermission } from '@/hooks/useLocation';
 import { formatDate, to24Hour, from24Hour, daysAgo } from '@/lib/dateUtils';
 import { profilesService } from '@/services/profiles.service';
 import { notificationsService } from '@/services/notifications.service';
-import { requestPermissions, getExpoPushToken } from '@/lib/notifications';
+import { requestPermissions, getPermissionStatus, getExpoPushToken } from '@/lib/notifications';
 import { getStoredPushToken } from '@/hooks/useNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSubscription } from '@/hooks/useSubscription';
 import PostTrialPaywall from '@/components/PostTrialPaywall';
 import TimePicker from '@/components/TimePicker';
+import { useDraftStore } from '@/stores/draftStore';
+import { capture } from '@/lib/posthog';
+import { openAppSettings } from '@/lib/openSettings';
 
 // ─── Helpers ──────────────────────────────────────────────
 
@@ -69,6 +75,7 @@ export default function SettingsScreen() {
   const signOut = useAuthStore((s) => s.signOut);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
   const familyId = useAuthStore((s) => s.familyId);
   const clearChildren = useChildrenStore((s) => s.clearChildren);
   const clearEntries = useEntriesStore((s) => s.clearEntries);
@@ -81,6 +88,7 @@ export default function SettingsScreen() {
   const [reminderTime, setReminderTime] = useState('8:30 PM');
   const [isSaving, setIsSaving] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showTimeConfirmation, setShowTimeConfirmation] = useState(false);
   const [showDeletedModal, setShowDeletedModal] = useState(false);
   const [showEditChildModal, setShowEditChildModal] = useState(false);
   const [editingChild, setEditingChild] = useState<Child | null>(null);
@@ -88,6 +96,9 @@ export default function SettingsScreen() {
   const [editBirthday, setEditBirthday] = useState('');
   const [editColorIndex, setEditColorIndex] = useState(0);
   const [editNickname, setEditNickname] = useState('');
+  const [editPhotoPath, setEditPhotoPath] = useState<string | undefined>(undefined);
+  const [editPhotoPreviewUri, setEditPhotoPreviewUri] = useState<string | undefined>(undefined);
+  const [isPhotoBusy, setIsPhotoBusy] = useState(false);
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
@@ -106,6 +117,9 @@ export default function SettingsScreen() {
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Track screen view for analytics
+  useEffect(() => { capture('screen_viewed', { screen: 'Settings' }); }, []);
 
   // Load saved reminder prefs from Supabase on mount.
   // Think of it like opening a saved document — we read what the
@@ -126,6 +140,34 @@ export default function SettingsScreen() {
     return () => { mounted = false; };
   }, []);
 
+  // ─── Notification permission mismatch detection ────────
+  //
+  // When the toggle shows ON but the phone is blocking
+  // notifications, show a small inline warning. Re-checks
+  // when app returns to foreground (user might have just
+  // granted permission in phone Settings).
+
+  const [notifBlocked, setNotifBlocked] = useState(false);
+
+  useEffect(() => {
+    if (!reminderEnabled) {
+      setNotifBlocked(false);
+      return;
+    }
+
+    const check = () => {
+      getPermissionStatus().then(({ granted }) => setNotifBlocked(!granted));
+    };
+
+    check();
+
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') check();
+    });
+
+    return () => sub.remove();
+  }, [reminderEnabled]);
+
   // Save reminder prefs to Supabase. Called whenever the user
   // toggles the switch or scrolls to a new time.
   const saveReminderPrefs = useCallback(async (enabled: boolean, time: string) => {
@@ -141,6 +183,7 @@ export default function SettingsScreen() {
 
   const handleToggleReminder = useCallback(async (enabled: boolean) => {
     setReminderEnabled(enabled);
+    capture('settings_changed', { setting: 'notification_enabled', value: enabled });
     saveReminderPrefs(enabled, reminderTime);
 
     if (enabled) {
@@ -151,7 +194,7 @@ export default function SettingsScreen() {
           'Notifications Disabled',
           'To receive reminders, enable notifications in your device settings.',
           [
-            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+            { text: 'Open Settings', onPress: () => openAppSettings() },
             { text: 'Not Now', style: 'cancel' },
           ],
         );
@@ -160,20 +203,21 @@ export default function SettingsScreen() {
         return;
       }
 
-      // Register push token if we don't have one stored
-      const existingToken = await getStoredPushToken();
-      if (!existingToken) {
+      // Always get a fresh push token and register it. Previous logic
+      // skipped this if a token was already in AsyncStorage, but that
+      // token can go stale (e.g. after reinstall or signing key change).
+      try {
         const token = await getExpoPushToken();
         if (token) {
           const userId = useAuthStore.getState().session?.user?.id;
           if (userId) {
             const platform = Platform.OS as 'ios' | 'android';
-            notificationsService.registerDevice(token, platform).catch(
-              (err) => console.warn('Failed to register device:', err)
-            );
-            AsyncStorage.setItem('ff_push_token', token).catch(() => {});
+            await notificationsService.registerDevice(token, platform);
+            await AsyncStorage.setItem('ff_push_token', token);
           }
         }
+      } catch (err) {
+        console.warn('Failed to register push token:', err);
       }
     } else {
       // Turning OFF — deactivate the device so the server stops sending.
@@ -186,8 +230,12 @@ export default function SettingsScreen() {
     }
   }, [reminderTime, saveReminderPrefs]);
 
-  const handleTimeChange = useCallback((time: string) => {
+  const handleTimeConfirm = useCallback((time: string) => {
     setReminderTime(time);
+    setShowTimePicker(false);
+    setShowTimeConfirmation(true);
+    setTimeout(() => setShowTimeConfirmation(false), 1500);
+    capture('settings_changed', { setting: 'notification_time', value: time });
     saveReminderPrefs(reminderEnabled, time);
 
     // Recompute the UTC equivalent so the server sends at the new time.
@@ -237,7 +285,76 @@ export default function SettingsScreen() {
     setEditBirthday(child.birthday);
     setEditColorIndex(child.colorIndex);
     setEditNickname(child.nickname ?? '');
+    setEditPhotoPath(child.photoPath);
+    setEditPhotoPreviewUri(undefined);
     setShowEditChildModal(true);
+
+    if (child.photoPath) {
+      storageService.getChildPhotoUrl(child.photoPath)
+        .then((url) => setEditPhotoPreviewUri(url))
+        .catch((err) => console.warn('Failed to load child photo preview:', err));
+    }
+  };
+
+  const pickEditChildPhoto = async () => {
+    if (!editingChild || !familyId) return;
+
+    let ImagePicker: typeof import('expo-image-picker');
+    try {
+      ImagePicker = await import('expo-image-picker');
+    } catch {
+      Alert.alert(
+        'Photo module unavailable',
+        'Please reinstall dependencies and restart/rebuild the app to enable photo picking.',
+      );
+      return;
+    }
+
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Photo Access Needed', 'Allow photo library access to choose a child photo.');
+      return;
+    }
+
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: (ImagePicker as any).MediaTypeOptions?.Images ?? ['images'],
+      allowsEditing: true,
+      quality: 1,
+    });
+    if (picked.canceled || !picked.assets[0]?.uri) return;
+
+    setIsPhotoBusy(true);
+    try {
+      const asset = picked.assets[0];
+
+      const path = await storageService.uploadChildPhoto(
+        familyId,
+        editingChild.id,
+        asset.uri,
+      );
+      setEditPhotoPath(path);
+      setEditPhotoPreviewUri(asset.uri);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not upload photo';
+      Alert.alert('Upload Failed', msg);
+    } finally {
+      setIsPhotoBusy(false);
+    }
+  };
+
+  const removeEditChildPhoto = async () => {
+    if (!editPhotoPath) return;
+    setIsPhotoBusy(true);
+    try {
+      await storageService.removeChildPhoto(editPhotoPath);
+      setEditPhotoPath(undefined);
+      setEditPhotoPreviewUri(undefined);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not remove photo';
+      Alert.alert('Remove Failed', msg);
+    } finally {
+      setIsPhotoBusy(false);
+    }
   };
 
   // Save edits to Supabase, then update the local store.
@@ -254,6 +371,7 @@ export default function SettingsScreen() {
         birthday: editBirthday,
         color_index: editColorIndex,
         nickname: editNickname.trim() || null,
+        photo_url: editPhotoPath ?? null,
       });
       // Update local cache with the server's response
       const mapped = mapSupabaseChild(updated);
@@ -262,9 +380,12 @@ export default function SettingsScreen() {
         birthday: mapped.birthday,
         colorIndex: mapped.colorIndex,
         nickname: mapped.nickname,
+        photoPath: mapped.photoPath,
       });
       setShowEditChildModal(false);
       setEditingChild(null);
+      setEditPhotoPreviewUri(undefined);
+      setEditPhotoPath(undefined);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Could not save changes';
       Alert.alert('Error', msg);
@@ -382,6 +503,40 @@ export default function SettingsScreen() {
     }
   };
 
+  // ─── Sign Out Handler ─────────────────────────────────
+  // Mirrors the same logic from home.tsx — checks for unsent
+  // drafts and warns before signing out so no work is lost.
+  const handleSignOut = useCallback(async () => {
+    const userId = user?.id;
+    const pendingDrafts = userId
+      ? useDraftStore.getState().getDraftsForUser(userId)
+      : [];
+
+    const doSignOut = async () => {
+      try {
+        await signOut();
+        clearChildren();
+        clearEntries();
+        router.replace('/(onboarding)');
+      } catch (error) {
+        console.warn('Sign out error:', error);
+      }
+    };
+
+    if (pendingDrafts.length > 0) {
+      Alert.alert(
+        'Unsent memories',
+        `You have ${pendingDrafts.length} ${pendingDrafts.length === 1 ? 'memory' : 'memories'} waiting to sync. They'll be here when you sign back in.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign Out', style: 'destructive', onPress: doSignOut },
+        ],
+      );
+    } else {
+      await doSignOut();
+    }
+  }, [user?.id, signOut, clearChildren, clearEntries, router]);
+
   return (
     <View style={styles.container}>
       <TopBar title="Settings" showBack />
@@ -390,6 +545,24 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* ─── Profile ─────────────────────────── */}
+        <View style={styles.section}>
+          <View style={styles.card}>
+            <View style={styles.row}>
+              <View style={styles.rowContent}>
+                {profile?.display_name ? (
+                  <>
+                    <Text style={styles.rowLabel}>{profile.display_name}</Text>
+                    <Text style={styles.rowSublabel}>{user?.email}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.rowLabel}>{user?.email}</Text>
+                )}
+              </View>
+            </View>
+          </View>
+        </View>
+
         {/* ─── 1. Children Section ─────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Children</Text>
@@ -467,6 +640,23 @@ export default function SettingsScreen() {
               />
             </View>
 
+            {/* Notification blocked warning */}
+            {notifBlocked && (
+              <Pressable
+                onPress={() => openAppSettings()}
+                style={({ pressed }) => [
+                  styles.notifWarning,
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Ionicons name="warning-outline" size={14} color={colors.warning} />
+                <Text style={styles.notifWarningText}>
+                  Your phone is blocking notifications ·{' '}
+                  <Text style={{ color: colors.accent, fontWeight: '600' }}>Fix</Text>
+                </Text>
+              </Pressable>
+            )}
+
             {/* Time row */}
             <Pressable
               onPress={() => reminderEnabled && setShowTimePicker((p) => !p)}
@@ -489,7 +679,19 @@ export default function SettingsScreen() {
 
             {/* Time picker (scroll wheels) */}
             {showTimePicker && reminderEnabled && (
-              <TimePicker value={reminderTime} onChange={handleTimeChange} />
+              <TimePicker
+                value={reminderTime}
+                onConfirm={handleTimeConfirm}
+                onCancel={() => setShowTimePicker(false)}
+              />
+            )}
+
+            {/* Brief confirmation after setting a new time */}
+            {showTimeConfirmation && (
+              <View style={styles.timeConfirmation}>
+                <Ionicons name="checkmark-circle" size={14} color={colors.accent} />
+                <Text style={styles.timeConfirmationText}>Reminder updated</Text>
+              </View>
             )}
           </View>
         </View>
@@ -533,30 +735,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* ─── 4. Account Security (email users only) ── */}
-        {isEmailUser && (
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>Account Security</Text>
-            <View style={styles.card}>
-              <Pressable
-                onPress={openChangePasswordModal}
-                style={({ pressed }) => [
-                  styles.row,
-                  pressed && { backgroundColor: colors.cardPressed },
-                ]}
-              >
-                <Text style={styles.rowLabel}>Change Password</Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={colors.textMuted}
-                />
-              </Pressable>
-            </View>
-          </View>
-        )}
-
-        {/* ─── 5. Recently Deleted ─────────────── */}
+        {/* ─── 4. Recently Deleted ─────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Recently Deleted</Text>
           <View style={[styles.card, styles.deletedSectionCard]}>
@@ -584,30 +763,29 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* ─── 6. Data & Privacy ───────────────── */}
+        {/* ─── 5. Data & Privacy ───────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>Data & Privacy</Text>
           <View style={styles.card}>
+            {isEmailUser && (
+              <Pressable
+                onPress={openChangePasswordModal}
+                style={({ pressed }) => [
+                  styles.row,
+                  styles.rowBorder,
+                  pressed && { backgroundColor: colors.cardPressed },
+                ]}
+              >
+                <Text style={styles.rowLabel}>Change Password</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.textMuted}
+                />
+              </Pressable>
+            )}
             <Pressable
-              onPress={() => {
-                // No-op for MVP
-              }}
-              style={({ pressed }) => [
-                styles.row,
-                styles.rowBorder,
-                pressed && { backgroundColor: colors.cardPressed },
-              ]}
-            >
-              <Text style={styles.rowLabel}>Export All Entries</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={colors.textMuted}
-              />
-            </Pressable>
-
-            <Pressable
-              onPress={() => Linking.openSettings()}
+              onPress={() => openAppSettings()}
               style={({ pressed }) => [
                 styles.row,
                 styles.rowBorder,
@@ -646,23 +824,23 @@ export default function SettingsScreen() {
                 pressed && { backgroundColor: colors.cardPressed },
               ]}
             >
-              <Text style={styles.dangerLabel}>Delete Account</Text>
+              <Text style={styles.rowLabel}>Delete Account</Text>
               <Ionicons
                 name="chevron-forward"
                 size={16}
-                color={colors.accent}
+                color={colors.textMuted}
               />
             </Pressable>
           </View>
         </View>
 
-        {/* ─── 7. About ────────────────────────── */}
+        {/* ─── 6. About ────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>About</Text>
           <View style={styles.card}>
             <View style={[styles.row, styles.rowBorder]}>
               <Text style={styles.rowLabel}>Version</Text>
-              <Text style={styles.rowSublabel}>1.0.0</Text>
+              <Text style={styles.rowSublabel}>{Constants.expoConfig?.version ?? '1.0.0'}</Text>
             </View>
             <Pressable
               onPress={() => Linking.openURL(config.privacyPolicyUrl)}
@@ -683,7 +861,6 @@ export default function SettingsScreen() {
               onPress={() => Linking.openURL(config.termsOfServiceUrl)}
               style={({ pressed }) => [
                 styles.row,
-                styles.rowBorder,
                 pressed && { backgroundColor: colors.cardPressed },
               ]}
             >
@@ -694,22 +871,24 @@ export default function SettingsScreen() {
                 color={colors.textMuted}
               />
             </Pressable>
+          </View>
+        </View>
+
+        {/* ─── 7. Sign Out ─────────────────────── */}
+        <View style={styles.section}>
+          <View style={styles.card}>
             <Pressable
-              onPress={() => {
-                const subject = encodeURIComponent('Fireflies Feedback — v1.0.0');
-                const body = encodeURIComponent(`\n\n---\nApp: Fireflies v1.0.0\nPlatform: ${Platform.OS} ${Platform.Version}`);
-                Linking.openURL(`mailto:${config.supportEmail}?subject=${subject}&body=${body}`);
-              }}
+              onPress={handleSignOut}
               style={({ pressed }) => [
                 styles.row,
                 pressed && { backgroundColor: colors.cardPressed },
               ]}
             >
-              <Text style={styles.rowLabel}>Contact Support</Text>
+              <Text style={styles.dangerLabel}>Sign Out</Text>
               <Ionicons
-                name="chevron-forward"
+                name="log-out-outline"
                 size={16}
-                color={colors.textMuted}
+                color={colors.accent}
               />
             </Pressable>
           </View>
@@ -745,7 +924,7 @@ export default function SettingsScreen() {
           </View>
 
           <ScrollView
-            contentContainerStyle={styles.fullModalContent}
+            contentContainerStyle={[styles.fullModalContent, { paddingBottom: insets.bottom + spacing(8) }]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
@@ -788,12 +967,54 @@ export default function SettingsScreen() {
               placeholderTextColor={colors.textMuted}
             />
 
+            {/* Photo */}
+            <Text style={styles.inputLabel}>Photo (optional)</Text>
+            <View style={styles.photoEditorRow}>
+              <View style={styles.photoAvatarWrap}>
+                {editPhotoPreviewUri ? (
+                  <Image source={{ uri: editPhotoPreviewUri }} style={styles.photoAvatarImage} />
+                ) : (
+                  <Text style={styles.photoAvatarLetter}>
+                    {(editName.trim()[0] ?? editingChild?.name?.[0] ?? '?').toUpperCase()}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.photoEditorActions}>
+                <Pressable
+                  onPress={pickEditChildPhoto}
+                  disabled={isPhotoBusy || isSaving}
+                  style={({ pressed }) => [
+                    styles.photoActionBtn,
+                    pressed && { opacity: 0.7 },
+                    (isPhotoBusy || isSaving) && { opacity: 0.5 },
+                  ]}
+                >
+                  <Text style={styles.photoActionText}>
+                    {isPhotoBusy ? 'Working...' : (editPhotoPath ? 'Change photo' : 'Add photo')}
+                  </Text>
+                </Pressable>
+                {editPhotoPath && (
+                  <Pressable
+                    onPress={removeEditChildPhoto}
+                    disabled={isPhotoBusy || isSaving}
+                    style={({ pressed }) => [
+                      styles.photoActionBtnGhost,
+                      pressed && { opacity: 0.7 },
+                      (isPhotoBusy || isSaving) && { opacity: 0.5 },
+                    ]}
+                  >
+                    <Text style={styles.photoActionGhostText}>Remove</Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
+
             {/* Save button */}
             <View style={styles.fullModalButtonArea}>
               <PrimaryButton
                 label={isSaving ? 'Saving...' : 'Save'}
                 onPress={saveEditChild}
-                disabled={!editName.trim() || !editBirthday || isSaving}
+                disabled={!editName.trim() || !editBirthday || isSaving || isPhotoBusy}
               />
             </View>
 
@@ -850,7 +1071,7 @@ export default function SettingsScreen() {
           </View>
 
           <ScrollView
-            contentContainerStyle={styles.fullModalContent}
+            contentContainerStyle={[styles.fullModalContent, { paddingBottom: insets.bottom + spacing(8) }]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
@@ -1053,7 +1274,7 @@ export default function SettingsScreen() {
           </View>
 
           <ScrollView
-            contentContainerStyle={styles.fullModalContent}
+            contentContainerStyle={[styles.fullModalContent, { paddingBottom: insets.bottom + spacing(8) }]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
@@ -1296,6 +1517,18 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontWeight: '600',
   },
+  timeConfirmation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    paddingVertical: spacing(2),
+    paddingHorizontal: spacing(3),
+  },
+  timeConfirmationText: {
+    ...typography.caption,
+    color: colors.accent,
+  },
   // ─── Modals (Edit/Add Child) ──────────
   modalOverlay: {
     flex: 1,
@@ -1410,6 +1643,61 @@ const styles = StyleSheet.create({
   },
   fullModalButtonArea: {
     marginTop: spacing(4),
+  },
+  photoEditorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    marginBottom: spacing(4),
+  },
+  photoAvatarWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  photoAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  photoAvatarLetter: {
+    ...typography.screenTitle,
+    color: colors.textMuted,
+  },
+  photoEditorActions: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(2),
+  },
+  photoActionBtn: {
+    paddingVertical: spacing(2),
+    paddingHorizontal: spacing(3),
+    borderRadius: radii.md,
+    backgroundColor: colors.accentSoft,
+  },
+  photoActionText: {
+    ...typography.caption,
+    color: colors.accent,
+    fontWeight: '600',
+  },
+  photoActionBtnGhost: {
+    paddingVertical: spacing(2),
+    paddingHorizontal: spacing(3),
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  photoActionGhostText: {
+    ...typography.caption,
+    color: colors.textSoft,
+    fontWeight: '600',
   },
   // ─── Change Password Modal ────────────
   passwordFieldContainer: {
@@ -1541,5 +1829,18 @@ const styles = StyleSheet.create({
     ...typography.formLabel,
     color: colors.card,
     fontWeight: '500',
+  },
+  // ─── Notification Warning ──────────────
+  notifWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(2),
+    paddingHorizontal: spacing(4),
+    paddingVertical: spacing(2),
+    minHeight: minTouchTarget,
+  },
+  notifWarningText: {
+    fontSize: 12,
+    color: colors.textSoft,
   },
 });

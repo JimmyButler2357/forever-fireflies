@@ -131,6 +131,7 @@ export default function FirstMemoryTextScreen() {
             multiline
             textAlignVertical="top"
             autoFocus
+            autoCapitalize="sentences"
           />
         </View>
 

@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii } from '@/constants/theme';
 import { authService } from '@/services/auth.service';
+import { config } from '@/lib/config';
 
 /**
  * Sign In screen — the very first screen new users see.
@@ -121,9 +122,13 @@ export default function SignInScreen() {
 
         {/* Legal links */}
         <View style={styles.legal}>
-          <Text style={styles.legalText}>Terms of Service</Text>
+          <Pressable onPress={() => Linking.openURL(config.termsOfServiceUrl)}>
+            <Text style={styles.legalText}>Terms of Service</Text>
+          </Pressable>
           <Text style={styles.legalDot}>·</Text>
-          <Text style={styles.legalText}>Privacy Policy</Text>
+          <Pressable onPress={() => Linking.openURL(config.privacyPolicyUrl)}>
+            <Text style={styles.legalText}>Privacy Policy</Text>
+          </Pressable>
         </View>
       </View>
     </View>

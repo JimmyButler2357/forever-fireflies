@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -26,34 +27,38 @@ import EntryCard from '@/components/EntryCard';
 import PrimaryButton from '@/components/PrimaryButton';
 import FloatingFireflies from '@/components/FloatingFireflies';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
-import { useSubscription } from '@/hooks/useSubscription';
 import { storageService } from '@/services/storage.service';
 import { capture } from '@/lib/posthog';
 
-// ─── Firefly Jar Screen ──────────────────────────────────
+// ─── Favorites Tab (Firefly Jar) ─────────────────────────
+//
+// Shows all favorited entries with the warm gold gradient
+// and floating fireflies. Moved from a pushed screen into
+// the Favorites tab — no subscription gate, no back button.
 
-export default function FireflyJarScreen() {
+export default function FavoritesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const children = useChildrenStore((s) => s.children);
   const entries = useEntriesStore((s) => s.entries);
-
-  // Defense-in-depth: if the user somehow reaches this screen without access
-  // (e.g. deep link or back navigation), send them back to Home.
-  // NOTE: All hooks must be called before the early return below —
-  // React requires hooks to run in the same order every render.
-  const { hasAccess } = useSubscription();
 
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   useEffect(() => { capture('firefly_jar_viewed'); }, []);
 
   // ─── Single shared audio player ─────────────────────────
-  // Like a boombox shared by the whole class — only one card
-  // can play at a time. Tapping play on a different card
-  // automatically stops the current one.
   const player = useAudioPlayer();
   const [playingEntryId, setPlayingEntryId] = useState<string | null>(null);
+  const navigation = useNavigation();
+
+  // Stop audio when leaving this tab (switching tabs or pushing a screen)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      player.cleanup();
+      setPlayingEntryId(null);
+    });
+    return unsubscribe;
+  }, [navigation, player]);
 
   const handlePlayAudio = useCallback(async (entryId: string, audioStoragePath?: string) => {
     if (!audioStoragePath) return;
@@ -68,7 +73,7 @@ export default function FireflyJarScreen() {
       return;
     }
 
-    // Different entry — load new audio (player.load auto-unloads the old one)
+    // Different entry — load new audio
     try {
       setPlayingEntryId(entryId);
       const url = await storageService.getPlaybackUrl(audioStoragePath);
@@ -83,19 +88,18 @@ export default function FireflyJarScreen() {
   // Build child lookup
   const childMap = useMemo(() => buildChildMap(children), [children]);
 
-  // All non-deleted entries — used to determine "first" globally, not just among favorites
+  // All non-deleted entries — used for "first memory" badge calculation
   const allActiveEntries = useMemo(
     () => entries.filter((e) => !e.isDeleted),
     [entries],
   );
 
-  // Identify each child's earliest entry for "first memory" badges
   const firstMemoryBadges = useMemo(
     () => getFirstEntryBadges(allActiveEntries, childMap),
     [allActiveEntries, childMap],
   );
 
-  // All favorited, non-deleted entries (reverse chronological — newest first)
+  // All favorited, non-deleted entries (newest first)
   const favorites = useMemo(
     () => entries.filter((e) => e.isFavorited && !e.isDeleted),
     [entries],
@@ -109,15 +113,6 @@ export default function FireflyJarScreen() {
 
   const isMultiChild = children.length >= 2;
 
-  // Redirect to Home if access is revoked — placed after all hooks.
-  useEffect(() => {
-    if (!hasAccess) {
-      router.replace('/(main)/home');
-    }
-  }, [hasAccess]);
-
-  if (!hasAccess) return null;
-
   return (
     <View style={styles.container}>
       {/* Warm honey fades to cool cream in the bottom third */}
@@ -127,13 +122,13 @@ export default function FireflyJarScreen() {
         style={styles.gradientBottom}
       />
 
-      {/* Floating firefly particles — ambient gold dots drifting in background */}
+      {/* Floating firefly particles */}
       <View style={styles.firefliesLayer} pointerEvents="none">
         <FloatingFireflies />
       </View>
 
-      {/* Top bar — serif title, no right icons */}
-      <TopBar title="Firefly Jar (favorites)" titleStyle="serif" showBack />
+      {/* Top bar — sans-serif title, no back button */}
+      <TopBar title="Your Firefly Jar" />
 
       {/* Memory count */}
       <View style={styles.countRow}>
@@ -171,7 +166,7 @@ export default function FireflyJarScreen() {
         </ScrollView>
       )}
 
-      {/* Entry list — elevated card treatment */}
+      {/* Entry list */}
       <FlatList
         data={filteredMemories}
         keyExtractor={(item) => item.id}
@@ -198,7 +193,7 @@ export default function FireflyJarScreen() {
             <View style={styles.emptyButtonWrap}>
               <PrimaryButton
                 label="Browse your entries"
-                onPress={() => router.back()}
+                onPress={() => router.push('/(main)/(tabs)/journal')}
               />
             </View>
           </View>

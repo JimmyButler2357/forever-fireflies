@@ -34,6 +34,7 @@ export interface Entry {
   audioDuration?: number; // seconds
   audioStoragePath?: string; // Supabase storage path (e.g. "user123/entry456.wav")
   entryType?: 'voice' | 'text';
+  photos?: { id: string; uri: string; storagePath?: string; displayOrder?: number }[];
 }
 
 // ─── Mapper ──────────────────────────────────────────────
@@ -68,6 +69,7 @@ interface SupabaseTimelineRow {
   entry_type: string;
   entry_children: Array<{ child_id: string }>;
   entry_tags: Array<{ tag_id: string; tags: { name: string; slug: string } | null }>;
+  entry_media?: Array<{ id: string; storage_path: string; display_order: number; media_type: string }>;
 }
 
 export function mapSupabaseEntry(row: SupabaseTimelineRow): Entry {
@@ -90,6 +92,15 @@ export function mapSupabaseEntry(row: SupabaseTimelineRow): Entry {
     recordedBy: row.user_id,
     audioDuration: row.audio_duration_seconds ?? undefined,
     entryType: row.entry_type as 'voice' | 'text',
+    photos: (row.entry_media ?? [])
+      .filter((m) => m.media_type === 'photo')
+      .sort((a, b) => a.display_order - b.display_order)
+      .map((m) => ({
+        id: m.id,
+        uri: m.storage_path,
+        storagePath: m.storage_path,
+        displayOrder: m.display_order,
+      })),
   };
 }
 

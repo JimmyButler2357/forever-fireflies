@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>On This Day — 6 Design Options</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAF8F5; --card: #FEFCF9; --text: #2C2420; --soft: #8C7E74;
+    --muted: #B5AAA0; --accent: #E8724A; --accent-soft: rgba(232,114,74,0.08);
+    --border: #EDE8E3; --tag: #F3EDE8; --glow: #F2C94C;
+    --blue: #7BAFD4; --amber: #D4A07B;
+  }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #1a1a2e; color: #e0e0e0; min-height: 100vh; padding: 32px; }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #8888aa; margin-bottom: 32px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; max-width: 1200px; margin: 0 auto; }
+  .option { display: flex; flex-direction: column; gap: 12px; }
+  .option-header { display: flex; align-items: baseline; gap: 8px; }
+  .option-num { font-size: 14px; font-weight: 700; color: #E8724A; }
+  .option-name { font-size: 14px; font-weight: 600; }
+  .option-desc { font-size: 11px; color: #8888aa; line-height: 1.5; }
+
+  /* Phone frame for each option */
+  .card-frame {
+    background: var(--bg); border-radius: 20px; padding: 16px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.3);
+    min-height: 220px;
+  }
+  .dash-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 8px; }
+
+  /* === SHARED CONTENT STYLES === */
+  .otd-child { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+  .otd-child .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); display: inline-block; }
+  .otd-child span { font-size: 10px; color: var(--soft); }
+  .otd-preview { font-family: Georgia, serif; font-size: 13px; color: var(--text); line-height: 1.45; margin-bottom: 6px; }
+  .otd-date { font-size: 10px; color: var(--muted); }
+
+  /* ============================================ */
+  /* 1. POLAROID */
+  /* ============================================ */
+  .polaroid {
+    background: white;
+    border-radius: 4px;
+    padding: 10px 10px 24px;
+    box-shadow: 0 2px 12px rgba(44,36,32,0.12), 0 1px 3px rgba(44,36,32,0.08);
+    transform: rotate(-1.5deg);
+    transition: transform 0.3s;
+  }
+  .polaroid:hover { transform: rotate(0deg) scale(1.02); }
+  .polaroid-content {
+    background: linear-gradient(135deg, #fdf8f0 0%, #f5ede3 100%);
+    border-radius: 2px;
+    padding: 14px 12px;
+    margin-bottom: 12px;
+    min-height: 80px;
+  }
+  .polaroid-content .otd-preview { font-style: italic; }
+  .polaroid-footer {
+    text-align: center;
+    padding: 0 8px;
+  }
+  .polaroid-date {
+    font-family: 'Segoe Script', 'Comic Sans MS', cursive;
+    font-size: 13px;
+    color: var(--soft);
+    transform: rotate(-1deg);
+    display: inline-block;
+  }
+  .polaroid-ago {
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  /* ============================================ */
+  /* 2. TIMELINE THREAD */
+  /* ============================================ */
+  .timeline-card {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(44,36,32,0.06);
+    overflow: hidden;
+  }
+  .timeline-entry {
+    padding: 12px 12px 12px 28px;
+    position: relative;
+  }
+  .timeline-entry + .timeline-entry { border-top: 1px solid var(--border); }
+  /* The vertical line */
+  .timeline-entry::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .timeline-entry:first-child::before { top: 18px; }
+  .timeline-entry:last-child::before { bottom: calc(100% - 18px); }
+  /* The circle on the line */
+  .timeline-entry::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 14px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: var(--card);
+    z-index: 1;
+  }
+  .timeline-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .timeline-badge.gold { color: #C9A044; }
+
+  /* ============================================ */
+  /* 3. CALENDAR TEAR-OFF */
+  /* ============================================ */
+  .tearoff {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(44,36,32,0.08);
+    overflow: hidden;
+  }
+  .tearoff-top {
+    background: linear-gradient(135deg, #f0e6dc 0%, #ebe0d5 100%);
+    padding: 12px 14px;
+    text-align: center;
+    position: relative;
+    border-bottom: 1px dashed var(--border);
+  }
+  /* Torn edge effect */
+  .tearoff-top::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: url("data:image/svg+xml,%3Csvg width='20' height='8' viewBox='0 0 20 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 8 Q5 0 10 8 Q15 0 20 8' fill='%23FEFCF9'/%3E%3C/svg%3E") repeat-x;
+    background-size: 20px 8px;
+  }
+  .tearoff-day {
+    font-family: Georgia, serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+  .tearoff-month {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--soft);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .tearoff-year {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  .tearoff-body {
+    padding: 16px 14px 14px;
+  }
+
+  /* ============================================ */
+  /* 4. LETTER / NOTE */
+  /* ============================================ */
+  .letter {
+    background: #faf6f0;
+    border-radius: 8px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 4px rgba(44,36,32,0.08);
+    position: relative;
+    /* Subtle paper lines */
+    background-image: repeating-linear-gradient(
+      transparent, transparent 23px,
+      rgba(44,36,32,0.04) 23px, rgba(44,36,32,0.04) 24px
+    );
+    background-position: 0 16px;
+  }
+  .letter-dateline {
+    text-align: right;
+    font-family: Georgia, serif;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--soft);
+    margin-bottom: 12px;
+  }
+  .letter .otd-preview {
+    font-style: italic;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+  .letter-sign {
+    font-family: Georgia, serif;
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .letter-corner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(225deg, var(--bg) 50%, #ede5da 50%);
+    border-radius: 0 8px 0 0;
+  }
+
+  /* ============================================ */
+  /* 5. STACKED PAGES */
+  /* ============================================ */
+  .stacked-wrap { position: relative; padding-bottom: 8px; }
+  /* Back pages peeking */
+  .stacked-back-2 {
+    position: absolute;
+    bottom: 0;
+    left: 6px;
+    right: 6px;
+    height: 100%;
+    background: var(--tag);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(44,36,32,0.04);
+    transform: rotate(1.5deg);
+  }
+  .stacked-back-1 {
+    position: absolute;
+    bottom: 4px;
+    left: 3px;
+    right: 3px;
+    height: 100%;
+    background: #f5efe8;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(44,36,32,0.06);
+    transform: rotate(-0.8deg);
+  }
+  .stacked-front {
+    position: relative;
+    background: var(--card);
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(44,36,32,0.08);
+    z-index: 2;
+  }
+  .stacked-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--accent-soft);
+    padding: 3px 8px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .stacked-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 8px;
+    cursor: pointer;
+  }
+  .stacked-hint .chevron { font-size: 12px; }
+
+  /* ============================================ */
+  /* 6. WINDOW / PORTHOLE */
+  /* ============================================ */
+  .window-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--soft);
+    text-align: center;
+    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+  }
+  .window-frame {
+    border-radius: 16px;
+    padding: 3px;
+    background: linear-gradient(135deg, #e8ddd2, #d4c7ba, #e8ddd2);
+    box-shadow: 0 2px 8px rgba(44,36,32,0.10);
+  }
+  .window-inner {
+    border-radius: 13px;
+    padding: 14px;
+    background: radial-gradient(ellipse at center, #FEFCF9 60%, #f5ede3 100%);
+    box-shadow: inset 0 2px 12px rgba(44,36,32,0.06), inset 0 0 20px rgba(44,36,32,0.03);
+    position: relative;
+    overflow: hidden;
+  }
+  /* Warm light rays from edges */
+  .window-inner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(242,201,76,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .window-inner .otd-preview {
+    text-align: center;
+    font-style: italic;
+    font-size: 14px;
+    position: relative;
+  }
+  .window-inner .otd-child {
+    justify-content: center;
+  }
+  .window-inner .otd-date {
+    text-align: center;
+  }
+  .window-ago {
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+    body { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<h1>On This Day — Design Options</h1>
+<div class="subtitle">6 alternatives to the standard card + pill badge. Same content, different feel. Pick your favorite(s).</div>
+
+<div class="grid">
+
+  <!-- 1. POLAROID -->
+  <div class="option">
+    <div class="option-header"><span class="option-num">#1</span><span class="option-name">Polaroid Snapshot</span></div>
+    <div class="option-desc">Slightly tilted like a photo on a fridge. Handwritten date below. Warm, nostalgic, physical-object energy.</div>
+    <div class="card-frame">
+      <div class="dash-label">On this day</div>
+      <div class="polaroid">
+        <div class="polaroid-content">
+          <div class="otd-child"><span class="dot"></span><span>Emma</span></div>
+          <div class="otd-preview">"The sky laid an egg" — she pointed at the moon and asked if the stars were cracking out of it</div>
+        </div>
+        <div class="polaroid-footer">
+          <div class="polaroid-date">April 3, 2025</div>
+          <div class="polaroid-ago">one year ago</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. TIMELINE THREAD -->
+  <div class="option">
+    <div class="option-header"><span class="option-num">#2</span><span class="option-name">Timeline Thread</span></div>
+    <div class="option-desc">Vertical line with dots at each time marker. Memories hang off the thread. Feels like living history flowing downward.</div>
+    <div class="card-frame">
+      <div class="dash-label">On this day</div>
+      <div class="timeline-card">
+        <div class="timeline-entry">
+          <div class="timeline-badge">One year ago</div>
+          <div class="otd-child"><span class="dot"></span><span>Emma</span></div>
+          <div class="otd-preview">She called the moon a "sky egg" and asked if the stars were cracking out of it</div>
+          <div class="otd-date">April 3, 2025</div>
+        </div>
+        <div class="timeline-entry">
+          <div class="timeline-badge gold">Six months ago</div>
+          <div class="otd-child"><span class="dot"></span><span>Emma</span></div>
+          <div class="otd-preview">"The clouds are the sky's blankets"</div>
+          <div class="otd-date">October 3, 2025</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. CALENDAR TEAR-OFF -->
+  <div class="option">
+    <div class="option-header"><span class="option-num">#3</span><span class="option-name">Calendar Page Tear-Off</span></div>
+    <div class="option-desc">Top looks like a ripped calendar page with large date. Memory content below the tear. Instantly communicates "this date."</div>
+    <div class="card-frame">
+      <div class="dash-label">On this day</div>
+      <div class="tearoff">
+        <div class="tearoff-top">
+          <div class="tearoff-day">3</div>
+          <div class="tearoff-month">April</div>
+          <div class="tearoff-year">2025 — one year ago</div>
+        </div>
+        <div class="tearoff-body">
+          <div class="otd-child"><span class="dot"></span><span>Emma</span></div>
+          <div class="otd-preview">She called the moon a "sky egg" and asked if the stars were cracking out of it</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. LETTER / NOTE -->
+  <div class="option">
+    <div class="option-header"><span class="option-num">#4</span><span class="option-name">Letter / Note</span></div>
+    <div class="option-desc">Looks like a handwritten note on lined paper. Date as a letter dateline. Dog-eared corner. Like finding a note in a drawer.</div>
+    <div class="card-frame">
+      <div class="dash-label">On this day</div>
+      <div class="letter">
+        <div class="letter-corner"></div>
+        <div class="letter-dateline">April 3, 2025</div>
+        <div class="otd-child"><span class="dot"></span><span>Emma, 1y 4m</span></div>
+        <div class="otd-preview">She called the moon a "sky egg" and asked if the stars were cracking out of it</div>
+        <div class="letter-sign">— one year ago today</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. STACKED PAGES -->
+  <div class="option">
+    <div class="option-header"><span class="option-num">#5</span><span class="option-name">Stacked Pages with Peek</span></div>
+    <div class="option-desc">Main memory on top, 1-2 more "pages" peeking behind it. Hints at depth and more history. Creates curiosity.</div>
+    <div class="card-frame">
+      <div class="dash-label">On this day</div>
+      <div class="stacked-wrap">
+        <div class="stacked-back-2"></div>
+        <div class="stacked-back-1"></div>
+        <div class="stacked-front">
+          <div class="stacked-badge">One year ago</div>
+          <div class="otd-child"><span class="dot"></span><span>Emma</span></div>
+          <div class="otd-preview">She called the moon a "sky egg" and asked if the stars were cracking out of it</div>
+          <div class="otd-date">April 3, 2025</div>
+          <div class="stacked-hint"><span>2 more memories</span><span class="chevron">&#8250;</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. WINDOW / PORTHOLE -->
+  <div class="option">
+    <div class="option-header"><span class="option-num">#6</span><span class="option-name">Window / Porthole</span></div>
+    <div class="option-desc">Rounded frame with inner shadow — like peering through a window into the past. Warm light rays at the edges. Dreamy.</div>
+    <div class="card-frame">
+      <div class="dash-label">On this day</div>
+      <div class="window-label">One year ago</div>
+      <div class="window-frame">
+        <div class="window-inner">
+          <div class="otd-child"><span class="dot"></span><span>Emma</span></div>
+          <div class="otd-preview">"The sky laid an egg" — she pointed at the moon and asked if the stars were cracking out of it</div>
+          <div class="otd-date">April 3, 2025</div>
+        </div>
+      </div>
+      <div class="window-ago">a window into that day</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

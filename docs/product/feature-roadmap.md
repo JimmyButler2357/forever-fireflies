@@ -275,6 +275,7 @@ Polish, legal, and marketing — everything needed between "beta works" and "App
 #### Data Export
 
 - [ ] Edge function or RPC to export all user entries + audio as downloadable archive (privacy compliance)
+- [ ] Re-add "Export All Entries" row to Settings > Data & Privacy once export edge function is built
 
 #### Email Marketing
 
@@ -336,6 +337,8 @@ Make the app smarter, more useful, and harder to leave. Focus on AI features and
 | **In-app contact form** | Replace mailto link with a native form inside the app (subject dropdown: bug / feature request / question / other + text area). Submissions saved to a `feedback` Supabase table with user ID, device info, and app version auto-attached. More polished than mailto and captures structured data |
 | **AI feedback triage** | Edge function (similar to `process-entry`) classifies each submission via Claude Haiku as bug / feature-request / question / praise. Auto-drafts an email reply for review, and auto-creates GitHub issues (with labels) for bugs and feature requests via GitHub API. Human-in-the-loop: drafts queue for approval before sending |
 | Cloud transcription fallback | For entries where on-device transcription has low confidence, offer cloud upgrade |
+| **24-hour nudge** | Push notification 24 hours after a user's first entry: "Yesterday you saved [title]. What happened today?" The gap between entry 1 and entry 2 is where most journaling apps lose people — this bridges it. Only fires once. Uses the AI-generated title from the first entry to make it personal and specific |
+| **First-entry show-and-tell tour** | After a user saves their very first entry and lands on the Entry Detail screen, a brief guided overlay highlights what the app just did for them — the AI-generated title, auto-detected child name, cleaned-up transcript, and auto-applied tags. Shows the value of the processing pipeline in a "look what we did with your 30 seconds" moment. Only triggers once (first entry ever). Dismissible, non-blocking |
 | Quiet week prompt | Gentle re-engagement for users inactive 7+ days |
 | Quick-react mood tags | One-tap mood icon after recording (laughing, crying, proud, exhausted); filterable later |
 | `prompt_history` cleanup | Add retention policy — cron job to prune rows older than 90 days, or cap at N rows per user. Table grows unbounded without this |
@@ -361,8 +364,10 @@ Multi-user features, richer media, and smarter search. The app evolves from a so
 | AI semantic search | Natural language queries ("When did Liam first talk about wanting a dog?") via pgvector + RAG pattern |
 | Partner prompt / question of the day | Both parents get the same daily prompt, record independently, paired responses surfaced side-by-side at week's end |
 | Memory Sparks | Import photo from camera roll, app prompts "What was happening here?" — bridges photos and voice |
-| Extended family sharing | Invite links for grandparents/family to contribute recordings. No app or account needed |
+| Extended family sharing | Invite links for grandparents/family to view and contribute recordings. No app download or account needed — grandma gets a web link, taps it, and can listen to recordings and see shared memories. Family members can also share memories *to* her. Web-based participation keeps the barrier zero; the app is for primary caregivers |
+| **Caregiver access** | Invite a nanny, babysitter, or au pair to contribute entries during their care hours. Caregiver gets a lightweight web link (same no-download approach as family sharing). They can record moments the parents missed during the workday. Caregiver role is separate from family — can be revoked easily when care arrangements change. Entries tagged with who recorded them |
 | Keepsake book builder | Print-on-demand physical books compiled from entries with auto-generated yearly suggestion |
+| **Retranscribe with Whisper** | On-device speech recognition (`expo-speech-recognition`) struggles in noisy/windy environments and there's no way to fix a bad transcript after the fact. Integrates **OpenAI Whisper API** for true cloud speech-to-text — pulls the stored WAV from Supabase Storage, sends it to Whisper, and replaces the transcript with a higher-quality result. New edge function (or extension of `process-entry`) downloads the audio, calls Whisper, then re-runs the AI cleanup pipeline (title, tags, filler removal) on the fresh transcript. Gives parents a second chance at an accurate transcript without re-recording. UI: "Retranscribe" button on Entry Detail with confirmation modal |
 | Extended recording | "Keep Going" button at 60s extends to 3-minute cap (if user data warrants it) |
 | Referral program | Invite a parent friend, both get a free month |
 | Yearly recap | "Year in Memories" email with curated audio, growth stats, and year-end letter prompt |

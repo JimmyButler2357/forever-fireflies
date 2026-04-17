@@ -49,6 +49,9 @@ export function getAge(birthday: string, referenceDate?: string): string {
   const d = referenceDate
     ? (() => { const [ry, rm, rd] = referenceDate.split('-').map(Number); return new Date(ry, rm - 1, rd); })()
     : new Date();
+  // Future birthday (bad data) — show "newborn" as a safe fallback
+  if (b > d) return 'newborn';
+
   let years = d.getFullYear() - b.getFullYear();
   let months = d.getMonth() - b.getMonth();
   if (months < 0) {
@@ -107,5 +110,5 @@ export function ageInMonths(birthday: string): number {
   const [by, bm] = birthday.split('-').map(Number);
   const b = new Date(by, bm - 1, 1);
   const now = new Date();
-  return (now.getFullYear() - b.getFullYear()) * 12 + (now.getMonth() - b.getMonth());
+  return Math.max(0, (now.getFullYear() - b.getFullYear()) * 12 + (now.getMonth() - b.getMonth()));
 }

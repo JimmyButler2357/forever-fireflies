@@ -85,6 +85,14 @@ export default function FirstRecordingScreen() {
           <Text style={styles.writeLinkText}>or write instead</Text>
         </Pressable>
       </View>
+
+      {/* Skip — subtle bottom text for users who want to explore first */}
+      <Pressable
+        onPress={() => router.push('/(onboarding)/welcome-preview')}
+        style={[styles.skipLink, { paddingBottom: insets.bottom + spacing(6) }]}
+      >
+        <Text style={styles.skipLinkText}>Skip for now</Text>
+      </Pressable>
     </View>
   );
 }
@@ -157,5 +165,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     color: colors.accent,
+  },
+  skipLink: {
+    alignItems: 'center',
+    paddingVertical: spacing(4),
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  skipLinkText: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: colors.textMuted,
   },
 });

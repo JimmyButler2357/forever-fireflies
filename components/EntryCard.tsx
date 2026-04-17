@@ -1,5 +1,5 @@
-import { useRef, useEffect } from 'react';
-import { View, Text, Pressable, Animated, StyleSheet } from 'react-native';
+import { useRef, useEffect, useState } from 'react';
+import { View, Text, Pressable, Animated, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   colors,
@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import DraftBadge from '@/components/DraftBadge';
 import type { DraftStatus } from '@/stores/draftStore';
+import { storageService } from '@/services/storage.service';
 
 // ─── Highlight Helper ────────────────────────────────────
 
@@ -120,6 +121,7 @@ interface EntryCardEntry {
   hasAudio: boolean;
   audioStoragePath?: string;
   firstMemoryBadge?: { names: string[]; colorHexes: string[] };
+  photos?: string[];
 }
 
 interface EntryCardProps {
@@ -194,6 +196,35 @@ export default function EntryCard({
   const hasFooterContent =
     (showTags && entry.tags.length > 0) ||
     (isCoreMemory && entry.hasAudio);
+  const [resolvedPhotos, setResolvedPhotos] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const resolvePhotoUrls = async () => {
+      if (!entry.photos || entry.photos.length === 0) {
+        setResolvedPhotos([]);
+        return;
+      }
+
+      const urls = await Promise.all(
+        entry.photos.slice(0, 3).map(async (uriOrPath) => {
+          if (uriOrPath.startsWith('http')) return uriOrPath;
+          try {
+            return await storageService.getEntryMediaUrl(uriOrPath);
+          } catch {
+            return '';
+          }
+        }),
+      );
+
+      if (cancelled) return;
+      setResolvedPhotos(urls.filter(Boolean));
+    };
+
+    resolvePhotoUrls();
+    return () => { cancelled = true; };
+  }, [entry.photos]);
 
   return (
     <Animated.View
@@ -316,6 +347,14 @@ export default function EntryCard({
           >
             {entry.preview}
           </Text>
+        )}
+
+        {resolvedPhotos.length > 0 && (
+          <View style={styles.photoRow}>
+            {resolvedPhotos.map((uri, i) => (
+              <Image key={`${uri}_${i}`} source={{ uri }} style={styles.photoThumb} />
+            ))}
+          </View>
         )}
 
         {/* Bottom row: tags + audio button (conditionally rendered) */}
@@ -468,6 +507,17 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 10,
   },
+  photoRow: {
+    flexDirection: 'row',
+    gap: spacing(2),
+    marginBottom: 8,
+  },
+  photoThumb: {
+    width: 46,
+    height: 46,
+    borderRadius: 8,
+    backgroundColor: colors.tag,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -476,7 +526,9 @@ const styles = StyleSheet.create({
   tags: {
     flexDirection: 'row',
     gap: spacing(1),
-    flex: 1,
+    flexShrink: 1,
+    overflow: 'hidden',
+    marginRight: spacing(2),
   },
   tagPill: {
     backgroundColor: colors.tag,

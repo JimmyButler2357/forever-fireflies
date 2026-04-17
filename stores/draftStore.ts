@@ -28,6 +28,7 @@ export interface DraftEntry {
   locationText: string | null;
   familyId: string;
   isOnboarding: boolean;
+  photoLocalUris: string[];
 
   // Sync state
   status: DraftStatus;
@@ -58,7 +59,9 @@ function draftId(): string {
 export type DraftInput = Pick<DraftEntry,
   'userId' | 'transcript' | 'audioLocalUri' | 'entryDate' |
   'entryType' | 'locationText' | 'familyId' | 'isOnboarding'
->;
+> & {
+  photoLocalUris?: string[];
+};
 
 // ─── Store ───────────────────────────────────────────────
 
@@ -101,6 +104,7 @@ export const useDraftStore = create<DraftState>()(
           retryCount: 0,
           supabaseEntryId: null,
           audioUploaded: false,
+          photoLocalUris: draft.photoLocalUris ?? [],
         };
         set((state) => ({
           drafts: [newDraft, ...state.drafts],

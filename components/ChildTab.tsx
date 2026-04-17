@@ -1,5 +1,5 @@
 import { Pressable, Text, View, StyleSheet } from 'react-native';
-import { colors, typography, radii, shadows, spacing } from '@/constants/theme';
+import { colors, typography, radii, shadows, spacing, minTouchTarget } from '@/constants/theme';
 import { childColorWithOpacity } from '@/constants/theme';
 
 interface ChildTabProps {
@@ -62,10 +62,12 @@ export default function ChildTab({ label, color, active, onPress, showDot = true
 
 const styles = StyleSheet.create({
   tab: {
-    paddingVertical: 7,
+    paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: radii.pill,
     borderWidth: 2,
+    minHeight: minTouchTarget,
+    justifyContent: 'center',
   },
   tabActive: {
     // borderColor and backgroundColor set dynamically

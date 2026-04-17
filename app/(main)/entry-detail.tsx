@@ -11,8 +11,9 @@ import {
   Platform,
   ActivityIndicator,
   GestureResponderEvent,
-  Keyboard,
   Alert,
+  Dimensions,
+  Image,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -54,6 +55,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { audioCleanupService } from '@/services/audioCleanup.service';
 import { notificationsService } from '@/services/notifications.service';
 import { startTrialIfNeeded } from '@/lib/subscriptionHelpers';
+import { capture } from '@/lib/posthog';
 
 // ─── FadeInUp Wrapper ────────────────────────────────────
 
@@ -95,6 +97,15 @@ const FREQUENT_TAGS = [
   'funny', 'milestone', 'first', 'sweet', 'family',
   'bedtime', 'outing', 'words', 'siblings', 'school',
 ];
+
+// ─── Photo Grid Constants ──────────────────────────────
+//
+// The photo grid is a 2×2 layout below the transcript.
+// Screen width minus horizontal padding (20px each side = 40px)
+// minus the gap between columns (8px), divided by 2.
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const PHOTO_GRID_GAP = 8;
+const PHOTO_THUMB_SIZE = (SCREEN_WIDTH - 40 - PHOTO_GRID_GAP) / 2;
 
 // ─── Audio Constants ────────────────────────────────────
 
@@ -161,6 +172,57 @@ function getBarColor(barIndex: number, childHexColors: string[]): string {
 }
 
 // ─── Helpers (shared from lib/) ───────────────────────────
+
+// ─── Transcript Shimmer ──────────────────────────────────
+// Pulsing placeholder bars shown while AI cleans the transcript.
+// Think of it like a skeleton loader — it shows the shape of text
+// lines while the real content is being prepared behind the scenes.
+
+const SHIMMER_BARS = [
+  { width: '100%' },
+  { width: '85%' },
+  { width: '60%' },
+] as const;
+
+function TranscriptShimmer() {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0.7,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.3,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+
+  return (
+    <Animated.View style={{ opacity, paddingVertical: 8 }}>
+      {SHIMMER_BARS.map((bar, i) => (
+        <View
+          key={i}
+          style={{
+            width: bar.width,
+            height: 12,
+            backgroundColor: colors.card,
+            borderRadius: 6,
+            marginBottom: i < SHIMMER_BARS.length - 1 ? 10 : 0,
+          }}
+        />
+      ))}
+    </Animated.View>
+  );
+}
 
 // ─── Entry Detail Screen ──────────────────────────────────
 
@@ -243,6 +305,7 @@ export default function EntryDetailScreen() {
 
   // Local UI state
   const [transcript, setTranscript] = useState('');
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [showChildPicker, setShowChildPicker] = useState(false);
   // When true, the child picker is mandatory — the user must select
   // at least one child before interacting with the rest of the entry.
@@ -254,7 +317,10 @@ export default function EntryDetailScreen() {
   const [showReRecordDialog, setShowReRecordDialog] = useState(false);
   const [showAppendDialog, setShowAppendDialog] = useState(false);
   const [tagInput, setTagInput] = useState('');
-  const [saveIndicator, setSaveIndicator] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showSavedConfirmation, setShowSavedConfirmation] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPhotoSaving, setIsPhotoSaving] = useState(false);
   const [showBanner, setShowBanner] = useState(!!params.audioUri);
   const [showDatePicker, setShowDatePicker] = useState(false);
   // Favorite animation — burst originates from the tap position
@@ -263,11 +329,6 @@ export default function EntryDetailScreen() {
   // Banner auto-dismiss (built-in Animated, not Reanimated)
   const bannerOpacity = useRef(new Animated.Value(1)).current;
   const reduceMotion = useReduceMotion();
-
-  // Debounce timer for transcript saves — we don't want to
-  // hit Supabase on every single keystroke. Think of it like
-  // Google Docs: it saves a moment after you stop typing.
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Audio player — loads a signed URL from Supabase Storage
   // and gives us play/pause/seek/position/duration.
@@ -286,6 +347,11 @@ export default function EntryDetailScreen() {
   // Ref (not state) because this value is only read inside
   // handleWaveformPress — it doesn't affect what renders.
   const waveformWidthRef = useRef(0);
+
+  // Ref to the transcript TextInput — used to reset scroll position on load.
+  const transcriptInputRef = useRef<TextInput>(null);
+  // One-shot guard so we only reset scroll once per entry load.
+  const hasResetScroll = useRef(false);
 
   // Guard for auto-retry on signed URL expiry — only retry once per entry.
   // Reset when entry changes so a different entry's audio can get its own retry.
@@ -340,6 +406,7 @@ export default function EntryDetailScreen() {
         locationText: params.locationText || null,
         familyId: familyId!,
         isOnboarding,
+        photoLocalUris: [],
       });
 
       // Copy audio to persistent storage (cache can be wiped by the OS)
@@ -369,6 +436,7 @@ export default function EntryDetailScreen() {
           setEntry(mapped);
           setTranscript(mapped.text);
           setLocationInput(mapped.locationText ?? '');
+          capture('entry_detail_viewed', { entryType: mapped.entryType });
         } else if (params.transcript !== undefined || params.audioUri) {
           // ── Mode 2: New entry from recording ──
           if (!familyId) throw new Error('No family — cannot create entry');
@@ -396,6 +464,10 @@ export default function EntryDetailScreen() {
             ...(isOnboarding && { is_favorited: true }),
           });
           if (cancelled) return;
+
+          // Show shimmer on transcript area while AI cleans it up.
+          // Only for voice entries — text entries show their content immediately.
+          if (params.audioUri) setIsAiProcessing(true);
 
           // Steps 2-4 run in parallel — audio upload, child/tag
           // detection, and AI processing don't depend on each other,
@@ -478,9 +550,11 @@ export default function EntryDetailScreen() {
             setNeedsChildSelection(true);
           }
 
-          // If AI was fast and title is already here, skip the fade-in animation
+          // If AI was fast and title is already here, skip the fade-in
+          // animation and clear the shimmer (transcript is already cleaned)
           if (mapped.title) {
             titleWasImmediate.current = true;
+            setIsAiProcessing(false);
           }
 
           // Also add to local cache so Home shows it immediately
@@ -508,16 +582,39 @@ export default function EntryDetailScreen() {
             return;
           }
 
-          // If AI hasn't finished yet, patch the title when it arrives.
-          // (If it already finished, getEntry above caught the title.)
-          if (!mapped.title) {
-            aiPromise.then((result) => {
-              if (cancelled) return;
-              if (!result?.title) return;
-              setEntry((prev) => prev ? { ...prev, title: result.title } : prev);
-              updateEntryLocal(row.id, { title: result.title });
-            });
-          }
+          // When AI finishes, patch title + cleaned transcript into state.
+          // If AI was already fast (mapped.title exists), this is a no-op
+          // since getEntry already returned the cleaned data above.
+          aiPromise.then((result) => {
+            if (cancelled) return;
+            setIsAiProcessing(false);
+            if (!result) return; // AI failed — raw transcript stays as fallback
+
+            const updates: Partial<Entry> = {};
+
+            if (result.title && !mapped.title) {
+              updates.title = result.title;
+            }
+
+            if (result.cleaned_transcript) {
+              updates.text = result.cleaned_transcript;
+              // Only replace transcript if user hasn't started editing.
+              // Compare against the raw text we originally received —
+              // if they match, user hasn't touched it, safe to swap in
+              // the cleaned version.
+              setTranscript((current) => {
+                const rawText = params.transcript || '';
+                return current === rawText ? result.cleaned_transcript! : current;
+              });
+            }
+
+            if (Object.keys(updates).length > 0) {
+              setEntry((prev) => prev ? { ...prev, ...updates } : prev);
+              updateEntryLocal(row.id, updates);
+            }
+          }).catch(() => {
+            setIsAiProcessing(false);
+          });
         } else {
           // No params at all — nothing to show
           setEntry(null);
@@ -655,6 +752,34 @@ export default function EntryDetailScreen() {
     return unsubscribe;
   }, [navigation, entry?.id]);
 
+  useEffect(() => {
+    if (!entry?.photos || entry.photos.length === 0) return;
+    const unresolved = entry.photos.filter((photo) => !photo.uri.startsWith('http') && photo.storagePath);
+    if (unresolved.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      const resolved = await Promise.all(
+        entry.photos!.map(async (photo) => {
+          const path = photo.storagePath ?? photo.uri;
+          if (photo.uri.startsWith('http') || !path) return photo;
+          try {
+            const signedUri = await storageService.getEntryMediaUrl(path);
+            return { ...photo, uri: signedUri, storagePath: path };
+          } catch {
+            return photo;
+          }
+        }),
+      );
+
+      if (cancelled) return;
+      setEntry((prev) => prev ? { ...prev, photos: resolved } : prev);
+      updateEntryLocal(entry.id, { photos: resolved });
+    })();
+
+    return () => { cancelled = true; };
+  }, [entry?.id, entry?.photos]);
+
 
   // ─── Auto-Retry on Signed URL Expiry ─────────────────────
   //
@@ -673,13 +798,6 @@ export default function EntryDetailScreen() {
       loadAudio(entry.audioStoragePath);
     }
   }, [player.error, entry?.audioStoragePath, loadAudio]);
-
-  // Clean up debounce timer on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, []);
 
   // ─── Derived Data (must be above early returns) ───────
   //
@@ -716,49 +834,24 @@ export default function EntryDetailScreen() {
     [waveformChildColors],
   );
 
-  // Use a ref to always read the latest entry/transcript inside the keyboard listener.
-  // A plain variable would create a stale closure — the listener is registered once
-  // and would forever see the values from that first render.
-  const entryRef = useRef(entry);
-  const transcriptRef = useRef(transcript);
-  useEffect(() => { entryRef.current = entry; }, [entry]);
-  useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
-
-  // Reads only from refs — no stale closure risk, so useCallback with [] is safe.
-  const triggerAITitleIfNeeded = useCallback(() => {
-    const currentEntry = entryRef.current;
-    const currentTranscript = transcriptRef.current;
-    if (!currentEntry || currentEntry.title || !currentTranscript.trim()) return;
-
-    // Cancel any pending debounce save and flush immediately so the edge
-    // function reads the latest transcript from the DB.
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-
-    const entryId = currentEntry.id;
-    entriesService.update(entryId, { transcript: currentTranscript })
-      .then(() => entriesService.processWithAI(entryId))
-      .then((result) => {
-        if (result?.title) {
-          setEntry((prev) => prev ? { ...prev, title: result.title } : prev);
-          updateEntryLocal(entryId, { title: result.title });
+  // ── Scroll-to-top on entry load ──
+  // When a multiline TextInput receives its value, the cursor defaults to the
+  // end of the text, which auto-scrolls to the bottom. This one-shot effect
+  // resets the cursor to position 0 so the user sees the beginning first.
+  // Fires for both existing entries (Mode 1) and newly created entries (Mode 2)
+  // once the entry object is set. The setTimeout gives the TextInput a frame
+  // to render the new value before we move the cursor.
+  useEffect(() => {
+    if (entry && !hasResetScroll.current) {
+      hasResetScroll.current = true;
+      const id = setTimeout(() => {
+        if (typeof transcriptInputRef.current?.setNativeProps === 'function') {
+          transcriptInputRef.current.setNativeProps({ selection: { start: 0, end: 0 } });
         }
-      })
-      .catch((err) => console.warn('AI title trigger failed:', err));
-  }, []);
-
-  // Trigger on keyboard hide (user taps "done") or back-navigation (user leaves
-  // without dismissing keyboard).
-  useEffect(() => {
-    const sub = Keyboard.addListener('keyboardDidHide', triggerAITitleIfNeeded);
-    return () => sub.remove();
-  }, [triggerAITitleIfNeeded]);
-
-  useEffect(() => {
-    return navigation.addListener('beforeRemove', triggerAITitleIfNeeded);
-  }, [navigation, triggerAITitleIfNeeded]);
+      }, 100);
+      return () => clearTimeout(id);
+    }
+  }, [entry?.id]);
 
   // ─── Loading State ──────────────────────────────────────
 
@@ -817,44 +910,42 @@ export default function EntryDetailScreen() {
   // Keeps empty string (not undefined) so the TextInput stays visible
   // when the user clears the title. Character limit is on the TextInput
   // (maxLength), and we strip newlines here so it stays single-line.
+  // Only updates local component state — Zustand store is updated
+  // when the user taps the explicit Save button.
   const handleTitleChange = (text: string) => {
     const cleaned = text.replace(/\n/g, ' ');
-
     setEntry((prev) => prev ? { ...prev, title: cleaned } : prev);
-    updateEntryLocal(entry.id, { title: cleaned || undefined });
-
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      try {
-        await entriesService.update(entry.id, { title: cleaned || null });
-        setSaveIndicator(true);
-        setTimeout(() => setSaveIndicator(false), 2000);
-      } catch (err) {
-        console.warn('Failed to save title:', err);
-      }
-    }, 800);
+    setHasUnsavedChanges(true);
   };
 
-  // Debounced transcript save — updates local state immediately
-  // (so typing feels instant) but waits 800ms before sending
-  // the change to Supabase. If you keep typing, the timer
-  // resets, so only the final version gets saved.
+  // Updates local state immediately so typing feels instant.
+  // Supabase is only updated when the user taps the Save button.
   const handleTranscriptChange = (text: string) => {
     setTranscript(text);
     setEntry((prev) => prev ? { ...prev, text } : prev);
-    updateEntryLocal(entry.id, { text });
+    setHasUnsavedChanges(true);
+  };
 
-    // Debounce the Supabase save
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      try {
-        await entriesService.update(entry.id, { transcript: text });
-        setSaveIndicator(true);
-        setTimeout(() => setSaveIndicator(false), 2000);
-      } catch (err) {
-        console.warn('Failed to save transcript:', err);
-      }
-    }, 800);
+  // Explicit save — persists title + transcript to Supabase and
+  // syncs the Zustand store so other screens see the update.
+  const handleSave = async () => {
+    if (!entry || isSaving) return;
+    setIsSaving(true);
+    try {
+      await entriesService.update(entry.id, {
+        title: entry.title || null,
+        transcript: transcript,
+      });
+      updateEntryLocal(entry.id, { title: entry.title, text: transcript });
+      setHasUnsavedChanges(false);
+      setShowSavedConfirmation(true);
+      setTimeout(() => setShowSavedConfirmation(false), 1500);
+    } catch (err) {
+      console.warn('Failed to save:', err);
+      Alert.alert('Save failed', 'Your changes could not be saved. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddChildToEntry = async (childId: string) => {
@@ -916,6 +1007,94 @@ export default function EntryDetailScreen() {
     updateEntryLocal(entry.id, { tags: newTags });
   };
 
+  const handleAddPhoto = async () => {
+    if (!entry || isPhotoSaving) return;
+    if (!isOnline) {
+      Alert.alert('No Internet', 'Photos can be added when you are back online.');
+      return;
+    }
+    const currentPhotos = entry.photos ?? [];
+    if (currentPhotos.length >= 4) {
+      Alert.alert('Photo limit reached', 'You can attach up to 4 photos per memory.');
+      return;
+    }
+
+    let ImagePicker: typeof import('expo-image-picker');
+    try {
+      ImagePicker = await import('expo-image-picker');
+    } catch {
+      Alert.alert(
+        'Photo module unavailable',
+        'Please reinstall dependencies and restart/rebuild the app to enable photo picking.',
+      );
+      return;
+    }
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Photo Access Needed', 'Allow photo library access to add memory photos.');
+      return;
+    }
+
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: (ImagePicker as any).MediaTypeOptions?.Images ?? ['images'],
+      allowsEditing: true,
+      quality: 1,
+    });
+    if (picked.canceled || !picked.assets[0]?.uri) return;
+
+    setIsPhotoSaving(true);
+    try {
+      const asset = picked.assets[0];
+
+      const displayOrder = currentPhotos.length === 0
+        ? 0
+        : Math.max(...currentPhotos.map((photo, index) => photo.displayOrder ?? index)) + 1;
+      const storagePath = await storageService.uploadEntryPhoto(entry.id, asset.uri, displayOrder);
+      const mediaRow = await entriesService.addEntryPhoto(entry.id, {
+        storage_path: storagePath,
+        display_order: displayOrder,
+        width: asset.width ?? null,
+        height: asset.height ?? null,
+        file_size_bytes: asset.fileSize ?? null,
+      });
+      const signedUri = await storageService.getEntryMediaUrl(storagePath);
+      const updatedPhotos = [
+        ...currentPhotos,
+        { id: mediaRow.id, uri: signedUri, storagePath, displayOrder },
+      ];
+      setEntry((prev) => prev ? { ...prev, photos: updatedPhotos } : prev);
+      updateEntryLocal(entry.id, { photos: updatedPhotos });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not add photo';
+      Alert.alert('Add Photo Failed', msg);
+    } finally {
+      setIsPhotoSaving(false);
+    }
+  };
+
+  const handleRemovePhoto = async (photoId: string) => {
+    if (!entry || isPhotoSaving) return;
+    const target = (entry.photos ?? []).find((photo) => photo.id === photoId);
+    if (!target) return;
+
+    setIsPhotoSaving(true);
+    try {
+      await entriesService.removeEntryPhoto(photoId);
+      if (target.storagePath) {
+        await storageService.deleteEntryMedia(target.storagePath);
+      }
+      const remaining = (entry.photos ?? []).filter((photo) => photo.id !== photoId);
+      setEntry((prev) => prev ? { ...prev, photos: remaining } : prev);
+      updateEntryLocal(entry.id, { photos: remaining });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not remove photo';
+      Alert.alert('Remove Photo Failed', msg);
+    } finally {
+      setIsPhotoSaving(false);
+    }
+  };
+
   const handleToggleFavorite = async (e?: GestureResponderEvent) => {
     // Optimistic update
     const newVal = !entry.isFavorited;
@@ -945,6 +1124,7 @@ export default function EntryDetailScreen() {
     setShowDeleteDialog(false);
     try {
       await entriesService.softDelete(entry.id);
+      capture('entry_deleted', { entryType: entry.entryType });
       removeEntryLocal(entry.id);
       router.back();
     } catch (err) {
@@ -1006,7 +1186,6 @@ export default function EntryDetailScreen() {
       params: {
         appendEntryId: entry.id,
         appendStoragePath: entry.audioStoragePath ?? '',
-        appendTranscript: transcript,
       },
     });
   };
@@ -1039,7 +1218,7 @@ export default function EntryDetailScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior="padding"
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: insets.top + spacing(3) }]}>
@@ -1070,7 +1249,7 @@ export default function EntryDetailScreen() {
             hitSlop={hitSlop.icon}
             style={({ pressed }) => [styles.overflowBtn, pressed && { opacity: 0.6 }]}
           >
-            <Text style={styles.overflowText}>···</Text>
+            <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
           </Pressable>
         </View>
       </View>
@@ -1147,7 +1326,7 @@ export default function EntryDetailScreen() {
               hitSlop={hitSlop.icon}
               style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.6 }]}
             >
-              <Ionicons name="add" size={12} color={colors.textMuted} />
+              <Ionicons name="add" size={14} color={colors.textMuted} />
             </Pressable>
           )}
         </View>
@@ -1273,31 +1452,59 @@ export default function EntryDetailScreen() {
 
         {/* ── 5. Transcript — flows on page background, no card ── */}
 
-        {/* Transcript hint — when voice recording produced no text */}
-        {isVoiceEntry && !transcript && (
-          <View style={styles.transcriptHint}>
-            <Ionicons name="create-outline" size={14} color={colors.textMuted} />
-            <Text style={styles.transcriptHintText}>
-              No speech detected — type your memory below
-            </Text>
+        {isAiProcessing ? (
+          /* Shimmer placeholder while AI cleans up the transcript.
+             Shows 3 pulsing bars that mimic lines of text — the user
+             can still interact with the rest of the page (title, child
+             pills, photos, audio) while this loads. */
+          <View style={styles.transcriptCard}>
+            <TranscriptShimmer />
           </View>
-        )}
+        ) : (
+          <>
+            {/* Transcript hint — when voice recording produced no text */}
+            {isVoiceEntry && !transcript && (
+              <View style={styles.transcriptHint}>
+                <Ionicons name="create-outline" size={14} color={colors.textMuted} />
+                <Text style={styles.transcriptHintText}>
+                  No speech detected — type your memory below
+                </Text>
+              </View>
+            )}
 
-        <View style={styles.transcriptCard}>
-          <TextInput
-            style={styles.transcriptInput}
-            value={transcript}
-            onChangeText={handleTranscriptChange}
-            placeholder="Start typing your memory..."
-            placeholderTextColor={colors.textMuted}
-            multiline
-            textAlignVertical="top"
-            scrollEnabled
-            editable={hasAccess}
-          />
-        </View>
-        {saveIndicator && (
-          <Text style={styles.savedIndicator}>All changes saved</Text>
+            <View style={styles.transcriptCard}>
+              <TextInput
+                ref={transcriptInputRef}
+                style={styles.transcriptInput}
+                value={transcript}
+                onChangeText={handleTranscriptChange}
+                placeholder="Start typing your memory..."
+                placeholderTextColor={colors.textMuted}
+                multiline
+                textAlignVertical="top"
+                scrollEnabled
+                editable={hasAccess}
+                autoCapitalize="sentences"
+              />
+            </View>
+            {hasUnsavedChanges && (
+              <Pressable
+                onPress={handleSave}
+                style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+                disabled={isSaving}
+              >
+                <Text style={styles.saveButtonText}>
+                  {isSaving ? 'Saving...' : 'Save'}
+                </Text>
+              </Pressable>
+            )}
+            {showSavedConfirmation && (
+              <View style={styles.savedConfirmation}>
+                <Ionicons name="checkmark-circle" size={14} color={colors.accent} />
+                <Text style={styles.savedConfirmationText}>Saved</Text>
+              </View>
+            )}
+          </>
         )}
 
         {/* ── 6. Audio Playback Bar — prominent, below transcript ── */}
@@ -1425,7 +1632,46 @@ export default function EntryDetailScreen() {
           </View>
         )}
 
-        {/* ── 7. Tags — footnote styling at the very bottom ── */}
+        {/* ── 7. Photos — 2×2 grid below transcript ── */}
+        {entry.photos && entry.photos.length > 0 && (
+          <View style={styles.photoSection}>
+            <View style={styles.photoGrid}>
+              {entry.photos.slice(0, 4).map((photo, index) => (
+                <View key={photo.id ?? index} style={styles.photoThumb}>
+                  <Image source={{ uri: photo.uri }} style={styles.photoImage} />
+                  {hasAccess && (
+                    <Pressable
+                      onPress={() => handleRemovePhoto(photo.id)}
+                      style={styles.photoRemoveBtn}
+                      hitSlop={hitSlop.icon}
+                      disabled={isPhotoSaving}
+                    >
+                      <Ionicons name="close-circle" size={20} color={colors.card} />
+                    </Pressable>
+                  )}
+                </View>
+              ))}
+            </View>
+            {hasAccess && entry.photos.length < 4 && (
+              <Pressable style={styles.addPhotosLink} onPress={handleAddPhoto} disabled={isPhotoSaving}>
+                <Text style={styles.addPhotosText}>
+                  {isPhotoSaving ? 'Saving photo...' : '+ Add photos'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {/* Empty-state add-photos link — shows when no photos yet */}
+        {hasAccess && (!entry.photos || entry.photos.length === 0) && (
+          <Pressable style={styles.addPhotosLink} onPress={handleAddPhoto} disabled={isPhotoSaving}>
+            <Text style={styles.addPhotosText}>
+              {isPhotoSaving ? 'Saving photo...' : '+ Add photos'}
+            </Text>
+          </Pressable>
+        )}
+
+        {/* ── 8. Tags — footnote styling at the very bottom ── */}
         <View style={styles.tagsRow}>
           {entry.tags.map((tag) => (
             <TagPill
@@ -1626,9 +1872,10 @@ const styles = StyleSheet.create({
   },
   // ─── Gradient Divider ────────────────
   gradientDivider: {
-    height: 3,
+    height: 2,
     borderRadius: 2,
-    marginBottom: spacing(2),
+    marginTop: 4,
+    marginBottom: spacing(3),
   },
   // ─── Mini Child Pills ────────────────
   miniPill: {
@@ -1636,7 +1883,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 2,
     paddingHorizontal: 8,
-    borderRadius: 10,
+    borderRadius: radii.md,
     gap: 4,
   },
   miniPillDot: {
@@ -1663,7 +1910,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginBottom: spacing(2),
+    marginBottom: 4,
     minHeight: minTouchTarget,
   },
   metaText: {
@@ -1683,12 +1930,6 @@ const styles = StyleSheet.create({
     minHeight: minTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  overflowText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: 2,
   },
   // ─── Date Picker ──────────────────
   datePickerContainer: {
@@ -1753,12 +1994,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacing(2),
-    marginBottom: spacing(1),
+    marginBottom: 4,
   },
   addBtn: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.textMuted,
     alignItems: 'center',
@@ -1804,21 +2045,19 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacing(1.5),
-    marginTop: spacing(5),
+    marginTop: spacing(4),
     marginBottom: spacing(4),
   },
   addTagPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 2,
-    paddingHorizontal: 7,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
     borderRadius: radii.sm,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.border,
+    backgroundColor: colors.tag,
   },
   addTagPillText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '500',
     color: colors.textMuted,
   },
@@ -1883,12 +2122,17 @@ const styles = StyleSheet.create({
   },
   transcriptCard: {
     backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
     padding: spacing(4),
     marginTop: spacing(3),
     marginBottom: spacing(2),
+    borderRadius: radii.card,
+    // Warm shadow — defines the card edge without a hard border line.
+    // Think of it like a soft spotlight behind a piece of paper on a desk.
+    shadowColor: 'rgb(44,36,32)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   transcriptInput: {
     ...typography.transcript,
@@ -1897,11 +2141,68 @@ const styles = StyleSheet.create({
     minHeight: 180,
     maxHeight: 400,
   },
-  savedIndicator: {
+  saveButton: {
+    alignSelf: 'flex-end',
+    backgroundColor: colors.accent,
+    paddingVertical: spacing(2),
+    paddingHorizontal: spacing(4),
+    borderRadius: radii.full,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing(2),
+    marginBottom: spacing(2),
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    ...typography.buttonLabel,
+    color: colors.card,
+  },
+  savedConfirmation: {
+    flexDirection: 'row',
+    alignSelf: 'flex-end',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing(2),
+    marginBottom: spacing(2),
+  },
+  savedConfirmationText: {
     ...typography.caption,
+    color: colors.accent,
+  },
+  // ─── Photo Grid ──────────────────────
+  photoSection: {
+    marginBottom: spacing(2),
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: PHOTO_GRID_GAP,
+  },
+  photoThumb: {
+    width: PHOTO_THUMB_SIZE,
+    height: PHOTO_THUMB_SIZE,
+    borderRadius: radii.card,
+    overflow: 'hidden',
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  photoRemoveBtn: {
+    position: 'absolute',
+    top: spacing(2),
+    right: spacing(2),
+  },
+  addPhotosLink: {
+    marginTop: spacing(2),
+  },
+  addPhotosText: {
+    fontSize: 11,
+    fontWeight: '500',
     color: colors.textMuted,
-    textAlign: 'right',
-    marginBottom: spacing(4),
   },
   // ─── Audio Bar ──────────────────────
   // Shown when user's trial has expired — locked audio indicator

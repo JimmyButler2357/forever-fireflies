@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forever Fireflies — Home v13</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ui-bg: #1a1a2e; --ui-surface: #16213e; --ui-border: #2a2a4a;
+    --ui-text: #e0e0e0; --ui-text-dim: #8888aa; --ui-accent: #E8724A;
+    --bg: #FAF8F5; --card: #FEFCF9; --text: #2C2420; --soft: #8C7E74;
+    --muted: #B5AAA0; --accent: #E8724A; --accent-soft: rgba(232,114,74,0.08);
+    --border: #EDE8E3; --tag: #F3EDE8; --glow: #F2C94C;
+    --blue: #7BAFD4; --amber: #D4A07B;
+  }
+  body { font-family: system-ui, -apple-system, sans-serif; background: var(--ui-bg); color: var(--ui-text); min-height: 100vh; display: flex; overflow: hidden; padding-bottom: 100px; }
+
+  /* === CONTROLS === */
+  .controls { width: 360px; min-width: 360px; background: var(--ui-surface); border-right: 1px solid var(--ui-border); padding: 24px 20px; overflow-y: auto; height: 100vh; display: flex; flex-direction: column; gap: 16px; }
+  .controls h1 { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .controls .subtitle { font-size: 11px; color: var(--ui-text-dim); }
+  .control-group { display: flex; flex-direction: column; gap: 8px; }
+  .control-group label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ui-text-dim); }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; }
+  .toggle-row span { font-size: 13px; }
+  .toggle-row .t-desc { font-size: 10px; color: var(--ui-text-dim); margin-top: 1px; }
+  .toggle { width: 44px; height: 24px; min-width: 44px; border-radius: 12px; background: var(--ui-border); cursor: pointer; position: relative; transition: background 0.2s; border: none; }
+  .toggle.active { background: var(--ui-accent); }
+  .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: transform 0.2s; }
+  .toggle.active::after { transform: translateX(20px); }
+  .btn-group { display: flex; gap: 4px; flex-wrap: wrap; }
+  .btn-group button { flex: 1; padding: 8px 4px; border: 1px solid var(--ui-border); background: transparent; color: var(--ui-text-dim); font-size: 12px; cursor: pointer; border-radius: 6px; transition: all 0.15s; font-family: inherit; min-width: 0; }
+  .btn-group button.active { background: var(--ui-accent); border-color: var(--ui-accent); color: white; font-weight: 600; }
+  .btn-group button:hover:not(.active) { border-color: var(--ui-text-dim); color: var(--ui-text); }
+  .divider { height: 1px; background: var(--ui-border); }
+  .notes { font-size: 11px; color: var(--ui-text-dim); line-height: 1.6; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid var(--ui-border); }
+  .notes strong { color: var(--ui-text); }
+
+  .preview-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: hidden; position: relative; transition: all 0.3s; }
+  .preview-area.zoomed { align-items: flex-start; overflow-y: auto; padding-top: 40px; padding-bottom: 120px; }
+  .preview-area.zoomed .phone { transform: scale(1.5); transform-origin: top center; margin-bottom: 400px; }
+  .zoom-btn { position: absolute; top: 12px; right: 12px; z-index: 30; width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--ui-border); background: var(--ui-surface); color: var(--ui-text); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .zoom-btn:hover { border-color: var(--ui-text-dim); background: rgba(255,255,255,0.08); }
+
+  /* === PHONE === */
+  .phone { width: 375px; height: 812px; background: var(--bg); border-radius: 44px; overflow: hidden; position: relative; box-shadow: 0 0 0 2px #2a2a2a, 0 0 0 6px #1a1a1a, 0 0 0 8px #333, 0 20px 60px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
+  .status-bar { height: 54px; padding: 14px 28px 0; display: flex; justify-content: space-between; align-items: center; background: var(--bg); flex-shrink: 0; z-index: 10; }
+  .status-bar .time { font-size: 15px; font-weight: 600; color: var(--text); }
+  .status-bar .s-icons { display: flex; gap: 6px; align-items: center; }
+  .status-bar .s-icons svg { width: 16px; height: 16px; fill: var(--text); }
+
+  .top-bar { padding: 6px 20px 8px; display: flex; justify-content: space-between; align-items: center; background: var(--bg); flex-shrink: 0; z-index: 10; }
+  .top-greeting { font-family: Georgia, serif; font-size: 16px; font-weight: 400; color: var(--soft); line-height: 1.3; }
+  .top-right { display: flex; align-items: center; gap: 12px; }
+  .top-right svg { width: 20px; height: 20px; cursor: pointer; }
+  .icon-stroke { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .scroll-content { flex: 1; overflow-y: auto; padding-bottom: 94px; }
+  .scroll-content::-webkit-scrollbar { width: 0; }
+  .tab-page { display: none; }
+  .tab-page.active { display: block; }
+
+  /* ============ HOME COMPONENTS ============ */
+
+  /* Branding banner — shared */
+  .banner { margin: 8px 16px 0; border-radius: 16px; overflow: hidden; position: relative; }
+
+  .banner-tagline {
+    font-family: Georgia, serif;
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.3;
+    position: relative;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  .banner-tagline em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .banner-sub {
+    font-size: 12px;
+    color: var(--soft);
+    margin-top: 8px;
+    position: relative;
+    z-index: 2;
+  }
+  .banner-mem-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--soft);
+    margin-top: 10px;
+    position: relative;
+    z-index: 2;
+  }
+  .banner-mem-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--glow);
+    box-shadow: 0 0 6px rgba(242,201,76,0.5);
+  }
+
+  /* Banner: Sketch scene — shared for all sketch variants */
+  .banner-sketch {
+    padding: 24px 20px 20px;
+    position: relative;
+    overflow: hidden;
+    min-height: 130px;
+  }
+  .banner-sketch-a { background: #F0E6DC; }
+  .banner-sketch-b { background: linear-gradient(160deg, #F5EDE3 0%, #EDE0D2 50%, #F0E6DC 100%); }
+  .banner-sketch-c { background: linear-gradient(145deg, #FAF8F5 0%, #F0E6DC 60%, #E8DDD2 100%); }
+  .banner-sketch-d { background: linear-gradient(135deg, #EDE3D8 0%, #E5D8CB 50%, #DDD0C3 100%); }
+  .banner-sketch-e { background: linear-gradient(150deg, #F8F2EC 0%, #F0E6DC 40%, #E8DDD2 100%); }
+  .sketch-scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .sketch-ff-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .sketch-ff {
+    position: absolute;
+    border-radius: 50%;
+    will-change: transform, opacity;
+  }
+
+  /* Family section */
+  .family-section { padding: 16px 16px 0; }
+  .family-section .s-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 10px; padding-left: 4px; }
+  .family-row { display: flex; justify-content: center; gap: 24px; }
+  .family-member { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; transition: transform 0.15s; }
+  .family-member:hover { transform: translateY(-2px); }
+  .family-avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: Georgia, serif; font-size: 20px; font-weight: 700; box-shadow: 0 0 0 3px var(--ring-color, var(--blue)), 0 2px 8px rgba(44,36,32,0.08); transition: box-shadow 0.2s; }
+  .family-member:hover .family-avatar { box-shadow: 0 0 0 3px var(--ring-color, var(--blue)), 0 4px 14px rgba(44,36,32,0.12); }
+  .family-avatar.photo { background-size: cover; background-position: center; color: transparent; }
+  .family-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .family-age { font-size: 11px; color: var(--muted); margin-top: -2px; }
+  /* Family memory count — style A: plain text */
+  .family-mem-count { text-align: center; margin-top: 8px; font-size: 11px; color: var(--muted); }
+  /* Family memory count — style B: pill badge */
+  .family-mem-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 10px auto 0;
+    padding: 6px 14px;
+    background: var(--tag);
+    border-radius: 9999px;
+    width: fit-content;
+  }
+  .family-mem-pill .fmp-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--glow);
+    box-shadow: 0 0 6px rgba(242,201,76,0.5);
+  }
+  .family-mem-pill .fmp-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--soft);
+  }
+  /* Family memory count — style C: mini card */
+  .family-mem-mini {
+    margin: 10px 0 0;
+    padding: 10px 14px;
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(44,36,32,0.06);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .family-mem-mini .fmm-num {
+    font-family: Georgia, serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .family-mem-mini .fmm-label {
+    font-size: 12px;
+    color: var(--soft);
+    line-height: 1.3;
+  }
+  .family-mem-mini .fmm-sub {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* Dashboard section */
+  .dash-section { padding: 16px 16px 0; }
+  .dash-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 8px; padding-left: 4px; }
+
+  /* Prompt card */
+  .prompt-section { padding: 12px 16px 0; }
+  .prompt-card { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: 0 1px 4px rgba(44,36,32,0.06); cursor: pointer; transition: box-shadow 0.2s; }
+  .prompt-card:hover { box-shadow: 0 3px 12px rgba(44,36,32,0.10); }
+  .prompt-card-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 10px; }
+  .prompt-card-body { display: flex; align-items: center; gap: 14px; }
+  .prompt-text { flex: 1; font-family: Georgia, serif; font-size: 18px; color: var(--text); line-height: 1.35; }
+  .prompt-mic { width: 44px; height: 44px; min-width: 44px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(232,114,74,0.3); transition: transform 0.15s; }
+  .prompt-mic:hover { transform: scale(1.06); }
+  .prompt-mic svg { width: 20px; height: 20px; fill: white; }
+  .prompt-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .prompt-or { font-size: 12px; color: var(--muted); }
+  .prompt-or a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .prompt-explore { font-size: 12px; color: var(--accent); font-weight: 500; cursor: pointer; text-decoration: none; transition: opacity 0.15s; }
+  .prompt-explore:hover { opacity: 0.7; }
+
+  /* === OTD SHARED === */
+  .otd-wrap { margin-bottom: 16px; }
+  .otd-child { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+  .otd-child .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); display: inline-block; }
+  .otd-child span { font-size: 10px; color: var(--soft); }
+  .otd-preview { font-family: Georgia, serif; font-size: 13px; color: var(--text); line-height: 1.45; margin-bottom: 6px; }
+  .otd-date { font-size: 10px; color: var(--muted); }
+
+  /* OTD flip container */
+  .otd-flipper { perspective: 800px; cursor: pointer; }
+  .otd-flip-inner { position: relative; transition: transform 0.5s ease; transform-style: preserve-3d; }
+  .otd-flip-inner.flipping { transform: rotateX(-90deg); }
+  .otd-dots { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+  .otd-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); opacity: 0.3; cursor: pointer; transition: all 0.2s; border: none; padding: 0; }
+  .otd-dot.active { opacity: 1; background: var(--accent); }
+  .otd-tap-hint { text-align: center; font-size: 10px; color: var(--muted); margin-top: 4px; opacity: 0.6; }
+
+  /* OTD #1 — Polaroid */
+  .polaroid {
+    background: white;
+    border-radius: 4px;
+    padding: 10px 10px 24px;
+    box-shadow: 0 2px 12px rgba(44,36,32,0.12), 0 1px 3px rgba(44,36,32,0.08);
+    transform: rotate(-1.5deg);
+    transition: transform 0.2s;
+  }
+  .polaroid:hover { transform: rotate(-0.5deg) scale(1.01); }
+  .polaroid-content {
+    background: linear-gradient(135deg, #fdf8f0 0%, #f5ede3 100%);
+    border-radius: 2px;
+    padding: 14px 12px;
+    margin-bottom: 12px;
+  }
+  .polaroid-content .otd-preview { font-style: italic; }
+  .polaroid-ago-hero { font-family: Georgia, serif; font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .polaroid-footer { text-align: center; }
+  .polaroid-date { font-family: 'Segoe Script', 'Comic Sans MS', cursive; font-size: 11px; color: var(--muted); transform: rotate(-1deg); display: inline-block; }
+
+
+  /* Streaks — quiet glow */
+  .streak-section { padding: 12px 16px 0; }
+  .streak-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(44,36,32,0.06);
+  }
+  .streak-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+  }
+  .streak-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+  }
+  .streak-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .streak-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: all 0.3s ease;
+  }
+  .streak-dot.lit {
+    background: var(--glow);
+    box-shadow: 0 0 8px rgba(242,201,76,0.5), 0 0 16px rgba(242,201,76,0.2);
+    animation: streakPulse 3s ease-in-out infinite;
+  }
+  .streak-dot.today {
+    border: 2px solid var(--accent);
+    background: transparent;
+  }
+  .streak-dot.today.lit {
+    background: var(--glow);
+    border-color: var(--glow);
+  }
+  @keyframes streakPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(242,201,76,0.4), 0 0 16px rgba(242,201,76,0.15); }
+    50% { box-shadow: 0 0 12px rgba(242,201,76,0.6), 0 0 20px rgba(242,201,76,0.25); }
+  }
+
+  /* Coming up — countdown ring */
+  .coming-up-wrap { margin-bottom: 0; }
+  .mile-card { background: var(--card); border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(44,36,32,0.06); }
+  .mile-ring-row { display: flex; align-items: center; gap: 12px; }
+  .mile-ring-wrap { position: relative; width: 44px; height: 44px; min-width: 44px; }
+  .mile-ring-wrap svg { transform: rotate(-90deg); }
+  .mile-ring-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--accent); }
+  .mile-ring-text { flex: 1; }
+  .mile-ring-text .mile-name { font-family: Georgia, serif; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .mile-ring-text .mile-when { font-size: 11px; color: var(--muted); }
+
+  .empty-home { display: none; text-align: center; padding: 24px 32px; }
+  .empty-home.visible { display: block; }
+  .empty-home .eh-title { font-family: Georgia, serif; font-size: 16px; color: var(--text); margin-bottom: 6px; }
+  .empty-home .eh-sub { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+  /* ============ JOURNAL ============ */
+  .journal-search { margin: 12px 16px; padding: 10px 14px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .journal-search span { font-size: 14px; color: var(--muted); }
+  .journal-filters { display: flex; gap: 8px; padding: 0 16px 8px; overflow-x: auto; }
+  .journal-chip { padding: 6px 14px; border-radius: 9999px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .journal-chip.active { background: var(--accent); color: white; }
+  .journal-chip.inactive { background: var(--tag); color: var(--soft); }
+  .journal-dh { padding: 12px 20px 6px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .je { margin: 0 16px 8px; background: var(--card); border-radius: 14px; box-shadow: 0 1px 3px rgba(44,36,32,0.06); overflow: hidden; display: flex; }
+  .je-bar { width: 3px; } .je-bar.blue { background: var(--blue); } .je-bar.amber { background: var(--amber); }
+  .je-body { flex: 1; padding: 12px 14px; }
+  .je-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .je-prev { font-family: Georgia, serif; font-size: 14px; color: var(--text); opacity: 0.8; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 6px; }
+  .je-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .je-child { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--soft); }
+  .je-child .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .je-date { font-size: 12px; color: var(--muted); }
+  .je-tag { padding: 2px 8px; background: var(--tag); border-radius: 8px; font-size: 11px; color: var(--soft); font-weight: 500; }
+
+  /* ============ CALENDAR ============ */
+  .cal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px 12px; }
+  .cal-month { font-family: Georgia, serif; font-size: 18px; font-weight: 700; color: var(--text); }
+  .cal-nav span { font-size: 18px; color: var(--soft); cursor: pointer; padding: 4px; }
+  .cal-weekdays { display: grid; grid-template-columns: repeat(7,1fr); padding: 0 16px 4px; }
+  .cal-wd { text-align: center; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; padding: 0 16px; }
+  .cal-day { height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+  .cal-day:hover { background: rgba(44,36,32,0.04); }
+  .cal-day.today { background: var(--accent-soft); }
+  .cal-day-num { font-size: 13px; color: var(--text); font-weight: 500; }
+  .cal-day.empty .cal-day-num { color: var(--muted); opacity: 0.4; }
+  .cal-day-dots { display: flex; gap: 3px; margin-top: 2px; min-height: 5px; }
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .cal-legend { padding: 16px 20px 0; display: flex; gap: 16px; }
+  .cal-legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--soft); }
+  .cal-legend-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* ============ FAVORITES ============ */
+  .fav-header { text-align: center; padding: 24px 32px 16px; }
+  .fav-jar-icon { width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 50%; background: rgba(242,201,76,0.1); display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 0 24px rgba(242,201,76,0.15); }
+  .fav-title { font-family: Georgia, serif; font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .fav-count { font-size: 13px; color: var(--muted); }
+  .fav-entry { margin: 0 16px 10px; background: var(--card); border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(44,36,32,0.06); border: 1px solid rgba(242,201,76,0.12); }
+  .fav-entry-title { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .fav-heart { color: var(--glow); font-size: 12px; }
+  .fav-entry-prev { font-family: Georgia, serif; font-size: 14px; color: var(--text); opacity: 0.85; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 6px; }
+  .fav-entry-meta { display: flex; align-items: center; gap: 8px; }
+  .fav-entry-child { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--soft); }
+  .fav-entry-child .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .fav-entry-date { font-size: 12px; color: var(--muted); }
+
+  /* ============ CHILD MODAL ============ */
+  .modal-overlay { display: none; position: absolute; inset: 0; background: rgba(44,36,32,0.4); z-index: 50; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .child-modal { background: var(--card); border-radius: 20px; width: 300px; padding: 28px 24px 20px; box-shadow: 0 12px 40px rgba(44,36,32,0.20); text-align: center; position: relative; }
+  .child-modal-close { position: absolute; top: 12px; right: 16px; font-size: 18px; color: var(--muted); cursor: pointer; background: none; border: none; padding: 4px; }
+  .child-modal-avatar { width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-family: Georgia, serif; font-size: 28px; font-weight: 700; background-size: cover; background-position: center; }
+  .child-modal-avatar.photo { color: transparent; }
+  .child-modal-name { font-family: Georgia, serif; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .child-modal-age { font-size: 14px; color: var(--soft); margin-bottom: 16px; }
+  .child-modal-stats { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; }
+  .child-modal-stat { text-align: center; }
+  .child-modal-stat-num { font-family: Georgia, serif; font-size: 22px; font-weight: 700; color: var(--text); }
+  .child-modal-stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .child-modal-recent-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px; }
+  .child-modal-recent { background: var(--bg); border-radius: 10px; padding: 10px 12px; text-align: left; }
+  .child-modal-recent-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .child-modal-recent-date { font-size: 10px; color: var(--muted); }
+  .child-modal-link { display: inline-block; margin-top: 14px; font-size: 13px; color: var(--accent); font-weight: 600; cursor: pointer; }
+
+  /* ============ TAB BAR ============ */
+  .tab-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 82px; background: var(--card); border-top: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-around; padding-top: 8px; z-index: 20; }
+  .tab-item { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 8px; min-width: 48px; }
+  .tab-item svg { width: 24px; height: 24px; }
+  .tab-item .tab-label { font-size: 11px; font-weight: 500; }
+  .tab-item.active svg { fill: var(--accent); stroke: var(--accent); }
+  .tab-item.active .tab-label { color: var(--accent); font-weight: 600; }
+  .tab-item.inactive svg { fill: var(--muted); stroke: var(--muted); }
+  .tab-item.inactive .tab-label { color: var(--muted); }
+  .tab-record { position: relative; top: -20px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(44,36,32,0.10), 0 0 20px rgba(232,114,74,0.25); transition: transform 0.15s; }
+  .tab-record:hover { transform: scale(1.05); }
+  .tab-record svg { width: 24px; height: 24px; fill: white; }
+
+  .prompt-output { position: fixed; bottom: 0; left: 0; right: 0; background: #0d0d1a; border-top: 1px solid var(--ui-border); padding: 16px 20px; z-index: 100; display: flex; align-items: flex-start; gap: 12px; }
+  .prompt-text-output { flex: 1; font-size: 12px; font-family: 'SF Mono','Fira Code',monospace; color: var(--ui-text-dim); line-height: 1.6; max-height: 80px; overflow-y: auto; }
+  .copy-btn { padding: 6px 14px; background: var(--ui-accent); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; min-width: 60px; }
+  .scroll-spacer { height: 16px; }
+</style>
+</head>
+<body>
+<div class="controls">
+  <div><h1>Forever Fireflies</h1><div class="subtitle">v13.4 — Interactive jar scene + 5 colors</div></div>
+
+  <div class="control-group"><label>Time of Day / Greeting</label><div class="btn-group" id="timeGroup">
+    <button data-value="morning">Morning</button><button data-value="afternoon" class="active">Afternoon</button><button data-value="evening">Evening</button><button data-value="late">Late</button><button data-value="special">Special</button>
+  </div></div>
+
+  <div class="control-group"><label>Children</label><div class="btn-group" id="childGroup">
+    <button data-value="one">Emma only</button><button data-value="two" class="active">Emma & Liam</button>
+  </div></div>
+
+  <div class="divider"></div>
+
+  <div class="control-group"><label>Banner Color</label><div class="btn-group" id="bannerGroup">
+    <button data-value="sketch-a" class="active">Warm</button><button data-value="sketch-b">Gradient</button><button data-value="sketch-c">Airy</button><button data-value="sketch-d">Deeper</button><button data-value="sketch-e">Soft</button>
+  </div></div>
+
+  <div class="control-group"><label>Memory Count Placement</label><div class="btn-group" id="memCountGroup">
+    <button data-value="banner" class="active">In Banner</button><button data-value="family-plain">Family: Plain</button><button data-value="family-pill">Family: Pill</button><button data-value="family-card">Family: Card</button>
+  </div></div>
+
+  <div class="divider"></div>
+
+  <div class="control-group"><label>Options</label>
+    <div class="toggle-row"><span>New user (empty state)</span><button class="toggle" id="toggleNew" onclick="toggleBtn(this,'newUser')"></button></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="notes">
+    <strong>v13.4 — Interactive jar scene</strong><br><br>
+    <strong>Click the banner</strong> to scatter fireflies. Jar fireflies bounce faster inside the jar. Free ones drift around.<br><br>
+    <strong>5 background tones:</strong> Warm, Gradient, Airy, Deeper, Soft.<br><br>
+    <strong>Memory count:</strong> In banner, or 3 family styles.<br><br>
+    <strong>OTD:</strong> Polaroid locked. Tap to flip.
+  </div>
+</div>
+
+<div class="preview-area" id="previewArea">
+  <button class="zoom-btn" id="zoomBtn" onclick="toggleZoom()" title="Toggle zoom">&#x1F50D;</button>
+  <div class="phone">
+    <div class="status-bar"><span class="time" id="statusTime">2:15</span><div class="s-icons"><svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg><svg viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg></div></div>
+
+    <div class="top-bar" id="topBar">
+      <span class="top-greeting" id="topGreeting">Right in the middle of it all</span>
+      <div class="top-right" id="topRight">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#8C7E74" class="icon-stroke"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#8C7E74" class="icon-stroke"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+    </div>
+
+    <div class="scroll-content" id="scrollContent">
+      <div class="tab-page active" id="pageHome"></div>
+
+      <div class="tab-page" id="pageJournal">
+        <div class="journal-search"><svg viewBox="0 0 24 24" fill="none" stroke="#B5AAA0" class="icon-stroke" style="width:18px;height:18px;"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg><span>Search memories...</span></div>
+        <div class="journal-filters"><div class="journal-chip active">All</div><div class="journal-chip inactive">funny</div><div class="journal-chip inactive">milestone</div><div class="journal-chip inactive">bedtime</div><div class="journal-chip inactive">kindness</div></div>
+        <div class="journal-dh">This Week</div>
+        <div class="je"><div class="je-bar blue"></div><div class="je-body"><div class="je-title">The Sky Egg Discovery</div><div class="je-prev">She pointed at the moon and said "look daddy, the sky laid an egg"</div><div class="je-meta"><span class="je-child"><span class="dot" style="background:var(--blue)"></span> Emma</span><span class="je-date">Mar 30</span><span class="je-tag">funny</span></div></div></div>
+        <div class="je"><div class="je-bar blue"></div><div class="je-body"><div class="je-title">First Time Sharing</div><div class="je-prev">She walked over and handed her cookie to the boy at the park</div><div class="je-meta"><span class="je-child"><span class="dot" style="background:var(--blue)"></span> Emma</span><span class="je-date">Mar 28</span><span class="je-tag">milestone</span></div></div></div>
+        <div class="journal-dh">Last Week</div>
+        <div class="je" id="jeLiam"><div class="je-bar amber"></div><div class="je-body"><div class="je-title">The Banana Phone</div><div class="je-prev">He picked up a banana, held it to his ear and said "hello grandma"</div><div class="je-meta"><span class="je-child"><span class="dot" style="background:var(--amber)"></span> Liam</span><span class="je-date">Mar 24</span><span class="je-tag">funny</span></div></div></div>
+        <div class="je"><div class="je-bar blue"></div><div class="je-body"><div class="je-title">Bedtime Negotiator</div><div class="je-prev">"My eyes aren't tired, only my legs are tired"</div><div class="je-meta"><span class="je-child"><span class="dot" style="background:var(--blue)"></span> Emma</span><span class="je-date">Mar 22</span><span class="je-tag">bedtime</span></div></div></div>
+        <div class="scroll-spacer"></div>
+      </div>
+
+      <div class="tab-page" id="pageCalendar">
+        <div class="cal-header"><span class="cal-nav"><span>&#8249;</span></span><span class="cal-month">March 2026</span><span class="cal-nav"><span>&#8250;</span></span></div>
+        <div class="cal-weekdays"><span class="cal-wd">S</span><span class="cal-wd">M</span><span class="cal-wd">T</span><span class="cal-wd">W</span><span class="cal-wd">T</span><span class="cal-wd">F</span><span class="cal-wd">S</span></div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend" id="calLegend"></div>
+        <div class="scroll-spacer"></div>
+      </div>
+
+      <div class="tab-page" id="pageFavorites">
+        <div class="fav-header"><div class="fav-jar-icon">&#x2728;</div><div class="fav-title">Your Firefly Jar</div><div class="fav-count">5 favorite moments</div></div>
+        <div class="fav-entry"><div class="fav-entry-title"><span class="fav-heart">&#x2764;</span> First Time Sharing</div><div class="fav-entry-prev">She walked over and handed her cookie to the boy at the park</div><div class="fav-entry-meta"><span class="fav-entry-child"><span class="dot" style="background:var(--blue)"></span> Emma</span><span class="fav-entry-date">Mar 28, 2026</span></div></div>
+        <div class="fav-entry"><div class="fav-entry-title"><span class="fav-heart">&#x2764;</span> First "I Love You"</div><div class="fav-entry-prev">She said "I yuh you daddy" and my heart just melted</div><div class="fav-entry-meta"><span class="fav-entry-child"><span class="dot" style="background:var(--blue)"></span> Emma</span><span class="fav-entry-date">Feb 14, 2026</span></div></div>
+        <div class="fav-entry" id="favLiam"><div class="fav-entry-title"><span class="fav-heart">&#x2764;</span> The Banana Phone</div><div class="fav-entry-prev">He picked up a banana, held it to his ear and said "hello grandma"</div><div class="fav-entry-meta"><span class="fav-entry-child"><span class="dot" style="background:var(--amber)"></span> Liam</span><span class="fav-entry-date">Mar 24, 2026</span></div></div>
+        <div class="scroll-spacer"></div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="childModal" onclick="closeModal(event)">
+      <div class="child-modal" onclick="event.stopPropagation()">
+        <button class="child-modal-close" onclick="closeModal()">&#x2715;</button>
+        <div class="child-modal-avatar photo" id="modalAvatar"></div>
+        <div class="child-modal-name" id="modalName">Emma</div>
+        <div class="child-modal-age" id="modalAge">2 years, 4 months old</div>
+        <div class="child-modal-stats">
+          <div class="child-modal-stat"><div class="child-modal-stat-num" id="modalMem">47</div><div class="child-modal-stat-label">memories</div></div>
+          <div class="child-modal-stat"><div class="child-modal-stat-num" id="modalFav">5</div><div class="child-modal-stat-label">favorites</div></div>
+          <div class="child-modal-stat"><div class="child-modal-stat-num" id="modalMo">6</div><div class="child-modal-stat-label">months</div></div>
+        </div>
+        <div class="child-modal-recent-label">Most recent</div>
+        <div class="child-modal-recent">
+          <div class="child-modal-recent-title" id="modalRecTitle">The Sky Egg Discovery</div>
+          <div class="child-modal-recent-date" id="modalRecDate">March 30, 2026</div>
+        </div>
+        <div class="child-modal-link">See all memories &#8250;</div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-item active" id="tabHome" onclick="setTab('home')"><svg viewBox="0 0 24 24" fill="none" class="icon-stroke"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="tab-label">Home</span></div>
+      <div class="tab-item inactive" id="tabJournal" onclick="setTab('journal')"><svg viewBox="0 0 24 24" fill="none" class="icon-stroke"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="tab-label">Journal</span></div>
+      <div class="tab-record"><svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></div>
+      <div class="tab-item inactive" id="tabCalendar" onclick="setTab('calendar')"><svg viewBox="0 0 24 24" fill="none" class="icon-stroke"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span class="tab-label">Calendar</span></div>
+      <div class="tab-item inactive" id="tabFavorites" onclick="setTab('favorites')"><svg viewBox="0 0 24 24" fill="none" class="icon-stroke"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="tab-label">Favorites</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="prompt-output">
+  <div class="prompt-text-output" id="promptOutput"></div>
+  <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">Copy</button>
+</div>
+
+<script>
+const state = {
+  timeOfDay: 'afternoon',
+  childCount: 'two',
+  newUser: false,
+  activeTab: 'home',
+  otdIdx: 0,
+  bannerStyle: 'sketch-a',
+  memCountPlace: 'banner',
+};
+
+const kids = {
+  emma: { name:'Emma', age:'2 years, 4 months old', short:'2y 4m', init:'E', color:'var(--blue)', hex:'#7BAFD4', img:"url('https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=120&h=120&fit=crop&crop=face')", memories:47, favs:5, months:6, recent:'The Sky Egg Discovery', recentDate:'March 30, 2026' },
+  liam: { name:'Liam', age:'10 months old', short:'10m', init:'L', color:'var(--amber)', hex:'#D4A07B', img:"url('https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=120&h=120&fit=crop&crop=face')", memories:8, favs:1, months:3, recent:'The Banana Phone', recentDate:'March 24, 2026' },
+};
+
+const totalMemories = 52;
+
+const otdEntries = [
+  { badge: 'One week ago', child: 'Emma', color: 'blue', preview: 'She tried to feed her stuffed bear real cereal and got mad when he "wouldn\'t chew"', date: 'March 27, 2026', day: '27', month: 'March', year: '2026' },
+  { badge: 'One month ago', child: 'Liam', color: 'amber', preview: 'He clapped for himself after stacking two blocks. Standing ovation energy.', date: 'March 3, 2026', day: '3', month: 'March', year: '2026' },
+  { badge: 'Six months ago', child: 'Emma', color: 'blue', preview: '"The clouds are the sky\'s blankets" — she said it so matter-of-factly', date: 'October 3, 2025', day: '3', month: 'October', year: '2025' },
+  { badge: 'One year ago', child: 'Emma', color: 'blue', preview: 'She called the moon a "sky egg" and asked if the stars were cracking out of it', date: 'April 3, 2025', day: '3', month: 'April', year: '2025' },
+];
+
+const greetings = {
+  morning:["Morning quiet is the best quiet","Hope your coffee is still warm","Another day of tiny discoveries","The good stuff happens before noon"],
+  afternoon:["Right in the middle of it all","The afternoon stretch","Post-lunch, pre-chaos","Hope the day is being kind"],
+  evening:["Almost made it to bedtime","The quiet part of the day","Feet up yet?","The house gets softer at night"],
+  late:["Burning the midnight oil?","The whole house is asleep but you","Night owl hours","Can't sleep either, huh?"],
+  special:["Happy 1st birthday, Liam","One year of Forever Fireflies"],
+};
+const statusTimes = { morning:'8:32', afternoon:'2:15', evening:'7:48', late:'11:42', special:'2:15' };
+let gIdx = { morning:0, afternoon:0, evening:0, late:0, special:0 };
+
+// ======== HOME SECTIONS ========
+
+// ======== SKETCH BANNER PARTICLES ========
+// Two groups: "jar" fireflies (constrained to jar area) and "free" fireflies (whole banner)
+const sketchFFs = [];
+let sketchAnimRunning = false;
+
+// Jar bounds in normalized coords (relative to banner width/height)
+// Jar is roughly at x: 71-89%, y: 40-92% of the 343x140 viewBox
+const JAR = { xMin: 0.71, xMax: 0.89, yMin: 0.40, yMax: 0.92 };
+
+function initSketchFFs() {
+  sketchFFs.length = 0;
+  const container = document.getElementById('sketchFFLayer');
+  if (!container) return;
+  container.innerHTML = '';
+
+  // Jar fireflies — 6 particles, constrained
+  for (let i = 0; i < 6; i++) {
+    const el = document.createElement('div');
+    el.className = 'sketch-ff';
+    const size = 2.5 + Math.random() * 2;
+    const isWarm = Math.random() > 0.7;
+    const color = isWarm ? '#E8724A' : '#F2C94C';
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.background = color;
+    el.style.boxShadow = `0 0 ${size*3}px ${color}`;
+    container.appendChild(el);
+    sketchFFs.push({
+      el, inJar: true,
+      x: JAR.xMin + Math.random() * (JAR.xMax - JAR.xMin),
+      y: JAR.yMin + Math.random() * (JAR.yMax - JAR.yMin),
+      speed: 0.005 + Math.random() * 0.008,
+      wobbleOffset: Math.random() * Math.PI * 2,
+      wobbleSpeed: 0.5 + Math.random() * 0.8,
+      wobbleAmp: 3 + Math.random() * 5,
+      opacityBase: 0.25 + Math.random() * 0.30,
+      opacityOffset: Math.random() * Math.PI * 2,
+      vx: 0, vy: 0,
+    });
+  }
+
+  // Free fireflies — 6 particles, full banner
+  const freeSpawns = [
+    {x:0.14, y:0.20}, {x:0.07, y:0.50}, {x:0.40, y:0.12},
+    {x:0.60, y:0.35}, {x:0.29, y:0.75}, {x:0.50, y:0.55},
+  ];
+  for (let i = 0; i < 6; i++) {
+    const el = document.createElement('div');
+    el.className = 'sketch-ff';
+    const size = 2 + Math.random() * 2.5;
+    const isWarm = Math.random() > 0.75;
+    const color = isWarm ? '#E8724A' : '#F2C94C';
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.background = color;
+    el.style.boxShadow = `0 0 ${size*3}px ${color}`;
+    container.appendChild(el);
+    sketchFFs.push({
+      el, inJar: false,
+      x: freeSpawns[i].x + (Math.random() - 0.5) * 0.05,
+      y: freeSpawns[i].y + (Math.random() - 0.5) * 0.05,
+      speed: 0.008 + Math.random() * 0.012,
+      wobbleOffset: Math.random() * Math.PI * 2,
+      wobbleSpeed: 0.3 + Math.random() * 0.5,
+      wobbleAmp: 5 + Math.random() * 8,
+      opacityBase: 0.18 + Math.random() * 0.25,
+      opacityOffset: Math.random() * Math.PI * 2,
+      vx: 0, vy: 0,
+    });
+  }
+
+  if (!sketchAnimRunning) { sketchAnimRunning = true; requestAnimationFrame(animateSketchFFs); }
+}
+
+let sketchLastTime = performance.now();
+function animateSketchFFs(now) {
+  const container = document.getElementById('sketchFFLayer');
+  if (!container) { sketchAnimRunning = false; return; }
+  const dt = Math.min((now - sketchLastTime) / 1000, 0.1);
+  sketchLastTime = now;
+  const W = container.offsetWidth || 343;
+  const H = container.offsetHeight || 140;
+
+  sketchFFs.forEach(p => {
+    // Apply velocity (from scatter click)
+    if (Math.abs(p.vx) > 0.5 || Math.abs(p.vy) > 0.5) {
+      p.x += (p.vx * dt) / W;
+      p.y += (p.vy * dt) / H;
+      p.vx *= Math.pow(0.04, dt);
+      p.vy *= Math.pow(0.04, dt);
+    }
+
+    // Drift upward gently
+    p.y -= p.speed * dt;
+
+    if (p.inJar) {
+      // Constrain to jar bounds — bounce off walls
+      if (p.x < JAR.xMin) { p.x = JAR.xMin; p.vx = Math.abs(p.vx) * 0.5; }
+      if (p.x > JAR.xMax) { p.x = JAR.xMax; p.vx = -Math.abs(p.vx) * 0.5; }
+      if (p.y < JAR.yMin) { p.y = JAR.yMin; p.vy = Math.abs(p.vy) * 0.3; p.speed = Math.abs(p.speed); }
+      if (p.y > JAR.yMax) { p.y = JAR.yMax; p.vy = -Math.abs(p.vy) * 0.3; }
+      // Slow drift direction change — jar fireflies wander
+      if (Math.random() < 0.01) p.speed = (Math.random() - 0.5) * 0.015;
+    } else {
+      // Free fireflies wrap around the banner
+      if (p.y < -0.05) { p.y = 1.05; p.x = Math.random() * 0.65; p.vx = 0; p.vy = 0; }
+      if (p.y > 1.1) { p.y = -0.05; p.x = Math.random() * 0.65; p.vx = 0; p.vy = 0; }
+      if (p.x < -0.05) p.x = 0.95;
+      if (p.x > 1.05) p.x = 0.05;
+    }
+
+    const wobble = Math.sin(now / 1000 * p.wobbleSpeed + p.wobbleOffset) * p.wobbleAmp;
+    const sx = p.x * W + wobble;
+    const sy = p.y * H;
+    const pulse = p.opacityBase + Math.sin(now / 1000 * 0.8 + p.opacityOffset) * 0.15;
+    const opacity = Math.max(0.05, pulse);
+
+    p.el.style.transform = `translate(${sx}px, ${sy}px)`;
+    p.el.style.opacity = opacity;
+  });
+  requestAnimationFrame(animateSketchFFs);
+}
+
+function scatterSketchFFs() {
+  sketchFFs.forEach(p => {
+    const angle = Math.random() * Math.PI * 2;
+    // Jar fireflies scatter faster but stay contained (they'll bounce off walls)
+    const force = p.inJar ? (100 + Math.random() * 150) : (50 + Math.random() * 100);
+    p.vx = Math.cos(angle) * force;
+    p.vy = Math.sin(angle) * force;
+  });
+}
+
+function htmlBanner() {
+  const memLine = state.memCountPlace === 'banner'
+    ? `<div class="banner-mem-count"><span class="banner-mem-dot"></span> ${totalMemories} memories and counting</div>`
+    : '';
+  const tagline = `<div class="banner-tagline">Your memories, kept <em>forever</em></div>`;
+  const sub = `<div class="banner-sub">A journal for the moments that matter</div>`;
+
+  // Sketch scene SVG — jar + static illustration elements (no firefly circles — JS handles those)
+  const sketchSvg = `<svg class="sketch-scene" viewBox="0 0 343 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- ground line: wobbly grass -->
+    <path d="M0 128 C15 126,25 130,45 127 C65 124,85 129,105 126 C125 123,140 128,160 125 C180 122,200 127,220 124 C240 121,260 126,280 123 C300 120,320 125,343 122" stroke="#8C7E74" stroke-width="0.8" stroke-opacity="0.18" stroke-linecap="round"/>
+    <!-- grass tufts -->
+    <path d="M30 127 C32 120,34 118,33 127" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.12" stroke-linecap="round"/>
+    <path d="M35 128 C38 121,40 119,38 128" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.10" stroke-linecap="round"/>
+    <path d="M80 126 C82 119,85 117,83 126" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.11" stroke-linecap="round"/>
+    <path d="M85 127 C88 122,90 120,87 127" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.09" stroke-linecap="round"/>
+    <path d="M135 125 C136 119,139 116,137 125" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.10" stroke-linecap="round"/>
+    <path d="M290 123 C292 116,295 114,293 123" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.11" stroke-linecap="round"/>
+    <path d="M295 124 C298 119,300 117,297 124" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.09" stroke-linecap="round"/>
+    <!-- JAR — right side, hand-drawn wobbly -->
+    <path d="M255 58 C257 55,262 54,270 53 C278 52,288 53,293 55 C296 56,297 58,295 60 L253 60 C251 59,253 57,255 58Z" stroke="#8C7E74" stroke-width="1.2" stroke-opacity="0.3" fill="#D4A07B" fill-opacity="0.08" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M268 53 C269 49,272 47,276 47 C280 47,282 49,283 53" stroke="#8C7E74" stroke-width="1" stroke-opacity="0.25" fill="none" stroke-linecap="round"/>
+    <path d="M253 60 C250 62,247 68,245 76 C243 84,242 94,243 102 C244 110,248 118,254 122 C260 126,268 127,275 127 C282 127,290 126,296 122 C302 118,306 110,307 102 C308 94,307 84,305 76 C303 68,300 62,297 60" stroke="#8C7E74" stroke-width="1.2" stroke-opacity="0.28" fill="#FAF8F5" fill-opacity="0.15" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M252 72 C251 80,251 90,253 100" stroke="white" stroke-width="1.5" stroke-opacity="0.12" stroke-linecap="round"/>
+    <!-- wing marks (static decoration) -->
+    <path d="M262 76 C260 74,259 73" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.12" stroke-linecap="round"/>
+    <path d="M268 76 C270 74,271 73" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.12" stroke-linecap="round"/>
+    <path d="M278 86 C276 84,275 83" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+    <path d="M283 86 C285 84,286 83" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+    <!-- free firefly wing marks -->
+    <path d="M47 28 C45 26,44 25" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+    <path d="M53 28 C55 26,56 25" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+    <path d="M207 43 C205 41,204 40" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+    <path d="M213 43 C215 41,216 40" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+    <!-- trails -->
+    <path d="M50 33 C48 38,45 42,47 48" stroke="#F2C94C" stroke-width="0.5" stroke-opacity="0.10" stroke-linecap="round" stroke-dasharray="2 3"/>
+    <path d="M25 73 C23 78,26 83" stroke="#F2C94C" stroke-width="0.4" stroke-opacity="0.08" stroke-linecap="round" stroke-dasharray="2 3"/>
+    <path d="M140 21 C142 25,139 29" stroke="#E8724A" stroke-width="0.4" stroke-opacity="0.07" stroke-linecap="round" stroke-dasharray="2 3"/>
+    <path d="M213 46 C218 48,225 50,232 52" stroke="#F2C94C" stroke-width="0.5" stroke-opacity="0.10" stroke-linecap="round" stroke-dasharray="2 3"/>
+    <!-- stars + moon -->
+    <path d="M180 12 L181 15 L184 15 L182 17 L183 20 L180 18 L177 20 L178 17 L176 15 L179 15Z" fill="#F2C94C" fill-opacity="0.12"/>
+    <path d="M320 20 L321 22 L323 22 L321.5 23.5 L322 25.5 L320 24 L318 25.5 L318.5 23.5 L317 22 L319 22Z" fill="#F2C94C" fill-opacity="0.10"/>
+    <circle cx="70" cy="15" r="0.8" fill="#F2C94C" fill-opacity="0.15"/>
+    <circle cx="230" cy="25" r="0.6" fill="#F2C94C" fill-opacity="0.12"/>
+    <path d="M310 12 C314 8,320 8,322 14 C318 12,314 14,310 12Z" fill="#F2C94C" fill-opacity="0.10" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.10"/>
+  </svg>`;
+
+  const bgMap = { 'sketch-a':'banner-sketch-a', 'sketch-b':'banner-sketch-b', 'sketch-c':'banner-sketch-c', 'sketch-d':'banner-sketch-d', 'sketch-e':'banner-sketch-e' };
+  const bgClass = bgMap[state.bannerStyle] || 'banner-sketch-a';
+
+  return `<div class="banner banner-sketch ${bgClass}" onclick="scatterSketchFFs()">
+    ${sketchSvg}
+    <div class="sketch-ff-layer" id="sketchFFLayer"></div>
+    ${tagline}${sub}${memLine}
+  </div>`;
+}
+
+function htmlFamily() {
+  let memWidget = '';
+  if (state.memCountPlace === 'family-plain') {
+    memWidget = `<div class="family-mem-count">${totalMemories} memories captured</div>`;
+  } else if (state.memCountPlace === 'family-pill') {
+    memWidget = `<div class="family-mem-pill"><span class="fmp-dot"></span><span class="fmp-text">${totalMemories} memories</span></div>`;
+  } else if (state.memCountPlace === 'family-card') {
+    memWidget = `<div class="family-mem-mini"><div class="fmm-num">${totalMemories}</div><div><div class="fmm-label">memories captured</div><div class="fmm-sub">Keep going — every one matters</div></div></div>`;
+  }
+  let members = `<div class="family-member" onclick="openModal('emma')"><div class="family-avatar photo" style="--ring-color:var(--blue);background-image:${kids.emma.img};"></div><div class="family-name">Emma</div><div class="family-age">${kids.emma.short}</div></div>`;
+  if (state.childCount === 'two') {
+    members += `<div class="family-member" onclick="openModal('liam')"><div class="family-avatar photo" style="--ring-color:var(--amber);background-image:${kids.liam.img};"></div><div class="family-name">Liam</div><div class="family-age">${kids.liam.short}</div></div>`;
+  }
+  return `<div class="family-section"><div class="s-label">Your family</div><div class="family-row">${members}</div>${memWidget}</div>`;
+}
+
+function htmlPrompt() {
+  return `<div class="prompt-section"><div class="prompt-card">
+    <div class="prompt-card-title">Today's prompt</div>
+    <div class="prompt-card-body"><div class="prompt-text">What made Emma laugh today?</div><div class="prompt-mic"><svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></div></div>
+    <div class="prompt-footer"><span class="prompt-or">or <a href="#">write instead</a></span><a class="prompt-explore" href="#">explore more prompts &#8250;</a></div>
+  </div></div>`;
+}
+
+// --- OTD: flip-through with 4 designs ---
+
+function htmlOTD() {
+  const e = otdEntries[state.otdIdx % otdEntries.length];
+  let dots = '<div class="otd-dots">';
+  for (let i = 0; i < otdEntries.length; i++) {
+    dots += `<button class="otd-dot${i === state.otdIdx ? ' active' : ''}" onclick="event.stopPropagation();setOTD(${i})"></button>`;
+  }
+  dots += '</div>';
+  const hint = state.otdIdx === 0 ? '<div class="otd-tap-hint">tap to flip</div>' : '';
+  return `<div class="otd-wrap"><div class="dash-label">On this day</div><div class="otd-flipper" onclick="flipOTD()"><div class="otd-flip-inner" id="otdCard">${otdPolaroid(e)}</div></div>${dots}${hint}</div>`;
+}
+
+function flipOTD() {
+  const card = document.getElementById('otdCard');
+  if (!card) return;
+  card.classList.add('flipping');
+  setTimeout(() => {
+    state.otdIdx = (state.otdIdx + 1) % otdEntries.length;
+    renderHome();
+  }, 250);
+}
+
+function setOTD(idx) {
+  const card = document.getElementById('otdCard');
+  if (card) card.classList.add('flipping');
+  setTimeout(() => {
+    state.otdIdx = idx;
+    renderHome();
+  }, 250);
+}
+
+function otdPolaroid(e) {
+  return `<div class="polaroid">
+    <div class="polaroid-content">
+      <div class="polaroid-ago-hero">${e.badge}</div>
+      <div class="otd-child"><span class="dot" style="background:var(--${e.color})"></span><span>${e.child}</span></div>
+      <div class="otd-preview">${e.preview}</div>
+    </div>
+    <div class="polaroid-footer">
+      <div class="polaroid-date">${e.date}</div>
+    </div>
+  </div>`;
+}
+
+
+// --- Streaks (quiet glow) ---
+
+function htmlStreaks() {
+  // Simulate: today is Thursday (day 4), recorded Mon, Tue, Thu
+  const days = ['M','T','W','T','F','S','S'];
+  const todayIdx = 3; // Thursday
+  const litDays = [0, 1, 3]; // Mon, Tue, Thu
+
+  let dotsHtml = days.map((d, i) => {
+    const isLit = litDays.includes(i);
+    const isToday = i === todayIdx;
+    let cls = 'streak-dot';
+    if (isLit) cls += ' lit';
+    if (isToday) cls += ' today';
+    return `<div class="streak-day">
+      <div class="${cls}"></div>
+      <span class="streak-label">${d}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="streak-section"><div class="dash-label">This week</div><div class="streak-card"><div class="streak-row">${dotsHtml}</div></div></div>`;
+}
+
+// --- Coming Up (countdown ring) ---
+
+function htmlComingUp() {
+  const isTwoKids = state.childCount === 'two';
+  const name = isTwoKids ? 'Liam' : 'Emma';
+  const label = isTwoKids ? 'turns 1' : 'turns 3';
+  const when = isTwoKids ? 'June 2, 2026' : 'December 15, 2026';
+  const pct = isTwoKids ? 83 : 35;
+  const daysLeft = isTwoKids ? 60 : 257;
+  const circ = 2 * Math.PI * 17;
+  const offset = circ * (1 - pct / 100);
+
+  return `<div class="coming-up-wrap"><div class="dash-label">Coming up</div><div class="mile-card"><div class="mile-ring-row">
+    <div class="mile-ring-wrap">
+      <svg width="44" height="44" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="17" fill="none" stroke="var(--border)" stroke-width="3"/>
+        <circle cx="22" cy="22" r="17" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+      </svg>
+      <div class="mile-ring-label">${daysLeft}d</div>
+    </div>
+    <div class="mile-ring-text">
+      <div class="mile-name">${name} ${label}</div>
+      <div class="mile-when">${when}</div>
+    </div>
+  </div></div></div>`;
+}
+
+// ======== RENDER HOME ========
+
+function renderHome() {
+  if (state.newUser) {
+    document.getElementById('pageHome').innerHTML =
+      htmlBanner() + htmlPrompt() +
+      '<div class="empty-home visible"><div class="eh-title">Your first firefly is waiting</div><div class="eh-sub">Tap the prompt above or the mic to capture a moment</div></div><div class="scroll-spacer"></div>';
+    return;
+  }
+  // Fixed order: Banner → Family → OTD → Prompt → Streaks → Milestones
+  document.getElementById('pageHome').innerHTML = [
+    htmlBanner(),
+    htmlFamily(),
+    '<div class="dash-section">' + htmlOTD() + '</div>',
+    htmlPrompt(),
+    htmlStreaks(),
+    '<div class="dash-section">' + htmlComingUp() + '</div>',
+    '<div class="scroll-spacer"></div>',
+  ].join('');
+
+  // Init sketch fireflies after DOM is ready
+  setTimeout(initSketchFFs, 0);
+}
+
+// ======== CONTROLS ========
+
+document.querySelectorAll('.btn-group').forEach(g => {
+  g.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      g.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      const v = b.dataset.value;
+      if (g.id === 'timeGroup') { state.timeOfDay = v; gIdx[v] = (gIdx[v]+1) % greetings[v].length; }
+      if (g.id === 'childGroup') state.childCount = v;
+      if (g.id === 'bannerGroup') state.bannerStyle = v;
+      if (g.id === 'memCountGroup') state.memCountPlace = v;
+      updateAll();
+    });
+  });
+});
+
+function toggleBtn(el, key) {
+  el.classList.toggle('active');
+  state[key] = el.classList.contains('active');
+  updateAll();
+}
+
+function setTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  const map = { home:'pageHome', journal:'pageJournal', calendar:'pageCalendar', favorites:'pageFavorites' };
+  document.getElementById(map[tab]).classList.add('active');
+  ['home','journal','calendar','favorites'].forEach(t => {
+    const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (el) el.className = t === tab ? 'tab-item active' : 'tab-item inactive';
+  });
+  // Update top bar — greeting on Home, page title on others
+  if (tab === 'home') {
+    const g = greetings[state.timeOfDay];
+    document.getElementById('topGreeting').textContent = g[gIdx[state.timeOfDay] % g.length];
+    document.getElementById('topGreeting').style.color = 'var(--soft)';
+  } else {
+    const titles = { journal:'Journal', calendar:'Calendar', favorites:'Firefly Jar' };
+    document.getElementById('topGreeting').textContent = titles[tab];
+    document.getElementById('topGreeting').style.color = 'var(--text)';
+    document.getElementById('topGreeting').style.fontWeight = '700';
+  }
+  document.getElementById('scrollContent').scrollTop = 0;
+  if (tab === 'calendar') buildCalendar();
+  updatePrompt();
+}
+
+function openModal(key) {
+  const c = kids[key];
+  const av = document.getElementById('modalAvatar');
+  av.style.backgroundImage = c.img;
+  av.style.boxShadow = '0 0 0 3px ' + c.hex;
+  av.className = 'child-modal-avatar photo';
+  av.textContent = '';
+  document.getElementById('modalName').textContent = c.name;
+  document.getElementById('modalAge').textContent = c.age;
+  document.getElementById('modalMem').textContent = c.memories;
+  document.getElementById('modalFav').textContent = c.favs;
+  document.getElementById('modalMo').textContent = c.months;
+  document.getElementById('modalRecTitle').textContent = c.recent;
+  document.getElementById('modalRecDate').textContent = c.recentDate;
+  document.getElementById('childModal').classList.add('open');
+}
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('childModal'))
+    document.getElementById('childModal').classList.remove('open');
+}
+
+function buildCalendar() {
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const recs = { 2:[{c:'blue'}],5:[{c:'blue'}],8:[{c:'blue'}],10:[{c:'blue'}],12:[{c:'blue'}],15:[{c:'blue'}],18:[{c:'blue'}],20:[{c:'blue'}],22:[{c:'blue'}],24:[{c:'blue'},{c:'amber'}],25:[{c:'blue'}],27:[{c:'amber'}],28:[{c:'blue'}],30:[{c:'blue'}],31:[{c:'blue'}] };
+  for (let d = 1; d <= 31; d++) {
+    const today = d === 31;
+    const dayRecs = state.childCount === 'two' ? recs[d] : (recs[d]||[]).filter(r => r.c === 'blue');
+    let dots = '<div class="cal-day-dots">';
+    if (dayRecs && dayRecs.length) dayRecs.forEach(r => { dots += `<div class="cal-dot" style="background:var(--${r.c});"></div>`; });
+    dots += '</div>';
+    grid.innerHTML += `<div class="cal-day${today?' today':''}"><span class="cal-day-num">${d}</span>${dots}</div>`;
+  }
+  document.getElementById('calLegend').innerHTML = state.childCount === 'two'
+    ? '<div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--blue);"></div> Emma</div><div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--amber);"></div> Liam</div>'
+    : '<div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--blue);"></div> Emma</div>';
+}
+
+function updateAll() {
+  document.getElementById('statusTime').textContent = statusTimes[state.timeOfDay];
+  // Update greeting in top bar
+  if (state.activeTab === 'home') {
+    const g = greetings[state.timeOfDay];
+    document.getElementById('topGreeting').textContent = g[gIdx[state.timeOfDay] % g.length];
+    document.getElementById('topGreeting').style.color = 'var(--soft)';
+    document.getElementById('topGreeting').style.fontWeight = '400';
+  }
+  document.getElementById('jeLiam').style.display = state.childCount === 'two' ? '' : 'none';
+  document.getElementById('favLiam').style.display = state.childCount === 'two' ? '' : 'none';
+  renderHome();
+  updatePrompt();
+}
+
+function updatePrompt() {
+  const p = [`Tab: ${state.activeTab}.`];
+  if (state.activeTab === 'home') {
+    p.push(`Layout: Banner(${state.bannerStyle}) → Family → OTD(polaroid, ${state.otdIdx + 1}/${otdEntries.length}) → Prompt → Streaks → Milestones.`);
+    p.push(`Memory count: ${state.memCountPlace}.`);
+    if (state.timeOfDay === 'special') p.push('Milestone greeting active.');
+  } else if (state.activeTab === 'calendar') { p.push('Calendar: month grid, child-colored dots.');
+  } else if (state.activeTab === 'journal') { p.push('Journal: search + filters + entries.');
+  } else { p.push('Favorites: Firefly Jar.'); }
+  document.getElementById('promptOutput').textContent = p.join(' ');
+}
+
+function copyPrompt() {
+  navigator.clipboard.writeText(document.getElementById('promptOutput').textContent).then(() => {
+    const b = document.getElementById('copyBtn'); b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500);
+  });
+}
+
+function toggleZoom() {
+  const area = document.getElementById('previewArea');
+  area.classList.toggle('zoomed');
+  document.getElementById('zoomBtn').textContent = area.classList.contains('zoomed') ? '\u2212' : '\uD83D\uDD0D';
+}
+
+updateAll();
+</script>
+</body>
+</html>

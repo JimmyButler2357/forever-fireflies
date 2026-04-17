@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forever Fireflies — Layout Options</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAF8F5; --card: #FEFCF9; --text: #2C2420; --soft: #8C7E74;
+    --muted: #B5AAA0; --accent: #E8724A; --border: #EDE8E3; --tag: #F3EDE8;
+    --glow: #F2C94C; --blue: #7BAFD4; --amber: #D4A07B;
+  }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #111118; color: #ddd; min-height: 100vh; padding: 32px 24px 48px;
+  }
+  h1 { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+  .page-sub { text-align: center; font-size: 13px; color: #888; margin-bottom: 32px; }
+
+  /* Row of options */
+  .row-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+    color: #666; margin: 40px 0 16px; padding-left: 8px;
+    border-left: 3px solid var(--accent);
+  }
+  .row-label:first-of-type { margin-top: 0; }
+
+  .options-row {
+    display: flex; gap: 24px; justify-content: center; flex-wrap: wrap;
+  }
+
+  /* Phone container */
+  .phone-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .phone-label {
+    font-size: 12px; font-weight: 600; color: #aaa; text-align: center;
+    max-width: 240px;
+  }
+  .phone-label span { color: var(--accent); }
+
+  .phone {
+    width: 260px; height: 563px; background: var(--bg); border-radius: 32px;
+    overflow: hidden; position: relative;
+    box-shadow: 0 0 0 2px #333, 0 0 0 4px #222, 0 12px 40px rgba(0,0,0,0.5);
+    display: flex; flex-direction: column;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+  .phone:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 2px #444, 0 0 0 4px #333, 0 20px 50px rgba(0,0,0,0.6);
+  }
+
+  /* Status bar */
+  .sb { height: 36px; padding: 8px 20px 0; display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+
+  /* Top bar */
+  .tb { padding: 4px 14px 6px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .tb-title { font-family: Georgia, serif; font-weight: 700; color: var(--text); }
+  .tb-icons { display: flex; gap: 10px; color: var(--soft); font-size: 14px; }
+
+  /* Scroll area */
+  .sc { flex: 1; overflow-y: auto; padding-bottom: 60px; }
+  .sc::-webkit-scrollbar { width: 0; }
+
+  /* Tab bar */
+  .tabbar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 56px;
+    background: var(--card); border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 0 4px; z-index: 10;
+  }
+  .tab-i { display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 9px; color: var(--muted); }
+  .tab-i.active { color: var(--accent); }
+  .tab-i .ti { font-size: 16px; }
+  .tab-mic {
+    width: 40px; height: 40px; border-radius: 50%; background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 18px; margin-top: -16px;
+    box-shadow: 0 3px 10px rgba(232,114,74,0.3), 0 0 14px rgba(232,114,74,0.15);
+  }
+
+  /* ============================== */
+  /* SHARED COMPONENT STYLES        */
+  /* ============================== */
+
+  /* Prompt card (shared across all options) */
+  .p-card {
+    background: var(--card); border-radius: 12px; padding: 14px;
+    box-shadow: 0 1px 3px rgba(44,36,32,0.06);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .p-card-text { flex: 1; font-family: Georgia, serif; font-size: 14px; color: var(--text); line-height: 1.35; }
+  .p-mic {
+    width: 34px; height: 34px; min-width: 34px; border-radius: 50%;
+    background: var(--accent); display: flex; align-items: center;
+    justify-content: center; color: white; font-size: 14px;
+    box-shadow: 0 2px 6px rgba(232,114,74,0.3);
+  }
+  .p-or { font-size: 9px; color: var(--muted); text-align: right; margin-top: 4px; }
+  .p-or a { color: var(--accent); text-decoration: none; }
+
+  /* Section cards */
+  .s-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.7px; color: var(--muted); margin-bottom: 6px; padding-left: 2px;
+  }
+  .s-card {
+    background: var(--card); border-radius: 12px; padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(44,36,32,0.06);
+  }
+  .s-card-sm {
+    background: var(--card); border-radius: 10px; padding: 10px;
+    box-shadow: 0 1px 3px rgba(44,36,32,0.06);
+  }
+  .otd-badge {
+    display: inline-block; background: rgba(232,114,74,0.08); padding: 2px 7px;
+    border-radius: 99px; font-size: 9px; font-weight: 600; color: var(--accent); margin-bottom: 4px;
+  }
+  .otd-preview { font-family: Georgia, serif; font-size: 11px; color: var(--text); line-height: 1.4; opacity: 0.85; }
+  .otd-date { font-size: 8px; color: var(--muted); margin-top: 3px; }
+  .child-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; }
+  .child-name { font-size: 9px; color: var(--soft); }
+
+  .mile-icon {
+    width: 28px; height: 28px; min-width: 28px; border-radius: 8px;
+    background: rgba(242,201,76,0.12); display: flex; align-items: center;
+    justify-content: center; font-size: 14px;
+  }
+  .mile-text { font-family: Georgia, serif; font-size: 11px; color: var(--text); line-height: 1.4; }
+
+  .jar-card {
+    background: var(--card); border-radius: 10px; padding: 10px;
+    box-shadow: 0 1px 3px rgba(44,36,32,0.06);
+    border: 1px solid rgba(242,201,76,0.15);
+  }
+  .jar-label { font-size: 9px; font-weight: 600; color: #C9A044; margin-bottom: 4px; }
+  .jar-preview { font-family: Georgia, serif; font-size: 10px; color: var(--text); line-height: 1.3; opacity: 0.8; }
+  .jar-title { font-size: 10px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+
+  /* Firefly count badge (moved to top bar area) */
+  .ff-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; color: var(--soft); font-weight: 500;
+  }
+  .ff-glow {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--glow);
+    box-shadow: 0 0 4px rgba(242,201,76,0.6);
+  }
+
+  /* ============================== */
+  /* OPTION-SPECIFIC STYLES         */
+  /* ============================== */
+
+  /* --- CENTERED & FOCUSED --- */
+  .cf-greeting { text-align: center; padding: 20px 16px 0; }
+  .cf-greeting-a .whimsy {
+    font-family: Georgia, serif; font-size: 14px; font-weight: 400;
+    font-style: italic; color: var(--soft); margin-bottom: 6px;
+  }
+  .cf-greeting-a .child-age {
+    font-family: Georgia, serif; font-size: 16px; color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .cf-greeting-b .whimsy {
+    font-family: Georgia, serif; font-size: 18px; font-weight: 700;
+    color: var(--text); margin-bottom: 8px; line-height: 1.3;
+  }
+  .cf-greeting-b .child-age {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--soft);
+  }
+
+  .cf-prompt { margin: 16px 12px 0; }
+
+  .cf-sections { padding: 16px 12px 0; display: flex; flex-direction: column; gap: 12px; }
+
+  /* --- COZY DASHBOARD --- */
+  .cd-greeting { padding: 14px 14px 0; }
+  .cd-greeting-a .whimsy {
+    font-family: Georgia, serif; font-size: 13px; font-style: italic;
+    color: var(--soft); margin-bottom: 4px;
+  }
+  .cd-greeting-a .child-age {
+    font-family: Georgia, serif; font-size: 16px; color: var(--text); font-weight: 600;
+  }
+
+  .cd-greeting-b .whimsy {
+    font-family: Georgia, serif; font-size: 18px; font-weight: 700;
+    color: var(--text); line-height: 1.25; margin-bottom: 4px;
+  }
+  .cd-greeting-b .child-age {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--soft);
+  }
+
+  .cd-prompt { margin: 12px 12px 0; }
+
+  .cd-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    padding: 12px 12px 0;
+  }
+  .cd-full { grid-column: 1 / -1; }
+
+  /* --- MAGAZINE EDITORIAL --- */
+  .me-header {
+    padding: 10px 14px 0; position: relative;
+  }
+  .me-header::after {
+    content: ''; position: absolute; bottom: -4px; left: 14px;
+    width: 32px; height: 2px; background: var(--accent);
+  }
+
+  .me-greeting-a .whimsy {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--muted); margin-bottom: 6px;
+  }
+  .me-greeting-a .child-age {
+    font-family: Georgia, serif; font-size: 20px; font-weight: 700;
+    color: var(--text); line-height: 1.2;
+  }
+
+  .me-greeting-b .whimsy {
+    font-family: Georgia, serif; font-size: 20px; font-weight: 700;
+    color: var(--text); line-height: 1.15; margin-bottom: 6px;
+  }
+  .me-greeting-b .child-age {
+    font-size: 11px; color: var(--soft); display: flex; align-items: center; gap: 5px;
+  }
+
+  .me-prompt {
+    margin: 16px 14px 0;
+    border-left: 3px solid var(--accent);
+  }
+  .me-prompt .p-card { border-radius: 0 12px 12px 0; }
+
+  .me-sections { padding: 14px 14px 0; display: flex; flex-direction: column; gap: 10px; }
+
+  .me-divider {
+    width: 100%; height: 1px; background: var(--border); margin: 4px 0;
+  }
+
+  /* Pull quote style for OTD */
+  .me-otd {
+    padding-left: 10px; border-left: 2px solid var(--glow);
+  }
+  .me-otd .otd-preview { font-size: 12px; font-style: italic; }
+
+</style>
+</head>
+<body>
+
+<h1>Forever Fireflies — Home Screen Options</h1>
+<p class="page-sub">Scroll down to compare all 6 options. Hover to lift. All use: card + mic prompt, firefly count in top bar, bottom tab nav.</p>
+
+<!-- ============= ROW 1: CENTERED & FOCUSED ============= -->
+<div class="row-label">Centered & Focused</div>
+<div class="options-row">
+
+  <!-- CF Option A: Greeting + Child as one composition -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="sb"><span>2:15</span><span style="font-size:10px;">⟨wifi⟩ ⟨bat⟩</span></div>
+      <div class="tb">
+        <span class="tb-title" style="font-size: 14px;">Forever Fireflies</span>
+        <div class="tb-icons">
+          <span>🔍</span>
+          <span class="ff-badge"><span class="ff-glow"></span> 47</span>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="cf-greeting cf-greeting-a">
+          <div class="whimsy">Hope your coffee is still warm</div>
+          <div class="child-age"><span class="child-dot" style="background:var(--blue);"></span> Emma is 2 years, 4 months old</div>
+        </div>
+        <div class="cf-prompt">
+          <div class="p-card">
+            <div class="p-card-text">What made Emma laugh today?</div>
+            <div class="p-mic">🎤</div>
+          </div>
+          <div class="p-or">or <a href="#">write instead</a></div>
+        </div>
+        <div class="cf-sections">
+          <div>
+            <div class="s-label">On this day</div>
+            <div class="s-card">
+              <div class="otd-badge">One year ago</div>
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                <span class="child-dot" style="background:var(--blue);"></span>
+                <span class="child-name">Emma</span>
+              </div>
+              <div class="otd-preview">She called the moon a "sky egg" and asked if the stars were cracking out of it</div>
+              <div class="otd-date">April 1, 2025</div>
+            </div>
+          </div>
+          <div>
+            <div class="s-label">Coming up</div>
+            <div class="s-card" style="display:flex;gap:8px;align-items:flex-start;">
+              <div class="mile-icon">✨</div>
+              <div class="mile-text">Emma turns 3 in eight months. What's her favorite thing right now?</div>
+            </div>
+          </div>
+          <div>
+            <div class="s-label">From your Firefly Jar</div>
+            <div class="jar-card">
+              <div class="jar-label">❤ A favorite memory</div>
+              <div class="jar-title">First Time Sharing</div>
+              <div class="jar-preview">Without anyone asking, she walked over and handed her cookie to the little boy at the park</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-i active"><span class="ti">🏠</span><span>Home</span></div>
+        <div class="tab-i"><span class="ti">📖</span><span>Journal</span></div>
+        <div class="tab-mic">🎤</div>
+        <div class="tab-i"><span class="ti">❤</span><span>Favorites</span></div>
+        <div class="tab-i"><span class="ti">⚙</span><span>Settings</span></div>
+      </div>
+    </div>
+    <div class="phone-label"><span>A · Centered</span> — Greeting + child age as one flowing composition. Italic greeting whispers, child age grounds it.</div>
+  </div>
+
+  <!-- CF Option B: Whimsical greeting as star -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="sb"><span>2:15</span><span style="font-size:10px;">⟨wifi⟩ ⟨bat⟩</span></div>
+      <div class="tb">
+        <span class="tb-title" style="font-size: 14px;">Forever Fireflies</span>
+        <div class="tb-icons">
+          <span>🔍</span>
+          <span class="ff-badge"><span class="ff-glow"></span> 47</span>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="cf-greeting cf-greeting-b">
+          <div class="whimsy">Almost made it<br>to bedtime</div>
+          <div class="child-age">
+            <span class="child-dot" style="background:var(--blue);"></span>
+            Emma is 2 years, 4 months old
+          </div>
+        </div>
+        <div class="cf-prompt">
+          <div class="p-card">
+            <div class="p-card-text">What made Emma laugh today?</div>
+            <div class="p-mic">🎤</div>
+          </div>
+          <div class="p-or">or <a href="#">write instead</a></div>
+        </div>
+        <div class="cf-sections">
+          <div>
+            <div class="s-label">On this day</div>
+            <div class="s-card">
+              <div class="otd-badge">One year ago</div>
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                <span class="child-dot" style="background:var(--blue);"></span>
+                <span class="child-name">Emma</span>
+              </div>
+              <div class="otd-preview">She called the moon a "sky egg" and asked if the stars were cracking out of it</div>
+              <div class="otd-date">April 1, 2025</div>
+            </div>
+          </div>
+          <div>
+            <div class="s-label">Coming up</div>
+            <div class="s-card" style="display:flex;gap:8px;align-items:flex-start;">
+              <div class="mile-icon">✨</div>
+              <div class="mile-text">Emma turns 3 in eight months. What's her favorite thing right now?</div>
+            </div>
+          </div>
+          <div>
+            <div class="s-label">From your Firefly Jar</div>
+            <div class="jar-card">
+              <div class="jar-label">❤ A favorite memory</div>
+              <div class="jar-title">First Time Sharing</div>
+              <div class="jar-preview">Without anyone asking, she walked over and handed her cookie to the little boy at the park</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-i active"><span class="ti">🏠</span><span>Home</span></div>
+        <div class="tab-i"><span class="ti">📖</span><span>Journal</span></div>
+        <div class="tab-mic">🎤</div>
+        <div class="tab-i"><span class="ti">❤</span><span>Favorites</span></div>
+        <div class="tab-i"><span class="ti">⚙</span><span>Settings</span></div>
+      </div>
+    </div>
+    <div class="phone-label"><span>B · Centered</span> — Whimsical greeting is the star. Big, bold, personality-forward. Child age is small supporting info.</div>
+  </div>
+
+</div>
+
+<!-- ============= ROW 2: COZY DASHBOARD ============= -->
+<div class="row-label">Cozy Dashboard</div>
+<div class="options-row">
+
+  <!-- CD Option A -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="sb"><span>2:15</span><span style="font-size:10px;">⟨wifi⟩ ⟨bat⟩</span></div>
+      <div class="tb">
+        <span class="tb-title" style="font-size: 14px;">Forever Fireflies</span>
+        <div class="tb-icons">
+          <span>🔍</span>
+          <span class="ff-badge"><span class="ff-glow"></span> 47</span>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="cd-greeting cd-greeting-a">
+          <div class="whimsy">Right in the middle of it all</div>
+          <div class="child-age"><span class="child-dot" style="background:var(--blue);margin-right:4px;"></span>Emma is 2 years, 4 months old</div>
+        </div>
+        <div class="cd-prompt">
+          <div class="p-card">
+            <div class="p-card-text">What made Emma laugh today?</div>
+            <div class="p-mic">🎤</div>
+          </div>
+          <div class="p-or">or <a href="#">write instead</a></div>
+        </div>
+        <div class="cd-grid">
+          <div class="cd-full">
+            <div class="s-label">On this day</div>
+            <div class="s-card">
+              <div class="otd-badge">One year ago</div>
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                <span class="child-dot" style="background:var(--blue);"></span>
+                <span class="child-name">Emma</span>
+              </div>
+              <div class="otd-preview">She called the moon a "sky egg" and asked if the stars were cracking out of it</div>
+              <div class="otd-date">April 1, 2025</div>
+            </div>
+          </div>
+          <div>
+            <div class="s-label">Coming up</div>
+            <div class="s-card-sm" style="display:flex;gap:6px;align-items:flex-start;">
+              <div class="mile-icon" style="width:24px;height:24px;min-width:24px;font-size:12px;">✨</div>
+              <div class="mile-text" style="font-size:10px;">Emma turns 3 in eight months</div>
+            </div>
+          </div>
+          <div>
+            <div class="s-label">Firefly Jar</div>
+            <div class="jar-card" style="padding:8px;">
+              <div class="jar-label" style="font-size:8px;">❤ Favorite</div>
+              <div class="jar-title" style="font-size:9px;">First Time Sharing</div>
+              <div class="jar-preview" style="font-size:9px;">She handed her cookie to the boy at the park</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-i active"><span class="ti">🏠</span><span>Home</span></div>
+        <div class="tab-i"><span class="ti">📖</span><span>Journal</span></div>
+        <div class="tab-mic">🎤</div>
+        <div class="tab-i"><span class="ti">❤</span><span>Favorites</span></div>
+        <div class="tab-i"><span class="ti">⚙</span><span>Settings</span></div>
+      </div>
+    </div>
+    <div class="phone-label"><span>A · Dashboard</span> — Greeting + child flow together. Below: 2-column grid for milestone + jar. OTD spans full width.</div>
+  </div>
+
+  <!-- CD Option B -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="sb"><span>2:15</span><span style="font-size:10px;">⟨wifi⟩ ⟨bat⟩</span></div>
+      <div class="tb">
+        <span class="tb-title" style="font-size: 14px;">Forever Fireflies</span>
+        <div class="tb-icons">
+          <span>🔍</span>
+          <span class="ff-badge"><span class="ff-glow"></span> 47</span>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="cd-greeting cd-greeting-b">
+          <div class="whimsy">The quiet part<br>of the day</div>
+          <div class="child-age">
+            <span class="child-dot" style="background:var(--blue);"></span>
+            Emma · 2 years, 4 months
+          </div>
+        </div>
+        <div class="cd-prompt">
+          <div class="p-card">
+            <div class="p-card-text">What made Emma laugh today?</div>
+            <div class="p-mic">🎤</div>
+          </div>
+          <div class="p-or">or <a href="#">write instead</a></div>
+        </div>
+        <div class="cd-grid">
+          <div class="cd-full">
+            <div class="s-label">On this day</div>
+            <div class="s-card">
+              <div class="otd-badge">One year ago</div>
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                <span class="child-dot" style="background:var(--blue);"></span>
+                <span class="child-name">Emma</span>
+              </div>
+              <div class="otd-preview">She called the moon a "sky egg" and asked if the stars were cracking out of it</div>
+              <div class="otd-date">April 1, 2025</div>
+            </div>
+          </div>
+          <div>
+            <div class="s-label">Coming up</div>
+            <div class="s-card-sm" style="display:flex;gap:6px;align-items:flex-start;">
+              <div class="mile-icon" style="width:24px;height:24px;min-width:24px;font-size:12px;">✨</div>
+              <div class="mile-text" style="font-size:10px;">Emma turns 3 in eight months</div>
+            </div>
+          </div>
+          <div>
+            <div class="s-label">Firefly Jar</div>
+            <div class="jar-card" style="padding:8px;">
+              <div class="jar-label" style="font-size:8px;">❤ Favorite</div>
+              <div class="jar-title" style="font-size:9px;">First Time Sharing</div>
+              <div class="jar-preview" style="font-size:9px;">She handed her cookie to the boy at the park</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-i active"><span class="ti">🏠</span><span>Home</span></div>
+        <div class="tab-i"><span class="ti">📖</span><span>Journal</span></div>
+        <div class="tab-mic">🎤</div>
+        <div class="tab-i"><span class="ti">❤</span><span>Favorites</span></div>
+        <div class="tab-i"><span class="ti">⚙</span><span>Settings</span></div>
+      </div>
+    </div>
+    <div class="phone-label"><span>B · Dashboard</span> — Big whimsical greeting hero. Child age is compact supporting info. Same 2-column grid below.</div>
+  </div>
+
+</div>
+
+<!-- ============= ROW 3: MAGAZINE EDITORIAL ============= -->
+<div class="row-label">Magazine Editorial</div>
+<div class="options-row">
+
+  <!-- ME Option A -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="sb"><span>2:15</span><span style="font-size:10px;">⟨wifi⟩ ⟨bat⟩</span></div>
+      <div class="tb">
+        <span class="tb-title" style="font-size: 14px;">Forever Fireflies</span>
+        <div class="tb-icons">
+          <span>🔍</span>
+          <span class="ff-badge"><span class="ff-glow"></span> 47</span>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="me-header me-greeting-a">
+          <div class="whimsy">Right in the middle of it all</div>
+          <div class="child-age"><span class="child-dot" style="background:var(--blue);margin-right:4px;"></span>Emma is 2 years,<br>4 months old</div>
+        </div>
+        <div class="me-prompt" style="margin-top:20px;">
+          <div class="p-card">
+            <div class="p-card-text">What made Emma laugh today?</div>
+            <div class="p-mic">🎤</div>
+          </div>
+        </div>
+        <div class="p-or" style="padding:0 14px;">or <a href="#">write instead</a></div>
+        <div class="me-sections">
+          <div>
+            <div class="s-label">On this day</div>
+            <div class="me-otd">
+              <div class="otd-badge">One year ago</div>
+              <div class="otd-preview" style="font-size:12px;font-style:italic;">"She called the moon a 'sky egg' and asked if the stars were cracking out of it"</div>
+              <div class="otd-date" style="margin-top:4px;">
+                <span class="child-dot" style="background:var(--blue);"></span>
+                <span class="child-name">Emma · April 1, 2025</span>
+              </div>
+            </div>
+          </div>
+          <div class="me-divider"></div>
+          <div>
+            <div class="s-label">Coming up</div>
+            <div style="display:flex;gap:8px;align-items:flex-start;">
+              <div class="mile-icon">✨</div>
+              <div class="mile-text">Emma turns 3 in eight months. What's her favorite thing right now?</div>
+            </div>
+          </div>
+          <div class="me-divider"></div>
+          <div>
+            <div class="s-label">From your Firefly Jar</div>
+            <div class="jar-card" style="border:none;border-left:2px solid var(--glow);border-radius:0 10px 10px 0;">
+              <div class="jar-label">❤ A favorite memory</div>
+              <div class="jar-title">First Time Sharing</div>
+              <div class="jar-preview">Without anyone asking, she walked over and handed her cookie to the little boy</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-i active"><span class="ti">🏠</span><span>Home</span></div>
+        <div class="tab-i"><span class="ti">📖</span><span>Journal</span></div>
+        <div class="tab-mic">🎤</div>
+        <div class="tab-i"><span class="ti">❤</span><span>Favorites</span></div>
+        <div class="tab-i"><span class="ti">⚙</span><span>Settings</span></div>
+      </div>
+    </div>
+    <div class="phone-label"><span>A · Editorial</span> — Greeting as small caps label, child age as bold headline. Accent-bar prompt. Pull-quote OTD. Thin dividers between sections.</div>
+  </div>
+
+  <!-- ME Option B -->
+  <div class="phone-wrap">
+    <div class="phone">
+      <div class="sb"><span>2:15</span><span style="font-size:10px;">⟨wifi⟩ ⟨bat⟩</span></div>
+      <div class="tb">
+        <span class="tb-title" style="font-size: 14px;">Forever Fireflies</span>
+        <div class="tb-icons">
+          <span>🔍</span>
+          <span class="ff-badge"><span class="ff-glow"></span> 47</span>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="me-header me-greeting-b">
+          <div class="whimsy">The house gets<br>softer at night</div>
+          <div class="child-age">
+            <span class="child-dot" style="background:var(--blue);"></span>
+            Emma · 2 years, 4 months
+          </div>
+        </div>
+        <div class="me-prompt" style="margin-top:20px;">
+          <div class="p-card">
+            <div class="p-card-text">What made Emma laugh today?</div>
+            <div class="p-mic">🎤</div>
+          </div>
+        </div>
+        <div class="p-or" style="padding:0 14px;">or <a href="#">write instead</a></div>
+        <div class="me-sections">
+          <div>
+            <div class="s-label">On this day</div>
+            <div class="me-otd">
+              <div class="otd-badge">One year ago</div>
+              <div class="otd-preview" style="font-size:12px;font-style:italic;">"She called the moon a 'sky egg' and asked if the stars were cracking out of it"</div>
+              <div class="otd-date" style="margin-top:4px;">
+                <span class="child-dot" style="background:var(--blue);"></span>
+                <span class="child-name">Emma · April 1, 2025</span>
+              </div>
+            </div>
+          </div>
+          <div class="me-divider"></div>
+          <div>
+            <div class="s-label">Coming up</div>
+            <div style="display:flex;gap:8px;align-items:flex-start;">
+              <div class="mile-icon">✨</div>
+              <div class="mile-text">Emma turns 3 in eight months. What's her favorite thing right now?</div>
+            </div>
+          </div>
+          <div class="me-divider"></div>
+          <div>
+            <div class="s-label">From your Firefly Jar</div>
+            <div class="jar-card" style="border:none;border-left:2px solid var(--glow);border-radius:0 10px 10px 0;">
+              <div class="jar-label">❤ A favorite memory</div>
+              <div class="jar-title">First Time Sharing</div>
+              <div class="jar-preview">Without anyone asking, she walked over and handed her cookie to the little boy</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab-i active"><span class="ti">🏠</span><span>Home</span></div>
+        <div class="tab-i"><span class="ti">📖</span><span>Journal</span></div>
+        <div class="tab-mic">🎤</div>
+        <div class="tab-i"><span class="ti">❤</span><span>Favorites</span></div>
+        <div class="tab-i"><span class="ti">⚙</span><span>Settings</span></div>
+      </div>
+    </div>
+    <div class="phone-label"><span>B · Editorial</span> — Big poetic greeting as headline. Child age as byline. Accent-bar prompt. Pull-quote OTD with gold left-border jar.</div>
+  </div>
+
+</div>
+
+</body>
+</html>

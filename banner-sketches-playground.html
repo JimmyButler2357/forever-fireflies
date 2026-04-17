@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forever Fireflies — Banner Sketches</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #FAF8F5; --card: #FEFCF9; --text: #2C2420; --soft: #8C7E74;
+    --muted: #B5AAA0; --accent: #E8724A; --border: #EDE8E3; --glow: #F2C94C;
+    --blue: #7BAFD4; --amber: #D4A07B; --sketch: #8C7E74;
+  }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    padding: 32px;
+    min-height: 100vh;
+  }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: #8888aa; margin-bottom: 32px; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .card {
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .card-label {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .card-desc {
+    font-size: 11px;
+    color: #8888aa;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .banner {
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    background: #F0E6DC;
+    min-height: 140px;
+    padding: 24px 20px 20px;
+  }
+  .banner-tagline {
+    font-family: Georgia, serif;
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.3;
+    position: relative;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  .banner-tagline em { font-style: italic; color: var(--accent); }
+  .banner-sub {
+    font-size: 12px;
+    color: var(--soft);
+    margin-top: 8px;
+    position: relative;
+    z-index: 2;
+  }
+  .banner-mem {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--soft);
+    margin-top: 10px;
+    position: relative;
+    z-index: 2;
+  }
+  .banner-mem-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--glow);
+    box-shadow: 0 0 6px rgba(242,201,76,0.5);
+  }
+  .sketch-scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  /* Animated firefly dots */
+  .ff {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: ffPulse 3s ease-in-out infinite;
+  }
+  @keyframes ffPulse {
+    0%, 100% { opacity: 0.2; transform: translateY(0) scale(1); }
+    50% { opacity: 0.7; transform: translateY(-3px) scale(1.3); }
+  }
+</style>
+</head>
+<body>
+
+<h1>Banner Sketches — Side by Side</h1>
+<div class="subtitle">6 whimsical hand-drawn jar scenes on warm tinted background (#F0E6DC). Pick your favorite.</div>
+
+<div class="grid">
+
+<!-- ====== 1. CURRENT: Jar on Right ====== -->
+<div class="card">
+  <div class="card-label">1. Jar Right (Current)</div>
+  <div class="card-desc">Jar on the right, escaped fireflies floating left, grass and moon. The original.</div>
+  <div class="banner">
+    <svg class="sketch-scene" viewBox="0 0 343 140" fill="none">
+      <!-- ground -->
+      <path d="M0 128 C15 126,25 130,45 127 C65 124,85 129,105 126 C125 123,140 128,160 125 C180 122,200 127,220 124 C240 121,260 126,280 123 C300 120,320 125,343 122" stroke="var(--sketch)" stroke-width="0.8" stroke-opacity="0.18" stroke-linecap="round"/>
+      <path d="M30 127 C32 120,34 118,33 127" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.12" stroke-linecap="round"/>
+      <path d="M35 128 C38 121,40 119,38 128" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.10" stroke-linecap="round"/>
+      <path d="M80 126 C82 119,85 117,83 126" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.11" stroke-linecap="round"/>
+      <path d="M290 123 C292 116,295 114,293 123" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.11" stroke-linecap="round"/>
+      <!-- jar lid -->
+      <path d="M255 58 C257 55,262 54,270 53 C278 52,288 53,293 55 C296 56,297 58,295 60 L253 60 C251 59,253 57,255 58Z" stroke="var(--sketch)" stroke-width="1.2" stroke-opacity="0.3" fill="var(--amber)" fill-opacity="0.08" stroke-linecap="round"/>
+      <path d="M268 53 C269 49,272 47,276 47 C280 47,282 49,283 53" stroke="var(--sketch)" stroke-width="1" stroke-opacity="0.25" fill="none" stroke-linecap="round"/>
+      <!-- jar body -->
+      <path d="M253 60 C250 62,247 68,245 76 C243 84,242 94,243 102 C244 110,248 118,254 122 C260 126,268 127,275 127 C282 127,290 126,296 122 C302 118,306 110,307 102 C308 94,307 84,305 76 C303 68,300 62,297 60" stroke="var(--sketch)" stroke-width="1.2" stroke-opacity="0.28" fill="var(--bg)" fill-opacity="0.15" stroke-linecap="round"/>
+      <path d="M252 72 C251 80,251 90,253 100" stroke="white" stroke-width="1.5" stroke-opacity="0.12" stroke-linecap="round"/>
+      <!-- jar fireflies -->
+      <circle cx="265" cy="78" r="3" fill="var(--glow)" fill-opacity="0.35"/><circle cx="265" cy="78" r="6" fill="var(--glow)" fill-opacity="0.08"/>
+      <circle cx="280" cy="88" r="2.5" fill="var(--glow)" fill-opacity="0.30"/><circle cx="280" cy="88" r="5" fill="var(--glow)" fill-opacity="0.07"/>
+      <circle cx="270" cy="100" r="2" fill="var(--glow)" fill-opacity="0.25"/>
+      <circle cx="288" cy="72" r="1.8" fill="var(--glow)" fill-opacity="0.28"/>
+      <circle cx="260" cy="112" r="2.2" fill="var(--glow)" fill-opacity="0.22"/>
+      <circle cx="285" cy="108" r="1.5" fill="var(--accent)" fill-opacity="0.20"/>
+      <!-- wing marks -->
+      <path d="M262 76 C260 74,259 73" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.12" stroke-linecap="round"/>
+      <path d="M268 76 C270 74,271 73" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.12" stroke-linecap="round"/>
+      <!-- free fireflies -->
+      <circle cx="50" cy="30" r="2.5" fill="var(--glow)" fill-opacity="0.30"/><circle cx="50" cy="30" r="6" fill="var(--glow)" fill-opacity="0.06"/>
+      <path d="M50 33 C48 38,45 42,47 48" stroke="var(--glow)" stroke-width="0.5" stroke-opacity="0.10" stroke-linecap="round" stroke-dasharray="2 3"/>
+      <circle cx="25" cy="70" r="2" fill="var(--glow)" fill-opacity="0.25"/>
+      <circle cx="140" cy="18" r="1.8" fill="var(--accent)" fill-opacity="0.22"/>
+      <circle cx="210" cy="45" r="2.2" fill="var(--glow)" fill-opacity="0.28"/>
+      <path d="M213 46 C218 48,225 50,232 52" stroke="var(--glow)" stroke-width="0.5" stroke-opacity="0.10" stroke-linecap="round" stroke-dasharray="2 3"/>
+      <!-- stars + moon -->
+      <path d="M180 12 L181 15 L184 15 L182 17 L183 20 L180 18 L177 20 L178 17 L176 15 L179 15Z" fill="var(--glow)" fill-opacity="0.12"/>
+      <path d="M310 12 C314 8,320 8,322 14 C318 12,314 14,310 12Z" fill="var(--glow)" fill-opacity="0.10" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.10"/>
+    </svg>
+    <div class="ff" style="left:14%;top:20%;width:4px;height:4px;background:var(--glow);box-shadow:0 0 12px rgba(242,201,76,0.4);animation-delay:0s;"></div>
+    <div class="ff" style="left:7%;top:52%;width:3px;height:3px;background:var(--glow);box-shadow:0 0 9px rgba(242,201,76,0.4);animation-delay:0.8s;"></div>
+    <div class="ff" style="left:60%;top:35%;width:3.5px;height:3.5px;background:var(--glow);box-shadow:0 0 10px rgba(242,201,76,0.4);animation-delay:1.6s;"></div>
+    <div class="banner-tagline">Your memories, kept <em>forever</em></div>
+    <div class="banner-sub">A journal for the moments that matter</div>
+    <div class="banner-mem"><span class="banner-mem-dot"></span> 52 memories and counting</div>
+  </div>
+</div>
+
+<!-- ====== 2. MEADOW RELEASE ====== -->
+<div class="card">
+  <div class="card-label">2. Meadow Release</div>
+  <div class="card-desc">Jar tipped on its side in tall grass, lid open, stream of fireflies pouring out and arcing across. Wildflowers and dandelion puffs.</div>
+  <div class="banner">
+    <svg class="sketch-scene" viewBox="0 0 343 140" fill="none">
+      <!-- ground with more grass -->
+      <path d="M0 120 C20 118,40 122,60 119 C80 116,100 121,120 118 C140 115,160 120,180 117 C200 114,220 119,240 116 C260 113,280 118,300 115 C320 112,335 117,343 114" stroke="var(--sketch)" stroke-width="0.8" stroke-opacity="0.20" stroke-linecap="round"/>
+      <!-- tall grass tufts -->
+      <path d="M15 120 C17 108,20 102,18 120" stroke="var(--sketch)" stroke-width="0.7" stroke-opacity="0.15" stroke-linecap="round"/>
+      <path d="M22 119 C25 106,28 100,25 119" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.12" stroke-linecap="round"/>
+      <path d="M28 120 C30 110,33 105,30 120" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.10" stroke-linecap="round"/>
+      <path d="M100 118 C102 108,105 104,103 118" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.12" stroke-linecap="round"/>
+      <path d="M106 119 C109 111,111 107,108 119" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.10" stroke-linecap="round"/>
+      <path d="M200 117 C202 109,204 105,202 117" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.11" stroke-linecap="round"/>
+      <path d="M300 115 C302 107,305 103,303 115" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.12" stroke-linecap="round"/>
+      <path d="M306 116 C309 110,311 106,308 116" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.09" stroke-linecap="round"/>
+      <!-- wildflowers -->
+      <circle cx="55" cy="112" r="3" fill="var(--accent)" fill-opacity="0.10" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.10"/>
+      <path d="M55 115 C55 120,54 122" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+      <circle cx="150" cy="110" r="2.5" fill="var(--glow)" fill-opacity="0.08" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.10"/>
+      <path d="M150 112 C150 117,149 119" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+      <!-- dandelion puff -->
+      <path d="M260 108 C260 115,259 118" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.12" stroke-linecap="round"/>
+      <circle cx="260" cy="106" r="4" fill="none" stroke="var(--sketch)" stroke-width="0.3" stroke-opacity="0.08"/>
+      <path d="M260 102 L260 99 M256 103 L253 101 M264 103 L267 101 M257 108 L254 109 M263 108 L266 109" stroke="var(--sketch)" stroke-width="0.3" stroke-opacity="0.10" stroke-linecap="round"/>
+
+      <!-- JAR — tipped on side, left-center -->
+      <!-- lid (open, detached) -->
+      <ellipse cx="92" cy="108" rx="10" ry="5" fill="var(--amber)" fill-opacity="0.08" stroke="var(--sketch)" stroke-width="0.8" stroke-opacity="0.22" transform="rotate(-15, 92, 108)"/>
+      <!-- jar body on its side -->
+      <path d="M105 92 C100 90,95 92,92 96 C89 100,88 108,90 114 C92 120,96 124,102 126 C108 128,118 127,126 124 C134 121,138 116,140 110 C142 104,142 96,140 92 C138 88,134 86,130 86 L120 86 C115 86,110 88,105 92Z" stroke="var(--sketch)" stroke-width="1.2" stroke-opacity="0.25" fill="var(--bg)" fill-opacity="0.12" stroke-linecap="round" transform="rotate(-10, 115, 106)"/>
+      <!-- opening where fireflies emerge -->
+      <path d="M130 84 C135 82,140 83,143 86" stroke="var(--sketch)" stroke-width="0.8" stroke-opacity="0.18" stroke-linecap="round" transform="rotate(-10, 115, 106)"/>
+      <!-- jar shine -->
+      <path d="M100 95 C99 102,100 110" stroke="white" stroke-width="1.2" stroke-opacity="0.10" stroke-linecap="round" transform="rotate(-10, 115, 106)"/>
+      <!-- remaining fireflies inside -->
+      <circle cx="112" cy="105" r="2" fill="var(--glow)" fill-opacity="0.25"/>
+      <circle cx="120" cy="100" r="1.8" fill="var(--glow)" fill-opacity="0.20"/>
+
+      <!-- stream of fireflies arcing out -->
+      <path d="M140 88 C155 78,175 65,200 55 C225 45,260 40,290 38 C310 36,325 38,335 42" stroke="var(--glow)" stroke-width="0.6" stroke-opacity="0.10" stroke-linecap="round" stroke-dasharray="3 4"/>
+      <!-- fireflies along the arc -->
+      <circle cx="155" cy="74" r="2.5" fill="var(--glow)" fill-opacity="0.30"/><circle cx="155" cy="74" r="5" fill="var(--glow)" fill-opacity="0.06"/>
+      <circle cx="195" cy="56" r="2.2" fill="var(--glow)" fill-opacity="0.28"/>
+      <circle cx="230" cy="46" r="2.8" fill="var(--glow)" fill-opacity="0.32"/><circle cx="230" cy="46" r="6" fill="var(--glow)" fill-opacity="0.06"/>
+      <circle cx="265" cy="40" r="2" fill="var(--accent)" fill-opacity="0.22"/>
+      <circle cx="295" cy="38" r="2.5" fill="var(--glow)" fill-opacity="0.30"/><circle cx="295" cy="38" r="5" fill="var(--glow)" fill-opacity="0.06"/>
+      <circle cx="320" cy="40" r="1.8" fill="var(--glow)" fill-opacity="0.25"/>
+      <!-- wing marks on arc fireflies -->
+      <path d="M153 72 C151 70,150 69" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+      <path d="M157 72 C159 70,160 69" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+      <path d="M228 44 C226 42,225 41" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+      <path d="M232 44 C234 42,235 41" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+    </svg>
+    <div class="ff" style="left:45%;top:38%;width:4px;height:4px;background:var(--glow);box-shadow:0 0 12px rgba(242,201,76,0.4);animation-delay:0s;"></div>
+    <div class="ff" style="left:67%;top:28%;width:3px;height:3px;background:var(--glow);box-shadow:0 0 9px rgba(242,201,76,0.4);animation-delay:0.6s;"></div>
+    <div class="ff" style="left:85%;top:25%;width:3.5px;height:3.5px;background:var(--glow);box-shadow:0 0 10px rgba(242,201,76,0.4);animation-delay:1.2s;"></div>
+    <div class="ff" style="left:55%;top:45%;width:3px;height:3px;background:var(--glow);box-shadow:0 0 9px rgba(242,201,76,0.3);animation-delay:1.8s;"></div>
+    <div class="banner-tagline">Your memories, kept <em>forever</em></div>
+    <div class="banner-sub">A journal for the moments that matter</div>
+    <div class="banner-mem"><span class="banner-mem-dot"></span> 52 memories and counting</div>
+  </div>
+</div>
+
+<!-- ====== 3. WINDOWSILL AT DUSK ====== -->
+<div class="card">
+  <div class="card-label">3. Windowsill at Dusk</div>
+  <div class="card-desc">Jar on a windowsill with a view of hills, moon, and stars. A small plant and a child's drawing taped to the frame. Cozy bedtime feel.</div>
+  <div class="banner">
+    <svg class="sketch-scene" viewBox="0 0 343 140" fill="none">
+      <!-- window frame -->
+      <rect x="200" y="8" width="130" height="124" rx="4" fill="none" stroke="var(--sketch)" stroke-width="1.2" stroke-opacity="0.20" stroke-linecap="round"/>
+      <!-- window crossbar -->
+      <line x1="265" y1="8" x2="265" y2="132" stroke="var(--sketch)" stroke-width="0.8" stroke-opacity="0.12"/>
+      <line x1="200" y1="70" x2="330" y2="70" stroke="var(--sketch)" stroke-width="0.8" stroke-opacity="0.12"/>
+      <!-- view through window: hills -->
+      <path d="M204 90 C220 75,240 80,265 68 C290 56,310 65,326 60" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.10" fill="none" stroke-linecap="round"/>
+      <path d="M204 100 C225 90,245 95,265 85 C285 75,305 82,326 78" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.08" fill="none" stroke-linecap="round"/>
+      <!-- moon outside -->
+      <path d="M310 22 C314 18,320 18,322 24 C318 22,314 24,310 22Z" fill="var(--glow)" fill-opacity="0.12" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.12"/>
+      <!-- stars outside -->
+      <circle cx="220" cy="25" r="0.8" fill="var(--glow)" fill-opacity="0.15"/>
+      <circle cx="240" cy="18" r="0.6" fill="var(--glow)" fill-opacity="0.12"/>
+      <circle cx="290" cy="30" r="0.7" fill="var(--glow)" fill-opacity="0.14"/>
+      <path d="M250 35 L251 37 L253 37 L251.5 38.5 L252 40 L250 39 L248 40 L248.5 38.5 L247 37 L249 37Z" fill="var(--glow)" fill-opacity="0.10"/>
+      <!-- windowsill -->
+      <path d="M195 128 L340 128" stroke="var(--sketch)" stroke-width="1.2" stroke-opacity="0.22" stroke-linecap="round"/>
+      <rect x="195" y="124" width="145" height="5" fill="var(--amber)" fill-opacity="0.06" stroke="none"/>
+
+      <!-- jar on sill -->
+      <path d="M270 100 C268 100,266 100,264 102 C262 104,261 110,261 116 C261 120,263 123,266 124 C270 125,278 125,282 124 C285 123,287 120,287 116 C287 110,286 104,284 102 C282 100,280 100,278 100" stroke="var(--sketch)" stroke-width="1" stroke-opacity="0.28" fill="var(--bg)" fill-opacity="0.15" stroke-linecap="round"/>
+      <!-- jar lid -->
+      <path d="M264 100 C266 97,270 96,275 96 C280 96,282 97,284 100" stroke="var(--sketch)" stroke-width="0.8" stroke-opacity="0.25" fill="var(--amber)" fill-opacity="0.06" stroke-linecap="round"/>
+      <!-- fireflies in jar -->
+      <circle cx="272" cy="108" r="2" fill="var(--glow)" fill-opacity="0.30"/><circle cx="272" cy="108" r="4" fill="var(--glow)" fill-opacity="0.06"/>
+      <circle cx="278" cy="114" r="1.5" fill="var(--glow)" fill-opacity="0.25"/>
+      <circle cx="268" cy="118" r="1.8" fill="var(--accent)" fill-opacity="0.20"/>
+      <!-- fireflies drifting out window -->
+      <circle cx="250" cy="50" r="2" fill="var(--glow)" fill-opacity="0.25"/>
+      <path d="M252 51 C256 53,260 56" stroke="var(--glow)" stroke-width="0.4" stroke-opacity="0.08" stroke-dasharray="2 2"/>
+      <circle cx="235" cy="38" r="1.5" fill="var(--glow)" fill-opacity="0.22"/>
+      <circle cx="300" cy="42" r="1.8" fill="var(--glow)" fill-opacity="0.20"/>
+
+      <!-- potted plant on sill -->
+      <rect x="230" y="114" width="14" height="12" rx="2" fill="var(--amber)" fill-opacity="0.08" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.15"/>
+      <path d="M234 114 C234 108,237 104,237 104 M237 114 C237 109,239 106 M240 114 C241 110,240 107" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.12" stroke-linecap="round"/>
+
+      <!-- child's drawing taped to frame -->
+      <rect x="206" y="12" width="20" height="16" rx="1" fill="var(--bg)" fill-opacity="0.20" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.12"/>
+      <!-- tape piece -->
+      <rect x="211" y="9" width="10" height="4" rx="0.5" fill="var(--amber)" fill-opacity="0.10"/>
+      <!-- heart on drawing -->
+      <path d="M213 18 C213 16,216 15,216 18 C216 15,219 16,219 18 C219 21,216 23,216 23 C216 23,213 21,213 18Z" fill="var(--accent)" fill-opacity="0.12" stroke="none"/>
+    </svg>
+    <div class="ff" style="left:70%;top:30%;width:3px;height:3px;background:var(--glow);box-shadow:0 0 10px rgba(242,201,76,0.4);animation-delay:0.3s;"></div>
+    <div class="ff" style="left:82%;top:25%;width:3px;height:3px;background:var(--glow);box-shadow:0 0 9px rgba(242,201,76,0.3);animation-delay:1.1s;"></div>
+    <div class="banner-tagline">Your memories, kept <em>forever</em></div>
+    <div class="banner-sub">A journal for the moments that matter</div>
+    <div class="banner-mem"><span class="banner-mem-dot"></span> 52 memories and counting</div>
+  </div>
+</div>
+
+<!-- ====== 4. CONSTELLATION TRAIL ====== -->
+<div class="card">
+  <div class="card-label">4. Constellation Trail</div>
+  <div class="card-desc">Small jar in bottom-right among pebbles. Fireflies have floated up and connected into a loose heart constellation across the sky. Dreamy.</div>
+  <div class="banner">
+    <svg class="sketch-scene" viewBox="0 0 343 140" fill="none">
+      <!-- ground with pebbles -->
+      <path d="M0 130 C30 128,60 132,90 129 C120 126,150 131,180 128 C210 125,240 130,270 127 C300 124,330 129,343 126" stroke="var(--sketch)" stroke-width="0.7" stroke-opacity="0.15" stroke-linecap="round"/>
+      <!-- pebbles near jar -->
+      <ellipse cx="275" cy="128" rx="4" ry="2" fill="var(--sketch)" fill-opacity="0.06" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.10"/>
+      <ellipse cx="285" cy="130" rx="3" ry="1.5" fill="var(--sketch)" fill-opacity="0.05" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.08"/>
+      <ellipse cx="260" cy="129" rx="2.5" ry="1.5" fill="var(--sketch)" fill-opacity="0.04" stroke="var(--sketch)" stroke-width="0.3" stroke-opacity="0.08"/>
+      <path d="M250 127 C252 120,254 118,253 127" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.10" stroke-linecap="round"/>
+
+      <!-- small jar, bottom right -->
+      <path d="M295 105 C296 103,298 102,302 102 C306 102,308 103,309 105" stroke="var(--sketch)" stroke-width="0.7" stroke-opacity="0.22" fill="var(--amber)" fill-opacity="0.06" stroke-linecap="round"/>
+      <path d="M294 106 C292 108,291 114,292 120 C293 124,296 126,300 127 C304 128,308 127,310 124 C312 120,313 114,312 108 C311 106,310 106,309 106" stroke="var(--sketch)" stroke-width="0.9" stroke-opacity="0.25" fill="var(--bg)" fill-opacity="0.12" stroke-linecap="round"/>
+      <circle cx="300" cy="115" r="1.5" fill="var(--glow)" fill-opacity="0.25"/>
+      <circle cx="305" cy="120" r="1.2" fill="var(--glow)" fill-opacity="0.20"/>
+
+      <!-- constellation heart shape — fireflies as stars connected by lines -->
+      <!-- heart shape points -->
+      <circle cx="130" cy="30" r="2.5" fill="var(--glow)" fill-opacity="0.35"/><circle cx="130" cy="30" r="5" fill="var(--glow)" fill-opacity="0.06"/>
+      <circle cx="145" cy="20" r="2" fill="var(--glow)" fill-opacity="0.30"/>
+      <circle cx="160" cy="15" r="2.8" fill="var(--glow)" fill-opacity="0.32"/><circle cx="160" cy="15" r="6" fill="var(--glow)" fill-opacity="0.06"/>
+      <circle cx="175" cy="18" r="2" fill="var(--glow)" fill-opacity="0.28"/>
+      <circle cx="185" cy="28" r="2.5" fill="var(--glow)" fill-opacity="0.30"/><circle cx="185" cy="28" r="5" fill="var(--glow)" fill-opacity="0.06"/>
+      <circle cx="190" cy="42" r="2" fill="var(--accent)" fill-opacity="0.25"/>
+      <circle cx="180" cy="55" r="2.2" fill="var(--glow)" fill-opacity="0.28"/>
+      <circle cx="158" cy="65" r="3" fill="var(--glow)" fill-opacity="0.35"/><circle cx="158" cy="65" r="6" fill="var(--glow)" fill-opacity="0.07"/>
+      <circle cx="135" cy="55" r="2" fill="var(--glow)" fill-opacity="0.25"/>
+      <circle cx="125" cy="42" r="2.2" fill="var(--accent)" fill-opacity="0.22"/>
+      <!-- connecting lines -->
+      <path d="M130 30 L145 20 L160 15 L175 18 L185 28 L190 42 L180 55 L158 65 L135 55 L125 42 L130 30" stroke="var(--glow)" stroke-width="0.5" stroke-opacity="0.12" stroke-linecap="round" stroke-dasharray="3 4"/>
+
+      <!-- scattered extra stars -->
+      <circle cx="60" cy="22" r="0.7" fill="var(--glow)" fill-opacity="0.12"/>
+      <circle cx="90" cy="50" r="0.6" fill="var(--glow)" fill-opacity="0.10"/>
+      <circle cx="220" cy="25" r="0.8" fill="var(--glow)" fill-opacity="0.10"/>
+      <circle cx="250" cy="60" r="0.5" fill="var(--glow)" fill-opacity="0.08"/>
+      <path d="M75 35 L76 37 L78 37 L76.5 38.5 L77 40 L75 39 L73 40 L73.5 38.5 L72 37 L74 37Z" fill="var(--glow)" fill-opacity="0.10"/>
+      <path d="M240 40 L241 42 L243 42 L241.5 43.5 L242 45 L240 44 L238 45 L238.5 43.5 L237 42 L239 42Z" fill="var(--glow)" fill-opacity="0.08"/>
+
+      <!-- rising trail from jar to constellation -->
+      <path d="M302 105 C300 95,290 80,270 70 C250 60,220 55,195 45" stroke="var(--glow)" stroke-width="0.4" stroke-opacity="0.08" stroke-linecap="round" stroke-dasharray="2 4"/>
+    </svg>
+    <div class="ff" style="left:38%;top:18%;width:4px;height:4px;background:var(--glow);box-shadow:0 0 12px rgba(242,201,76,0.4);animation-delay:0s;animation-duration:2.5s;"></div>
+    <div class="ff" style="left:47%;top:10%;width:3px;height:3px;background:var(--glow);box-shadow:0 0 10px rgba(242,201,76,0.4);animation-delay:0.7s;animation-duration:3s;"></div>
+    <div class="ff" style="left:53%;top:38%;width:3px;height:3px;background:var(--glow);box-shadow:0 0 9px rgba(242,201,76,0.3);animation-delay:1.4s;animation-duration:3.5s;"></div>
+    <div class="banner-tagline">Your memories, kept <em>forever</em></div>
+    <div class="banner-sub">A journal for the moments that matter</div>
+    <div class="banner-mem"><span class="banner-mem-dot"></span> 52 memories and counting</div>
+  </div>
+</div>
+
+<!-- ====== 5. BRANCHES & LANTERNS ====== -->
+<div class="card">
+  <div class="card-label">5. Branches & Lanterns</div>
+  <div class="card-desc">A tree branch stretches across the top. Multiple jars hang from twine at different heights, glowing at different intensities. A perched bird, leaves.</div>
+  <div class="banner">
+    <svg class="sketch-scene" viewBox="0 0 343 140" fill="none">
+      <!-- main branch -->
+      <path d="M-5 22 C20 18,50 25,90 20 C130 15,160 22,200 18 C240 14,280 20,320 16 C335 14,343 16,348 15" stroke="var(--sketch)" stroke-width="1.8" stroke-opacity="0.18" stroke-linecap="round"/>
+      <!-- smaller branches -->
+      <path d="M60 21 C65 28,68 35" stroke="var(--sketch)" stroke-width="0.8" stroke-opacity="0.12" stroke-linecap="round"/>
+      <path d="M160 20 C155 28,152 34" stroke="var(--sketch)" stroke-width="0.8" stroke-opacity="0.12" stroke-linecap="round"/>
+      <path d="M280 18 C285 25,288 30" stroke="var(--sketch)" stroke-width="0.7" stroke-opacity="0.10" stroke-linecap="round"/>
+      <!-- leaves -->
+      <path d="M70 32 C75 28,78 30,75 35 C72 33,70 32" fill="var(--sketch)" fill-opacity="0.06" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.10"/>
+      <path d="M148 32 C152 28,155 29,153 34 C150 32,148 32" fill="var(--sketch)" fill-opacity="0.05" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.08"/>
+      <path d="M285 28 C289 24,292 26,289 31 C287 29,285 28" fill="var(--sketch)" fill-opacity="0.05" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.08"/>
+      <path d="M45 24 C48 20,51 21,49 26 C47 24,45 24" fill="var(--sketch)" fill-opacity="0.05" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.08"/>
+
+      <!-- twine + jar 1 (left, larger, brightest) -->
+      <path d="M90 20 L90 42" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.15" stroke-linecap="round"/>
+      <path d="M82 44 C83 42,86 41,90 41 C94 41,97 42,98 44" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.18" fill="var(--amber)" fill-opacity="0.05" stroke-linecap="round"/>
+      <path d="M81 45 C79 48,78 55,79 64 C80 72,83 78,87 80 C91 82,96 81,99 78 C102 74,103 66,103 58 C103 50,102 46,101 45" stroke="var(--sketch)" stroke-width="0.9" stroke-opacity="0.22" fill="var(--bg)" fill-opacity="0.10" stroke-linecap="round"/>
+      <circle cx="88" cy="55" r="2.5" fill="var(--glow)" fill-opacity="0.35"/><circle cx="88" cy="55" r="5" fill="var(--glow)" fill-opacity="0.07"/>
+      <circle cx="94" cy="65" r="2" fill="var(--glow)" fill-opacity="0.28"/>
+      <circle cx="86" cy="72" r="1.8" fill="var(--accent)" fill-opacity="0.22"/>
+
+      <!-- twine + jar 2 (center, medium) -->
+      <path d="M200 18 L200 50" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.12" stroke-linecap="round"/>
+      <path d="M194 52 C195 50,197 49,200 49 C203 49,205 50,206 52" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.15" fill="var(--amber)" fill-opacity="0.04" stroke-linecap="round"/>
+      <path d="M193 53 C191 56,190 62,191 68 C192 74,194 78,197 79 C200 80,204 79,207 77 C209 74,210 68,210 62 C210 56,209 53,208 53" stroke="var(--sketch)" stroke-width="0.8" stroke-opacity="0.18" fill="var(--bg)" fill-opacity="0.08" stroke-linecap="round"/>
+      <circle cx="199" cy="62" r="2" fill="var(--glow)" fill-opacity="0.25"/><circle cx="199" cy="62" r="4" fill="var(--glow)" fill-opacity="0.05"/>
+      <circle cx="203" cy="70" r="1.5" fill="var(--glow)" fill-opacity="0.20"/>
+
+      <!-- twine + jar 3 (right, small, dimmest) -->
+      <path d="M295 17 L295 55" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+      <path d="M290 57 C291 55,293 54,295 54 C297 54,299 55,300 57" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.12" fill="var(--amber)" fill-opacity="0.03" stroke-linecap="round"/>
+      <path d="M289 58 C288 60,287 64,288 70 C289 74,291 77,293 78 C296 79,299 78,301 76 C303 73,304 68,303 62 C303 58,302 57,301 57" stroke="var(--sketch)" stroke-width="0.7" stroke-opacity="0.15" fill="var(--bg)" fill-opacity="0.06" stroke-linecap="round"/>
+      <circle cx="295" cy="66" r="1.5" fill="var(--glow)" fill-opacity="0.18"/>
+      <circle cx="293" cy="72" r="1" fill="var(--glow)" fill-opacity="0.12"/>
+
+      <!-- bird on branch -->
+      <path d="M240 14 C242 10,246 9,248 11 C250 13,249 16,247 17 C245 18,243 17,242 16" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.15" fill="var(--sketch)" fill-opacity="0.05" stroke-linecap="round"/>
+      <path d="M248 11 L252 10" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.12" stroke-linecap="round"/>
+      <circle cx="245" cy="12" r="0.5" fill="var(--sketch)" fill-opacity="0.15"/>
+
+      <!-- free fireflies -->
+      <circle cx="130" cy="90" r="2" fill="var(--glow)" fill-opacity="0.22"/>
+      <path d="M130 93 C128 98,130 102" stroke="var(--glow)" stroke-width="0.4" stroke-opacity="0.08" stroke-dasharray="2 3"/>
+      <circle cx="250" cy="95" r="1.8" fill="var(--glow)" fill-opacity="0.20"/>
+      <circle cx="40" cy="80" r="1.5" fill="var(--glow)" fill-opacity="0.18"/>
+    </svg>
+    <div class="ff" style="left:25%;top:38%;width:4px;height:4px;background:var(--glow);box-shadow:0 0 12px rgba(242,201,76,0.4);animation-delay:0s;"></div>
+    <div class="ff" style="left:57%;top:44%;width:3px;height:3px;background:var(--glow);box-shadow:0 0 9px rgba(242,201,76,0.3);animation-delay:0.9s;"></div>
+    <div class="ff" style="left:38%;top:65%;width:3px;height:3px;background:var(--glow);box-shadow:0 0 9px rgba(242,201,76,0.3);animation-delay:1.5s;"></div>
+    <div class="banner-tagline">Your memories, kept <em>forever</em></div>
+    <div class="banner-sub">A journal for the moments that matter</div>
+    <div class="banner-mem"><span class="banner-mem-dot"></span> 52 memories and counting</div>
+  </div>
+</div>
+
+<!-- ====== 6. STORYTIME SHELF ====== -->
+<div class="card">
+  <div class="card-label">6. Storytime Shelf</div>
+  <div class="card-desc">A shelf across the bottom with the jar among books, a framed photo, lavender sprig, and a child's block. Fireflies rise from the open jar. Nostalgic keepsake feel.</div>
+  <div class="banner">
+    <svg class="sketch-scene" viewBox="0 0 343 140" fill="none">
+      <!-- shelf -->
+      <path d="M160 108 L340 108" stroke="var(--sketch)" stroke-width="1.2" stroke-opacity="0.22" stroke-linecap="round"/>
+      <rect x="160" y="108" width="180" height="4" fill="var(--amber)" fill-opacity="0.06"/>
+      <!-- shelf bracket left -->
+      <path d="M170 112 L170 125 L180 125" stroke="var(--sketch)" stroke-width="0.7" stroke-opacity="0.12" stroke-linecap="round"/>
+      <!-- shelf bracket right -->
+      <path d="M325 112 L325 125 L315 125" stroke="var(--sketch)" stroke-width="0.7" stroke-opacity="0.12" stroke-linecap="round"/>
+
+      <!-- books (stacked, left side of shelf) -->
+      <rect x="175" y="88" width="10" height="20" rx="1" fill="var(--accent)" fill-opacity="0.06" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.15" transform="rotate(-3, 180, 98)"/>
+      <rect x="186" y="90" width="8" height="18" rx="1" fill="var(--blue)" fill-opacity="0.06" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.12" transform="rotate(2, 190, 99)"/>
+      <rect x="195" y="92" width="9" height="16" rx="1" fill="var(--glow)" fill-opacity="0.06" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.12"/>
+      <!-- book spine lines -->
+      <line x1="179" y1="92" x2="179" y2="96" stroke="var(--sketch)" stroke-width="0.3" stroke-opacity="0.08"/>
+      <line x1="190" y1="94" x2="190" y2="97" stroke="var(--sketch)" stroke-width="0.3" stroke-opacity="0.08"/>
+
+      <!-- jar (open, center of shelf) -->
+      <path d="M225 80 C226 78,229 77,233 77 C237 77,240 78,241 80" stroke="var(--sketch)" stroke-width="0.7" stroke-opacity="0.20" fill="var(--amber)" fill-opacity="0.05" stroke-linecap="round"/>
+      <!-- lid leaning against jar -->
+      <ellipse cx="248" cy="104" rx="7" ry="4" fill="var(--amber)" fill-opacity="0.06" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.15" transform="rotate(20, 248, 104)"/>
+      <path d="M224 81 C222 84,221 90,221 96 C221 102,223 106,226 107 C230 108,236 108,240 107 C243 106,245 102,245 96 C245 90,244 84,242 81" stroke="var(--sketch)" stroke-width="1" stroke-opacity="0.25" fill="var(--bg)" fill-opacity="0.12" stroke-linecap="round"/>
+      <path d="M224 86 C223 92,224 98" stroke="white" stroke-width="1" stroke-opacity="0.10" stroke-linecap="round"/>
+      <!-- fireflies inside -->
+      <circle cx="231" cy="92" r="1.8" fill="var(--glow)" fill-opacity="0.28"/>
+      <circle cx="237" cy="98" r="1.5" fill="var(--glow)" fill-opacity="0.22"/>
+
+      <!-- framed photo -->
+      <rect x="262" y="88" width="18" height="20" rx="1" fill="var(--bg)" fill-opacity="0.15" stroke="var(--sketch)" stroke-width="0.7" stroke-opacity="0.18"/>
+      <rect x="265" y="91" width="12" height="10" rx="0.5" fill="var(--amber)" fill-opacity="0.05" stroke="var(--sketch)" stroke-width="0.3" stroke-opacity="0.08"/>
+      <!-- heart in photo -->
+      <path d="M269 95 C269 93,271 92,271 95 C271 92,273 93,273 95 C273 97,271 99,271 99 C271 99,269 97,269 95Z" fill="var(--accent)" fill-opacity="0.12"/>
+
+      <!-- lavender sprig -->
+      <path d="M295 108 C294 100,295 90,296 82" stroke="var(--sketch)" stroke-width="0.5" stroke-opacity="0.12" stroke-linecap="round"/>
+      <ellipse cx="296" cy="82" rx="2" ry="3" fill="var(--blue)" fill-opacity="0.08" stroke="none"/>
+      <ellipse cx="294" cy="86" rx="1.5" ry="2.5" fill="var(--blue)" fill-opacity="0.06" stroke="none"/>
+      <ellipse cx="297" cy="88" rx="1.5" ry="2.5" fill="var(--blue)" fill-opacity="0.06" stroke="none"/>
+      <ellipse cx="295" cy="92" rx="1.5" ry="2" fill="var(--blue)" fill-opacity="0.05" stroke="none"/>
+
+      <!-- child's block -->
+      <rect x="315" y="96" width="12" height="12" rx="1.5" fill="var(--glow)" fill-opacity="0.06" stroke="var(--sketch)" stroke-width="0.6" stroke-opacity="0.15"/>
+      <text x="321" y="106" font-family="Georgia, serif" font-size="7" fill="var(--sketch)" fill-opacity="0.18" text-anchor="middle">E</text>
+
+      <!-- fireflies rising from jar -->
+      <circle cx="230" cy="72" r="2.5" fill="var(--glow)" fill-opacity="0.30"/><circle cx="230" cy="72" r="5" fill="var(--glow)" fill-opacity="0.06"/>
+      <path d="M230 75 C229 78,230 80" stroke="var(--glow)" stroke-width="0.4" stroke-opacity="0.08" stroke-dasharray="2 3"/>
+      <circle cx="240" cy="58" r="2" fill="var(--glow)" fill-opacity="0.25"/>
+      <path d="M240 61 C239 65,240 68" stroke="var(--glow)" stroke-width="0.3" stroke-opacity="0.06" stroke-dasharray="2 3"/>
+      <circle cx="225" cy="48" r="2.2" fill="var(--glow)" fill-opacity="0.28"/><circle cx="225" cy="48" r="5" fill="var(--glow)" fill-opacity="0.05"/>
+      <path d="M225 51 C224 56,226 60" stroke="var(--glow)" stroke-width="0.3" stroke-opacity="0.06" stroke-dasharray="2 3"/>
+      <circle cx="250" cy="40" r="1.8" fill="var(--accent)" fill-opacity="0.22"/>
+      <circle cx="218" cy="30" r="2" fill="var(--glow)" fill-opacity="0.22"/>
+      <circle cx="245" cy="22" r="1.5" fill="var(--glow)" fill-opacity="0.18"/>
+
+      <!-- wing marks -->
+      <path d="M228 70 C226 68,225 67" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+      <path d="M232 70 C234 68,235 67" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round"/>
+      <path d="M223 46 C221 44,220 43" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.08" stroke-linecap="round"/>
+      <path d="M227 46 C229 44,230 43" stroke="var(--sketch)" stroke-width="0.4" stroke-opacity="0.08" stroke-linecap="round"/>
+    </svg>
+    <div class="ff" style="left:66%;top:38%;width:4px;height:4px;background:var(--glow);box-shadow:0 0 12px rgba(242,201,76,0.4);animation-delay:0s;"></div>
+    <div class="ff" style="left:70%;top:25%;width:3px;height:3px;background:var(--glow);box-shadow:0 0 9px rgba(242,201,76,0.3);animation-delay:0.7s;"></div>
+    <div class="ff" style="left:63%;top:18%;width:3.5px;height:3.5px;background:var(--glow);box-shadow:0 0 10px rgba(242,201,76,0.4);animation-delay:1.4s;"></div>
+    <div class="ff" style="left:73%;top:12%;width:3px;height:3px;background:var(--glow);box-shadow:0 0 9px rgba(242,201,76,0.3);animation-delay:2.1s;"></div>
+    <div class="banner-tagline">Your memories, kept <em>forever</em></div>
+    <div class="banner-sub">A journal for the moments that matter</div>
+    <div class="banner-mem"><span class="banner-mem-dot"></span> 52 memories and counting</div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

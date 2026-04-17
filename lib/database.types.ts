@@ -494,6 +494,7 @@ export type Database = {
       }
       prompts: {
         Row: {
+          category: string
           created_at: string
           id: string
           is_active: boolean
@@ -502,6 +503,7 @@ export type Database = {
           text: string
         }
         Insert: {
+          category?: string
           created_at?: string
           id?: string
           is_active?: boolean
@@ -510,6 +512,7 @@ export type Database = {
           text: string
         }
         Update: {
+          category?: string
           created_at?: string
           id?: string
           is_active?: boolean

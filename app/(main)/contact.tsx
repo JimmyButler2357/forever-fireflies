@@ -1,14 +1,17 @@
 import { View, Text, Pressable, Linking, Platform, StyleSheet } from 'react-native';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radii, shadows } from '@/constants/theme';
 import { config } from '@/lib/config';
 import TopBar from '@/components/TopBar';
 
 export default function ContactScreen() {
+  const appVersion = Constants.expoConfig?.version ?? '1.0.0';
+
   const handleEmail = () => {
-    const subject = encodeURIComponent('Fireflies Feedback — v1.0.0');
+    const subject = encodeURIComponent(`Fireflies Feedback — v${appVersion}`);
     const body = encodeURIComponent(
-      `\n\n---\nApp: Fireflies v1.0.0\nPlatform: ${Platform.OS} ${Platform.Version}`,
+      `\n\n---\nApp: Fireflies v${appVersion}\nPlatform: ${Platform.OS} ${Platform.Version}`,
     );
     Linking.openURL(`mailto:${config.supportEmail}?subject=${subject}&body=${body}`);
   };

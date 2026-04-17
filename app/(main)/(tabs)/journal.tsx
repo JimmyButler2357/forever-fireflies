@@ -16,7 +16,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +28,6 @@ import {
   childColors,
   childColorWithOpacity,
   hitSlop,
-  minTouchTarget,
 } from '@/constants/theme';
 import { useChildrenStore, mapSupabaseChild, type Child } from '@/stores/childrenStore';
 import { useEntriesStore, mapSupabaseEntry } from '@/stores/entriesStore';
@@ -47,22 +45,23 @@ import DraftBanner from '@/components/DraftBanner';
 import TopBar from '@/components/TopBar';
 import ChildTab from '@/components/ChildTab';
 import EntryCard from '@/components/EntryCard';
-import MicButton from '@/components/MicButton';
-import DropdownMenu from '@/components/DropdownMenu';
 import SearchBar from '@/components/SearchBar';
 import FilterChips from '@/components/FilterChips';
 import DateRangePicker from '@/components/DateRangePicker';
-import PostTrialPaywall from '@/components/PostTrialPaywall';
-import { useSubscription } from '@/hooks/useSubscription';
 import { capture } from '@/lib/posthog';
 
 // ─── Animation duration ──────────────────────────────────
 
 const ANIM_DURATION = 250;
 
-// ─── Home Screen ──────────────────────────────────────────
+// ─── Journal Tab ─────────────────────────────────────────
+//
+// The entry timeline — browse, search, and filter all your
+// memories. This was the original home screen, renamed and
+// trimmed down. The floating mic button and menu moved to
+// the tab bar and Home tab respectively.
 
-export default function HomeScreen() {
+export default function JournalScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
@@ -74,18 +73,9 @@ export default function HomeScreen() {
   const setFilter = useUIStore((s) => s.setActiveChildFilter);
   const familyId = useAuthStore((s) => s.familyId);
   const userId = useAuthStore((s) => s.session?.user?.id);
-  const signOut = useAuthStore((s) => s.signOut);
-  const clearChildren = useChildrenStore((s) => s.clearChildren);
-  const clearEntries = useEntriesStore((s) => s.clearEntries);
 
-  // Dropdown menu state
-  const [menuVisible, setMenuVisible] = useState(false);
-
-  // Subscription state — controls what features are available.
-  // When hasAccess is false (trial expired, no subscription), we hide
-  // the mic button, write link, and Firefly Jar icon.
-  const { hasAccess } = useSubscription();
-  const [showPaywall, setShowPaywall] = useState(false);
+  // Track screen view for analytics
+  useEffect(() => { capture('screen_viewed', { screen: 'Journal' }); }, []);
 
   // Draft sync — watches connectivity and auto-syncs offline drafts
   const { retryDraft } = useDraftSync();
@@ -106,6 +96,8 @@ export default function HomeScreen() {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const searchBarRef = useRef<TextInput>(null);
+  const childTabsRef = useRef<ScrollView>(null);
+  const tabPositions = useRef<Record<number, number>>({});
   const searchFilter = useSearchFilter();
 
   // Animated expand/collapse for the search area
@@ -139,17 +131,25 @@ export default function HomeScreen() {
     }
   }, [isSearchActive, reduceMotion]);
 
+  // ─── Scroll child tabs to show the active filter ─────────
+  //
+  // When the active child filter changes (e.g. from the Home
+  // tab's "See all memories" link), scroll the child tabs
+  // so the selected pill is visible at the left edge.
+  useEffect(() => {
+    if (!activeFilter || !childTabsRef.current) return;
+
+    const childIndex = children.findIndex((c) => c.id === activeFilter);
+    if (childIndex < 0) return;
+
+    // Index in tabPositions is childIndex + 1 (because "All" is at index 0)
+    const tabX = tabPositions.current[childIndex + 1];
+    if (tabX !== undefined) {
+      childTabsRef.current.scrollTo({ x: tabX, animated: true });
+    }
+  }, [activeFilter, children]);
+
   // ─── Fetch real data from Supabase on mount ──────────────
-  //
-  // This replaces the old seed data logic. On mount, we:
-  // 1. Fetch children from the children table
-  // 2. Fetch timeline entries (newest first, with joined children + tags)
-  // 3. Map the snake_case rows to our camelCase UI shapes
-  // 4. Update the local stores
-  //
-  // Think of it like opening a filing cabinet when you arrive
-  // at work — you pull out what you need and put copies on
-  // your desk (local store) for quick reference.
 
   useEffect(() => {
     if (!familyId) {
@@ -163,9 +163,6 @@ export default function HomeScreen() {
       setIsLoadingData(true);
       setLoadError(null);
       try {
-        // Fetch children and entries in parallel — they don't
-        // depend on each other, so running them at the same time
-        // is faster than running one after the other.
         const [childRows, entryRows] = await Promise.all([
           childrenService.getChildren(),
           entriesService.getTimeline(familyId),
@@ -173,14 +170,13 @@ export default function HomeScreen() {
 
         if (cancelled) return;
 
-        // Map server rows to UI shapes and update local stores
         setChildren(childRows.map(mapSupabaseChild));
         setEntries(entryRows.map(mapSupabaseEntry));
       } catch (error) {
         if (cancelled) return;
         const message = error instanceof Error ? error.message : 'Could not load data';
         setLoadError(message);
-        console.warn('Home data fetch failed:', error);
+        console.warn('Journal data fetch failed:', error);
       } finally {
         if (!cancelled) setIsLoadingData(false);
       }
@@ -188,9 +184,6 @@ export default function HomeScreen() {
 
     fetchData();
 
-    // Cleanup — if the component unmounts before the fetch
-    // finishes (e.g. user navigates away fast), we set a flag
-    // so we don't try to update state on an unmounted component.
     return () => { cancelled = true; };
   }, [familyId, retryCount]);
 
@@ -217,7 +210,6 @@ export default function HomeScreen() {
     () => getAvailableTags(displayedEntries, searchFilter.selectedTags),
     [displayedEntries, searchFilter.selectedTags],
   );
-  // Selected tags first (so user can deselect), then available ones
   const visibleTags = useMemo(
     () => [...searchFilter.selectedTags, ...availableTags],
     [searchFilter.selectedTags, availableTags],
@@ -227,44 +219,6 @@ export default function HomeScreen() {
   const isMultiChild = children.length >= 2;
   const isSingleChild = children.length === 1;
   const isFirstEntry = activeEntries.length === 1;
-
-  // ─── Menu Handlers ──────────────────────────────────────
-
-  const handleMenuNavigate = useCallback((screen: string) => {
-    router.push(`/(main)/${screen}` as any);
-  }, [router]);
-
-  // Sign out — same logic as settings.tsx used to have.
-  // Checks for pending drafts first and warns the user.
-  const handleSignOut = useCallback(async () => {
-    const pendingDrafts = userId
-      ? useDraftStore.getState().getDraftsForUser(userId)
-      : [];
-
-    const doSignOut = async () => {
-      try {
-        await signOut();
-        clearChildren();
-        clearEntries();
-        router.replace('/(onboarding)');
-      } catch (error) {
-        console.warn('Sign out error:', error);
-      }
-    };
-
-    if (pendingDrafts.length > 0) {
-      Alert.alert(
-        'Unsent memories',
-        `You have ${pendingDrafts.length} ${pendingDrafts.length === 1 ? 'memory' : 'memories'} waiting to sync. They'll be here when you sign back in.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign Out', style: 'destructive', onPress: doSignOut },
-        ],
-      );
-    } else {
-      await doSignOut();
-    }
-  }, [userId, signOut, clearChildren, clearEntries, router]);
 
   // Build child lookup for fast access
   const childMap = useMemo(() => buildChildMap(children), [children]);
@@ -278,13 +232,11 @@ export default function HomeScreen() {
   const childColor = childColors[children[0]?.colorIndex ?? 0]?.hex ?? childColors[0].hex;
 
   // ─── Loading state ──────────────────────────────────────
-  // Show a spinner while we're fetching data for the first time.
-  // This prevents showing an empty screen briefly before data loads.
 
   if (isLoadingData) {
     return (
       <View style={styles.container}>
-        <TopBar title="Forever Fireflies" titleStyle="serif" />
+        <TopBar title="Journal" />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.accent} />
         </View>
@@ -293,12 +245,11 @@ export default function HomeScreen() {
   }
 
   // ─── Error state ────────────────────────────────────────
-  // If the data fetch failed, show an error with a retry button.
 
   if (loadError) {
     return (
       <View style={styles.container}>
-        <TopBar title="Forever Fireflies" titleStyle="serif" />
+        <TopBar title="Journal" />
         <View style={styles.centered}>
           <Ionicons name="cloud-offline-outline" size={48} color={colors.textMuted} />
           <Text style={styles.emptyHeading}>Couldn't load memories</Text>
@@ -322,21 +273,14 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Top bar */}
+      {/* Top bar — "Journal" with search toggle */}
       <TopBar
-        title="Forever Fireflies"
-        titleStyle="serif"
+        title="Journal"
         rightIcons={[
           {
             icon: (isSearchActive ? 'close-outline' : 'search-outline') as keyof typeof Ionicons.glyphMap,
             onPress: toggleSearchMode,
           },
-          // Only show Firefly Jar heart when user has access (trial active or subscribed).
-          // When expired, we hide it so lapsed users aren't tempted by a locked screen.
-          ...(hasAccess
-            ? [{ icon: 'heart-outline' as keyof typeof Ionicons.glyphMap, onPress: () => router.push('/(main)/firefly-jar') }]
-            : []),
-          { icon: 'menu-outline' as const, onPress: () => setMenuVisible(true) },
         ]}
       />
 
@@ -392,31 +336,38 @@ export default function HomeScreen() {
       {/* Child tabs — multi-child only */}
       {isMultiChild && (
         <ScrollView
+          ref={childTabsRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.tabScroll}
           contentContainerStyle={styles.tabRow}
         >
-          <ChildTab
-            label="All"
-            color={colors.general}
-            active={activeFilter === null}
-            onPress={() => setFilter(null)}
-            showDot={false}
-          />
-          {children.map((child) => (
+          <View onLayout={(e) => { tabPositions.current[0] = e.nativeEvent.layout.x; }}>
             <ChildTab
-              key={child.id}
-              label={child.name}
-              color={childColors[child.colorIndex]?.hex ?? childColors[0].hex}
-              active={activeFilter === child.id}
-              onPress={() => setFilter(child.id)}
+              label="All"
+              color={colors.general}
+              active={activeFilter === null}
+              onPress={() => setFilter(null)}
+              showDot={false}
             />
+          </View>
+          {children.map((child, i) => (
+            <View
+              key={child.id}
+              onLayout={(e) => { tabPositions.current[i + 1] = e.nativeEvent.layout.x; }}
+            >
+              <ChildTab
+                label={child.name}
+                color={childColors[child.colorIndex]?.hex ?? childColors[0].hex}
+                active={activeFilter === child.id}
+                onPress={() => setFilter(child.id)}
+              />
+            </View>
           ))}
         </ScrollView>
       )}
 
-      {/* Single child info pill — pill has dot + name; age + count sit outside */}
+      {/* Single child info pill */}
       {isSingleChild && (
         <View style={styles.singleChildRow}>
           <View
@@ -469,7 +420,6 @@ export default function HomeScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         ListHeaderComponent={
-          // Show draft cards above synced entries (only when not searching)
           !isSearchActive && userDrafts.length > 0 ? (
             <View style={styles.draftList}>
               {userDrafts.map((draft, index) => (
@@ -528,61 +478,12 @@ export default function HomeScreen() {
 
       {/* Result count pill (when searching with results) */}
       {isSearchActive && searchFilter.hasActiveFilters && displayedEntries.length > 0 && (
-        <View style={[styles.resultCount, { bottom: insets.bottom + spacing(6) + 120 }]}>
+        <View style={[styles.resultCount, { bottom: insets.bottom + spacing(6) }]}>
           <Text style={styles.resultCountText}>
             {displayedEntries.length} {displayedEntries.length === 1 ? 'memory' : 'memories'} found
           </Text>
         </View>
       )}
-
-      {/* Floating bottom area — gradient fade + mic + write link */}
-      <View style={styles.bottomWrapper} pointerEvents="box-none">
-        <LinearGradient
-          colors={['transparent', 'rgba(250,248,245,0.5)', 'rgba(250,248,245,0.88)']}
-          locations={[0, 0.55, 1]}
-          style={styles.bottomFade}
-          pointerEvents="none"
-        />
-        {hasAccess ? (
-          // Full access — show mic button + write link
-          <View style={[styles.bottomArea, { paddingBottom: insets.bottom + spacing(5) }]}>
-            <MicButton
-              size="home"
-              onPress={() => router.push('/(main)/recording')}
-            />
-            <Pressable
-              onPress={() => router.push({ pathname: '/(main)/entry-detail', params: { transcript: '' } })}
-              style={styles.writeLink}
-            >
-              <Ionicons name="pencil-outline" size={12} color={colors.textSoft} />
-              <Text style={styles.writeLinkText}>or write instead</Text>
-            </Pressable>
-          </View>
-        ) : (
-          // Lapsed — show subscribe banner instead of mic button.
-          // The banner opens the post-trial paywall modal.
-          <View style={[styles.bottomArea, { paddingBottom: insets.bottom + spacing(5) }]}>
-            <Pressable
-              onPress={() => setShowPaywall(true)}
-              style={({ pressed }) => [styles.subscribeBanner, pressed && { opacity: 0.9 }]}
-            >
-              <Ionicons name="sparkles" size={18} color={colors.accent} />
-              <Text style={styles.subscribeBannerText}>Subscribe to keep recording</Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
-
-      {/* Dropdown menu — anchored below the menu icon */}
-      <DropdownMenu
-        visible={menuVisible}
-        onClose={() => setMenuVisible(false)}
-        onNavigate={handleMenuNavigate}
-        onSignOut={handleSignOut}
-      />
-
-      {/* Post-trial paywall — shown when user taps the subscribe banner */}
-      <PostTrialPaywall visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </View>
   );
 }
@@ -711,7 +612,7 @@ const styles = StyleSheet.create({
   list: {
     flexGrow: 1,
     paddingHorizontal: spacing(5),
-    paddingBottom: 140, // room for bottom floating area
+    paddingBottom: spacing(6), // Reduced — tab bar provides the bottom spacing now
   },
   // ─── Empty State ───────────────────
   empty: {
@@ -742,48 +643,5 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.card,
     fontWeight: '600',
-  },
-  // ─── Bottom Area ───────────────────
-  bottomWrapper: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  bottomFade: {
-    height: 70,
-  },
-  bottomArea: {
-    backgroundColor: 'rgba(250, 248, 245, 0.88)',
-    alignItems: 'center',
-    paddingTop: spacing(1),
-    gap: spacing(2),
-  },
-  writeLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  writeLinkText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.textSoft,
-  },
-  // ─── Subscribe Banner (lapsed state) ──────
-  subscribeBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing(2),
-    backgroundColor: colors.accentSoft,
-    paddingVertical: spacing(4),
-    paddingHorizontal: spacing(6),
-    borderRadius: radii.lg,
-    minHeight: minTouchTarget,
-    ...shadows.sm,
-  },
-  subscribeBannerText: {
-    ...typography.formLabel,
-    color: colors.accent,
   },
 });

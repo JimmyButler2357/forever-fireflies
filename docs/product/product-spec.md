@@ -413,7 +413,7 @@ The parent is the sole owner of contributor identities. Contributors never type 
 - [ ] Push notification with personalized child name + age prompt
 - [ ] Notification actions: Record (→ Recording) and Remind Me Later (30-min snooze)
 - [ ] Full-text keyword search with child/tag/date range filters
-- [ ] Settings (children management, reminder time, subscription, Recently Deleted, data export, account deletion)
+- [ ] Settings (children management, reminder time, subscription, Recently Deleted, account deletion) — data export UI deferred until export backend is built (see Phase 10B in feature-roadmap.md)
 - [ ] Onboarding: Sign In → Add Child (with inline birthday picker) → Mic Permission → Notifications → First Recording → Memory Saved → Paywall → Home (first-entry state)
 - [ ] Free trial (7 days) → subscription paywall ($5.99/mo or $49.99/yr)
 - [ ] User authentication (Apple + Google + Email) + cloud sync

@@ -13,7 +13,19 @@ const DAILY_PROMPTS_KEY = 'daily_prompts';
 
 interface DailyPromptsCache {
   date: string;
+  childId: string | null; // which child this cache entry is for
   prompts: CachedPrompt[];
+}
+
+/** Pick today's featured child by rotating through the list.
+ *  Uses day-number math so the result is deterministic — reopening
+ *  the app always shows the same child all day, like taking turns
+ *  at a board game. Day 1 = kid 0, Day 2 = kid 1, etc., then wraps. */
+function getTodaysChildIndex(childCount: number): number {
+  if (childCount <= 1) return 0;
+  const epoch = new Date(2026, 0, 1).getTime();
+  const dayNumber = Math.floor((Date.now() - epoch) / 86_400_000);
+  return dayNumber % childCount;
 }
 
 /** Get today's date as YYYY-MM-DD in the user's local timezone.
@@ -28,6 +40,8 @@ function getLocalToday(): string {
   return `${y}-${m}-${d}`;
 }
 
+export { getTodaysChildIndex };
+
 export const promptsService = {
   /** Get multiple unique prompts in one batch. Hits the database twice:
    *  once for recently-shown history, once for candidates. Shuffles
@@ -39,6 +53,8 @@ export const promptsService = {
     profileId: string,
     count: number,
     childAgeMonths?: number,
+    category?: string,
+    universalOnly?: boolean,
   ): Promise<Prompt[]> {
     // 1. Fetch recently shown prompt IDs (last 10) — 1 DB call
     const { data: recentHistory, error: historyError } = await supabase
@@ -69,6 +85,16 @@ export const promptsService = {
         .or(`max_age_months.is.null,max_age_months.gte.${childAgeMonths}`);
     }
 
+    // Universal-only: return prompts with no age range (for "All" child tab)
+    if (universalOnly) {
+      query = query.is('min_age_months', null);
+    }
+
+    // Category filter: narrow to a specific theme
+    if (category && category !== 'all') {
+      query = query.eq('category', category);
+    }
+
     if (recentIds.length > 0) {
       query = query.not('id', 'in', `(${recentIds.join(',')})`);
     }
@@ -88,10 +114,19 @@ export const promptsService = {
     // If not enough candidates (all were recently shown), fall back
     // to the full active pool — better to repeat than show nothing.
     if (pool.length < count) {
-      const { data: fallbackPool, error: fallbackError } = await supabase
+      let fallbackQuery = supabase
         .from('prompts')
         .select('*')
-        .eq('is_active', true)
+        .eq('is_active', true);
+
+      if (universalOnly) {
+        fallbackQuery = fallbackQuery.is('min_age_months', null);
+      }
+      if (category && category !== 'all') {
+        fallbackQuery = fallbackQuery.eq('category', category);
+      }
+
+      const { data: fallbackPool, error: fallbackError } = await fallbackQuery
         .limit(fetchLimit);
 
       if (!fallbackError && fallbackPool && fallbackPool.length > 0) {
@@ -111,10 +146,14 @@ export const promptsService = {
     return shuffled.slice(0, count);
   },
 
-  /** Get 3 prompts for today, cached in AsyncStorage so they're instant
-   *  after the first load. Think of it like a "daily special" menu —
-   *  the kitchen preps it once in the morning, then serves it instantly
-   *  to every customer that day. Next day, new specials.
+  /** Get a prompt for today, cached per child in AsyncStorage so it's
+   *  instant after the first load. Think of it like a "daily special"
+   *  menu — the kitchen preps it once in the morning, then serves it
+   *  instantly to every customer that day. Next day, new specials.
+   *
+   *  The cache includes the featured child's ID so that different
+   *  children get age-appropriate prompts (a 2-year-old and a
+   *  12-year-old shouldn't see the same question).
    *
    *  Returns raw prompt text with {child_name} placeholder intact —
    *  the caller substitutes real names at render time so renames
@@ -123,6 +162,7 @@ export const promptsService = {
     profileId: string,
     count: number,
     childAgeMonths?: number,
+    childId?: string,
   ): Promise<CachedPrompt[]> {
     const today = getLocalToday();
 
@@ -131,7 +171,11 @@ export const promptsService = {
       const raw = await AsyncStorage.getItem(DAILY_PROMPTS_KEY);
       if (raw) {
         const cache: DailyPromptsCache = JSON.parse(raw);
-        if (cache.date === today && cache.prompts.length > 0) {
+        if (
+          cache.date === today &&
+          cache.childId === (childId ?? null) &&
+          cache.prompts.length > 0
+        ) {
           return cache.prompts;
         }
       }
@@ -143,10 +187,10 @@ export const promptsService = {
     const fetched = await this.getNextPrompts(profileId, count, childAgeMonths);
     const result: CachedPrompt[] = fetched.map((p) => ({ id: p.id, text: p.text }));
 
-    // 3. Save to cache for today (fire-and-forget)
+    // 3. Save to cache for today + child (fire-and-forget)
     AsyncStorage.setItem(
       DAILY_PROMPTS_KEY,
-      JSON.stringify({ date: today, prompts: result }),
+      JSON.stringify({ date: today, childId: childId ?? null, prompts: result }),
     ).catch(() => {});
 
     // 4. Record shown in prompt_history — single batch insert instead

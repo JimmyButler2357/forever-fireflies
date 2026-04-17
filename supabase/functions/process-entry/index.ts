@@ -18,14 +18,28 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
+// CORS headers — needed so browsers (localhost dev, web builds) can call this function.
+// Native mobile apps don't need CORS, but it doesn't hurt to include it.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 Deno.serve(async (req) => {
+  // Handle CORS preflight — the browser sends an OPTIONS request first
+  // to ask "is this cross-origin request allowed?" We say yes.
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
     // ─── Parse request body ───────────────────────────
     const { entry_id } = await req.json();
     if (!entry_id || typeof entry_id !== 'string') {
       return new Response(
         JSON.stringify({ error: 'entry_id is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } },
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
@@ -52,15 +66,32 @@ Deno.serve(async (req) => {
     if (fetchError || !entry) {
       return new Response(
         JSON.stringify({ error: 'Entry not found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } },
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
+
+    // ─── Fetch linked children's names ─────────────
+    // If the parent tagged this entry with a child, we tell Claude
+    // the correct spelling so it can fix speech-to-text errors
+    // (e.g. "West" → "Wes"). Think of it like giving a proofreader
+    // the cast list before they edit a script.
+    const { data: linkedChildren } = await supabase
+      .from('entry_children')
+      .select('child_id, children(name, nickname)')
+      .eq('entry_id', entry_id);
+
+    const childNames = (linkedChildren ?? [])
+      .map((ec: any) => {
+        const c = ec.children;
+        return c?.nickname || c?.name;
+      })
+      .filter(Boolean);
 
     // Skip if there's no transcript to process
     if (!entry.transcript?.trim()) {
       return new Response(
         JSON.stringify({ skipped: true, reason: 'Empty transcript' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
@@ -87,7 +118,7 @@ Deno.serve(async (req) => {
     if (meaningfulWords.length < 3) {
       return new Response(
         JSON.stringify({ skipped: true, reason: 'Transcript too short for AI processing' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
@@ -106,15 +137,19 @@ Deno.serve(async (req) => {
     if (!anthropicKey) {
       return new Response(
         JSON.stringify({ error: 'Anthropic API key not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } },
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    const systemPrompt = `You are a family memory organizer. A parent just recorded a voice journal entry about their child. Return a JSON object with exactly these three fields:
+    const childNameContext = childNames.length > 0
+      ? `The parent has linked this entry to the following child(ren): ${childNames.join(', ')}. When a name in the transcript sounds similar to one of these names (e.g. "West" for "Wes", "Emma" for "M"), always use the correct spelling from this list.\n\n`
+      : '';
+
+    const systemPrompt = `${childNameContext}You are a family memory organizer. A parent just recorded a voice journal entry about their child. Return a JSON object with exactly these three fields:
 
 1. "title": A short, warm title for this memory (maximum 8 words). Use the child's name if mentioned. Examples: "Emma's First Giggle", "Bath Time Chaos", "Dancing in the Rain". Do not wrap the title in quotes. If the transcript is garbled, incoherent, or doesn't describe a recognizable memory, set title to null.
 
-2. "cleaned_transcript": The same transcript with any remaining filler words removed (um, uh, like, you know, so, basically, I mean, kind of, sort of) and obvious speech-to-text errors fixed. Clean up extra spaces (the speech engine sometimes leaves gaps where it removed filler words). Capitalize the first word of every sentence. IMPORTANT: Preserve the parent's authentic voice and meaning. Do NOT rewrite, summarize, or paraphrase. Only remove filler and fix errors.
+2. "cleaned_transcript": The same transcript with any remaining filler words removed (um, uh, like, you know, so, basically, I mean, kind of, sort of) and obvious speech-to-text errors fixed.${childNames.length > 0 ? ' When fixing speech-to-text errors, correct any child name misspellings to match the known child names listed above.' : ''} Clean up extra spaces (the speech engine sometimes leaves gaps where it removed filler words). Capitalize the first word of every sentence. Ensure every sentence ends with appropriate punctuation. IMPORTANT: Preserve the parent's authentic voice and meaning. Do NOT rewrite, summarize, or paraphrase. Only remove filler and fix errors.
 
 3. "tags": An array of objects, each with "slug" and "confidence" (0.0 to 1.0). Pick the most relevant tags from this taxonomy: [${tagTaxonomy}]. Maximum 3 tags. Only include tags with confidence >= 0.5.
 
@@ -142,7 +177,7 @@ Return ONLY valid JSON. No markdown, no explanation, no code fences.`;
       // (supabase.functions.invoke hides non-2xx response bodies)
       return new Response(
         JSON.stringify({ success: false, anthropic_status: response.status, detail: errorText }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
@@ -152,7 +187,7 @@ Return ONLY valid JSON. No markdown, no explanation, no code fences.`;
     if (!content) {
       return new Response(
         JSON.stringify({ success: false, error: 'Empty AI response' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
@@ -168,7 +203,7 @@ Return ONLY valid JSON. No markdown, no explanation, no code fences.`;
       console.error('Failed to parse AI response:', content);
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid AI response format', raw: content.slice(0, 200) }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
@@ -201,7 +236,7 @@ Return ONLY valid JSON. No markdown, no explanation, no code fences.`;
         console.error('Failed to update entry:', updateError);
         return new Response(
           JSON.stringify({ error: `Failed to save AI results: ${updateError.message}` }),
-          { status: 500, headers: { 'Content-Type': 'application/json' } },
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
     }
@@ -260,15 +295,16 @@ Return ONLY valid JSON. No markdown, no explanation, no code fences.`;
         success: true,
         title: updates.title ?? null,
         transcript_cleaned: 'transcript' in updates,
+        cleaned_transcript: updates.transcript ?? null,
         tags_applied: tagsApplied,
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } },
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
     console.error('process-entry error:', err);
     return new Response(
       JSON.stringify({ error: String(err) }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } },
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
 });

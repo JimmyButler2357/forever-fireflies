@@ -19,10 +19,11 @@ export const config = {
    *  or access customer data on its own. */
   revenueCatApiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? 'PLACEHOLDER_REVENUECAT_KEY',
 
-  /** PostHog project API key for analytics. Like the Sentry DSN, this is
-   *  a public key — safe to include in the app binary. It tells PostHog
-   *  which project to send events to, but can't be used to read data back. */
-  posthogApiKey: process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? 'PLACEHOLDER_POSTHOG_KEY',
+  // PostHog API key is read directly in lib/posthog.ts (not here).
+  // Metro's OTA bundler wasn't replacing the env var when read through
+  // config.ts, so we moved it to a direct process.env read — same
+  // pattern Sentry uses for its DSN.
+
   // ─── Public URLs & Contact ─────────────────────────────
   // Centralized so every screen imports from one place.
 

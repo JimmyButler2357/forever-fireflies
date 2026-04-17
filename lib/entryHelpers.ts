@@ -34,13 +34,24 @@ export function getFirstEntryBadges(
   childMap: Record<string, Child>,
 ): Map<string, FirstMemoryBadge> {
   // For each child, find their earliest entry by date
-  const earliestByChild = new Map<string, { entryId: string; date: string }>();
+  const earliestByChild = new Map<string, { entryId: string; date: string; createdAt?: string }>();
 
   for (const entry of entries) {
     for (const childId of entry.childIds) {
       const existing = earliestByChild.get(childId);
-      if (!existing || entry.date < existing.date) {
-        earliestByChild.set(childId, { entryId: entry.id, date: entry.date });
+      // Compare by date first, then by created_at timestamp to break ties
+      // within the same day — so the truly first entry keeps the badge.
+      const isEarlier =
+        !existing ||
+        entry.date < existing.date ||
+        (entry.date === existing.date &&
+          (entry.createdAt ?? '') < (existing.createdAt ?? ''));
+      if (isEarlier) {
+        earliestByChild.set(childId, {
+          entryId: entry.id,
+          date: entry.date,
+          createdAt: entry.createdAt,
+        });
       }
     }
   }
@@ -94,6 +105,7 @@ export function entryToCard(
     isFavorited: entry.isFavorited,
     hasAudio: entry.hasAudio,
     audioStoragePath: entry.audioStoragePath,
+    photos: entry.photos?.map((photo) => photo.uri) ?? [],
     firstMemoryBadge: firstMemoryBadges?.get(entry.id),
   };
 }

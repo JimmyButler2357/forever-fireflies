@@ -3,10 +3,8 @@ import {
   View,
   Text,
   Pressable,
-  ScrollView,
   Animated,
   StyleSheet,
-  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,7 +19,7 @@ import {
   hitSlop,
   minTouchTarget,
 } from '@/constants/theme';
-import { useEntriesStore } from '@/stores/entriesStore';
+import { useEntriesStore, mapSupabaseEntry } from '@/stores/entriesStore';
 import { entriesService } from '@/services/entries.service';
 import { capture } from '@/lib/posthog';
 import { storageService } from '@/services/storage.service';
@@ -29,9 +27,9 @@ import { audioCleanupService } from '@/services/audioCleanup.service';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { formatDuration } from '@/lib/dateUtils';
 import { useLocation } from '@/hooks/useLocation';
+import { openAppSettings } from '@/lib/openSettings';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { concatWavFiles, getWavDurationSeconds } from '@/lib/audioConcat';
-import { LinearGradient } from 'expo-linear-gradient';
 import ErrorState from '@/components/ErrorState';
 import WarmGlow from '@/components/WarmGlow';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -49,11 +47,10 @@ export default function RecordingScreen() {
   // because React requires hooks to run in the same order every render.
   const { hasAccess } = useSubscription();
 
-  const { reRecordEntryId, appendEntryId, appendStoragePath, appendTranscript, onboarding, fromNotification } = useLocalSearchParams<{
+  const { reRecordEntryId, appendEntryId, appendStoragePath, onboarding, fromNotification } = useLocalSearchParams<{
     reRecordEntryId?: string;
     appendEntryId?: string;
     appendStoragePath?: string;
-    appendTranscript?: string;
     onboarding?: string;
     fromNotification?: string;
   }>();
@@ -61,6 +58,13 @@ export default function RecordingScreen() {
   const isAppend = !!appendEntryId;
 
   const updateEntryLocal = useEntriesStore((s) => s.updateEntryLocal);
+
+  // Look up the original transcript from the store instead of passing
+  // it through URL params (long text gets truncated by URL encoding).
+  const appendTranscript = useEntriesStore((s) => {
+    if (!appendEntryId) return undefined;
+    return s.entries.find((e) => e.id === appendEntryId)?.text;
+  });
 
   // Real speech recognition — captures audio + live transcript
   const speech = useSpeechRecognition();
@@ -71,8 +75,6 @@ export default function RecordingScreen() {
 
   const [seconds, setSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const transcriptScrollRef = useRef<ScrollView>(null);
-
   // Tracks when we've called stop() but speech hasn't finalized yet.
   const [isStopping, setIsStopping] = useState(false);
 
@@ -120,7 +122,7 @@ export default function RecordingScreen() {
   // Placed AFTER all hooks to satisfy React's rules of hooks.
   useEffect(() => {
     if (!hasAccess) {
-      router.replace('/(main)/home');
+      router.replace('/(main)/(tabs)/journal');
     }
   }, [hasAccess]);
 
@@ -128,21 +130,27 @@ export default function RecordingScreen() {
 
   // ─── Permission Check ──────────────────────────────────
   //
-  // On mount, ask the OS whether mic access was already
-  // granted or permanently denied. If "canAskAgain" is true,
-  // we let the hook request permission when auto-start fires.
+  // On mount, check mic permission status. If already granted,
+  // proceed to recording. If denied but Android still allows
+  // re-prompting ("canAskAgain"), show the native permission
+  // dialog — one tap to grant vs navigating through Settings.
+  // Only show the "Open Settings" ErrorState when permanently denied.
 
   useEffect(() => {
     ExpoSpeechRecognitionModule.getPermissionsAsync()
-      .then((result) => {
+      .then(async (result) => {
         if (result.granted) {
           setMicPermission('granted');
-        } else if (!result.canAskAgain) {
-          // Permanently denied — show the "open settings" screen
-          setMicPermission('denied');
+          return;
+        }
+
+        if (result.canAskAgain) {
+          // First denial — Android lets us ask again via native prompt
+          const requested = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+          setMicPermission(requested.granted ? 'granted' : 'denied');
         } else {
-          // Not yet decided — the hook will prompt when auto-start fires
-          setMicPermission('granted');
+          // Permanently denied — can only fix in Settings
+          setMicPermission('denied');
         }
       })
       .catch(() => {
@@ -358,13 +366,23 @@ export default function RecordingScreen() {
             hasAudio: true,
           });
 
-          // Re-run AI so the title reflects the combined content
-          entriesService.processWithAI(appendEntryId).catch(() => {});
-
-          // Clean up all temp files
+          // Clean up temp files (don't need to await — fire and forget)
           audioCleanupService.deleteLocalFile(existingUri);
           audioCleanupService.deleteLocalFile(s.audioUri);
           audioCleanupService.deleteLocalFile(combinedUri);
+
+          // Re-run AI so the title and cleaned transcript reflect
+          // the combined content. We await here so the local cache
+          // is up-to-date before we navigate back — otherwise the
+          // user sees the old title and raw transcript.
+          try {
+            await entriesService.processWithAI(appendEntryId);
+            const updatedRow = await entriesService.getEntry(appendEntryId);
+            const mapped = mapSupabaseEntry(updatedRow);
+            updateEntryLocal(appendEntryId, mapped);
+          } catch {
+            // AI is nice-to-have — entry is already saved with combined transcript
+          }
         } catch (err) {
           console.warn('Append save failed:', err);
         }
@@ -422,7 +440,7 @@ export default function RecordingScreen() {
     setSeconds(0);
     speech.reset(); // Clear any previous error or transcript
     await speech.start();
-    capture('recording_started');
+    capture('recording_started', { hour: new Date().getHours() });
     // The hook fires a 'start' event -> speech.isRecording = true.
     // If permission is denied, speech.error gets set instead.
   }, [speech]);
@@ -431,7 +449,8 @@ export default function RecordingScreen() {
     if (timerRef.current) clearInterval(timerRef.current);
     speech.stop();
     setIsStopping(true);
-  }, [speech]);
+    capture('recording_completed', { durationSeconds: seconds });
+  }, [speech, seconds]);
 
   // Clean up if the user navigates away mid-recording
   useEffect(() => {
@@ -463,7 +482,7 @@ export default function RecordingScreen() {
           title="Microphone access needed"
           body="Forever Fireflies needs mic access to record your voice. You can enable it in your device settings."
           actionLabel="Open Settings"
-          onAction={() => Linking.openSettings()}
+          onAction={() => openAppSettings()}
         />
       </View>
     );
@@ -503,27 +522,11 @@ export default function RecordingScreen() {
                   : `${60 - seconds}s remaining`}
             </Text>
 
-            {/* Live transcript — updates in real-time as you speak */}
+            {/* Warm message — we hide the raw transcript because speech-to-text
+                output has poor punctuation and looks messy. The real transcript
+                is still captured in the background for AI processing. */}
             <View style={styles.transcriptContainer}>
-              <ScrollView
-                ref={transcriptScrollRef}
-                style={styles.transcriptScroll}
-                contentContainerStyle={styles.transcriptContent}
-                showsVerticalScrollIndicator={false}
-                onContentSizeChange={() => {
-                  transcriptScrollRef.current?.scrollToEnd({ animated: true });
-                }}
-              >
-                <Text style={speech.transcript ? styles.liveTranscript : styles.transcriptPlaceholder}>
-                  {speech.transcript || 'Start speaking...'}
-                </Text>
-              </ScrollView>
-              {/* Fade overlay — older text fades out at the top */}
-              <LinearGradient
-                colors={[colors.bg, 'transparent']}
-                style={styles.transcriptFade}
-                pointerEvents="none"
-              />
+              <Text style={styles.capturingText}>Capturing your memory</Text>
             </View>
           </>
         )}
@@ -642,13 +645,11 @@ const styles = StyleSheet.create({
   micWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 160,
-    height: 160,
+    width: '100%',
+    minHeight: 160,
   },
   ring: {
     position: 'absolute',
-    top: 20,
-    left: 20,
     width: 120,
     height: 120,
     borderRadius: 60,
@@ -657,8 +658,6 @@ const styles = StyleSheet.create({
   },
   breatheCircle: {
     position: 'absolute',
-    top: 20,
-    left: 20,
     width: 120,
     height: 120,
     borderRadius: 60,
@@ -713,37 +712,16 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontWeight: '500',
   },
-  // ─── Live Transcript ──────────────────
+  // ─── Capturing Message ──────────────────
   transcriptContainer: {
-    maxHeight: 120,
     width: '100%',
-  },
-  transcriptScroll: {
-    width: '100%',
-    paddingHorizontal: spacing(5),
-  },
-  transcriptFade: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 32,
-  },
-  transcriptContent: {
+    alignItems: 'center',
     paddingVertical: spacing(2),
   },
-  liveTranscript: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: colors.text,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  transcriptPlaceholder: {
+  capturingText: {
     fontSize: 14,
     fontWeight: '400',
     color: colors.textMuted,
     textAlign: 'center',
-    fontStyle: 'italic',
   },
 });

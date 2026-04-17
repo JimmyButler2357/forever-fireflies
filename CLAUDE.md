@@ -2,6 +2,21 @@
 
 **Session prefix: CM**
 
+## Kanban Board
+
+The project kanban lives at `kanban/kanban.json`. Check it at the start of sessions to understand priorities. When you complete work that matches a card, move it to Done and add a brief note. Add new cards for bugs or tasks discovered during a session.
+
+## Landing Site (`landing/`)
+
+The `landing/` folder contains the static website deployed to Cloudflare Pages at `foreverfireflies.app`. These are standalone HTML files — not part of the React Native app.
+
+| File | URL | Purpose |
+|------|-----|---------|
+| `index.html` | `/` | Coming-soon landing page |
+| `privacy.html` | `/privacy` | Privacy policy |
+| `delete-account.html` | `/delete-account` | Account deletion page (required by app stores) |
+| `auth/callback.html` | `/auth/callback` | Auth redirect bridge — Supabase redirects here after verifying email tokens, then the page redirects to the app via `forever-fireflies://` deep link. Needed because email clients block custom URL schemes but allow `https://` links. |
+
 ## Design System
 
 **Before doing any UI work**, read `/docs/design/design-style.md`. It is the source of truth for all visual implementation.
@@ -24,6 +39,12 @@
 - **When to apply:** Any task involving user-facing text — UI strings, notifications, empty states, error messages, onboarding, app store descriptions, email templates
 - **When to skip:** Pure refactoring, infrastructure, backend logic, database migrations, or code-only changes with no user-facing text
 - **For in-app copy specifically:** The Tone & Language table in `docs/design/design-style.md` remains the primary reference. `BRAND_VOICE.md` extends those rules to external channels (email, social, marketing)
+
+## Git Safety
+
+- **Never use `git stash` to temporarily shelve changes.** An auto-stash (labeled "Teleport auto-stash") once silently hid all working changes right before an `eas build`, causing a broken build to ship to Google Play with none of the latest code. The local dev server (`npx expo start`) still showed the correct files, so the problem was invisible until testers got the wrong version.
+- **Before every `eas build`**, run `git stash list` and `git status` as a sanity check. If `stash list` is not empty or `status` looks suspiciously clean, something pulled changes away.
+- **Do not auto-stash, rebase with auto-stash, or use any operation that implicitly stashes.** If you need to switch context, commit the work-in-progress instead.
 
 ## General Coding Patterns
 
@@ -62,6 +83,7 @@ Common mistakes to watch for — learned from the Phase 4-5 code review.
 - **Use union types instead of plain `string` for known values.** When a field can only be one of a few specific values (like `'voice' | 'text'`), type it as a union — not just `string`. This catches typos and wrong values at compile time.
 - **Parallelize independent async calls with `Promise.all()`.** If two operations don't depend on each other (e.g. uploading audio and detecting child names), run them at the same time instead of one after the other. Saves time for the user.
 - **Remove dead code.** Unused imports, unused state variables, and functions that nothing calls should be deleted — not left around "just in case." Dead code is confusing because future readers assume it's there for a reason.
+- **Read `EXPO_PUBLIC_` env vars directly in the file that uses them — not through a shared config module.** Metro's babel transform replaces `process.env.EXPO_PUBLIC_*` at bundle time, but during OTA builds (`eas update`) the replacement silently fails inside `config.ts` while working fine when read directly. This caused PostHog analytics to be dead for a week with no errors. Sentry (which reads its DSN directly) kept working. Rule: for SDK init keys, do `const KEY = process.env.EXPO_PUBLIC_FOO` at the top of the file that needs it.
 
 ## Push Notification Workflow
 

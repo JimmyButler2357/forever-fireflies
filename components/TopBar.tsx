@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, typography, spacing, hitSlop, radii } from '@/constants/theme';
+import { colors, typography, spacing, hitSlop, radii, fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -15,7 +15,7 @@ interface TopBarProps {
   onBack?: () => void;
   rightIcons?: TopBarIcon[];
   rightContent?: React.ReactNode;
-  titleStyle?: 'serif' | 'sans';
+  titleStyle?: 'serif' | 'sans' | 'greeting';
 }
 
 /**
@@ -42,7 +42,7 @@ export default function TopBar({
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + spacing(3) }]}>
+    <View style={[styles.container, { paddingTop: insets.top + spacing(2) }]}>
       <View style={styles.left}>
         {showBack && (
           <Pressable
@@ -60,7 +60,9 @@ export default function TopBar({
           <Text
             style={[
               styles.title,
-              titleStyle === 'serif' ? styles.titleSerif : styles.titleSans,
+              titleStyle === 'serif' ? styles.titleSerif
+                : titleStyle === 'greeting' ? styles.titleGreeting
+                : styles.titleSans,
             ]}
             numberOfLines={1}
           >
@@ -96,7 +98,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing(5),
-    paddingBottom: spacing(3),
+    paddingBottom: spacing(2),
   },
   left: {
     flexDirection: 'row',
@@ -129,5 +131,11 @@ const styles = StyleSheet.create({
   },
   titleSans: {
     ...typography.screenTitle,
+  },
+  titleGreeting: {
+    fontFamily: fonts.serif,
+    fontSize: 14,
+    fontWeight: '400' as const,
+    color: colors.textSoft,
   },
 });

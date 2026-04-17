@@ -697,12 +697,12 @@
     },
     {
       "id": "backlog-025",
-      "title": "Landing page deployment",
+      "title": "Landing page deployment to Cloudflare",
       "column": "backlog",
       "tag": "infra",
-      "priority": "low",
+      "priority": "medium",
       "order": 24,
-      "notes": "landing/ directory exists with a web landing page but it's not deployed. Domain foreverfireflies.app is on Cloudflare (auto-renew, expires 2027-03-26). Deploy to Cloudflare Pages or similar. Needed for: privacy policy hosting, App Store marketing URL, pre-launch signups.",
+      "notes": "Pages built (index, privacy, delete-account, design playgrounds) but not yet deployed. Domain foreverfireflies.app is on Cloudflare (auto-renew, expires 2027-03-26). Deploy to Cloudflare Pages. Needed for: privacy policy hosting, App Store marketing URL, pre-launch signups. Bumped priority since pages now exist.",
       "link": "landing/",
       "created": "2026-03-31T00:00:00.000Z",
       "updated": "2026-03-31T00:00:00.000Z"
@@ -730,6 +730,42 @@
       "link": "http://foreverfireflies.app/terms",
       "created": "2026-03-31T12:16:20.512Z",
       "updated": "2026-03-31T12:17:15.494Z"
+    },
+    {
+      "id": "done-018",
+      "title": "Fix: Append audio loses transcript + title doesn't update",
+      "column": "done",
+      "tag": "bug",
+      "priority": "high",
+      "order": 17,
+      "notes": "Beta feedback: tapping '+' to extend a memory saved the audio but lost the original transcript and didn't update the title. Two root causes: (1) appendTranscript was passed via URL query param — long text got truncated by URL encoding. Fix: read from Zustand store instead. (2) processWithAI was fire-and-forget — router.back() ran before AI finished, so entry-detail saw stale title. Fix: await AI + refetch before navigating back.",
+      "link": "",
+      "created": "2026-04-01T00:00:00.000Z",
+      "updated": "2026-04-01T00:00:00.000Z"
+    },
+    {
+      "id": "in-progress-003",
+      "title": "Fix raw transcript display (4 bugs)",
+      "column": "in-progress",
+      "tag": "bug",
+      "priority": "high",
+      "order": 2,
+      "notes": "Raw speech-to-text (bad punctuation, filler words, no caps) visible in 4 places: (1) recording screen shows live raw transcript, (2) entry detail shows raw text immediately, (3) entry detail never auto-updates when AI finishes, (4) home cards show raw preview. Plan: replace live transcript with 'Capturing your memory' + bouncing dots, return cleaned_transcript from process-entry edge function, add shimmer UI while AI processes, auto-replace transcript when AI returns. Files: recording.tsx, process-entry/index.ts, entries.service.ts, entry-detail.tsx.",
+      "link": "app/(main)/recording.tsx",
+      "created": "2026-04-03T00:00:00.000Z",
+      "updated": "2026-04-03T00:00:00.000Z"
+    },
+    {
+      "id": "in-progress-004",
+      "title": "Landing page build-out",
+      "column": "in-progress",
+      "tag": "infra",
+      "priority": "medium",
+      "order": 3,
+      "notes": "Landing pages created in landing/ directory: index.html (main page), privacy.html (privacy policy), delete-account.html (account deletion flow), plus design playgrounds (dusk, ember themes). Still needs deployment to foreverfireflies.app via Cloudflare Pages.",
+      "link": "landing/index.html",
+      "created": "2026-04-03T00:00:00.000Z",
+      "updated": "2026-04-03T00:00:00.000Z"
     }
   ]
 }

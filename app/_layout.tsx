@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -19,6 +19,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { supabase } from '@/lib/supabase';
 import { initRevenueCat } from '@/lib/revenueCat';
 import { colors } from '@/constants/theme';
+import NotificationPermissionModal from '@/components/NotificationPermissionModal';
 import * as Sentry from '@sentry/react-native';
 import { initSentry } from '@/lib/sentry';
 import { initPostHog } from '@/lib/posthog';
@@ -47,21 +48,28 @@ function RootLayout() {
   const handleAuthChange = useAuthStore((s) => s.handleAuthChange);
 
   // Register push token and set up notification tap listeners.
-  // This hook silently does nothing if the user isn't authenticated
-  // or hasn't granted notification permissions.
-  useNotifications();
+  // Returns needsPermissionPrompt when the user opted in previously
+  // but this device hasn't granted phone-level permission yet.
+  const { needsPermissionPrompt, resolvePermissionMismatch } = useNotifications();
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+
+  // Show the modal when the hook detects the mismatch
+  useEffect(() => {
+    if (needsPermissionPrompt) setShowPermissionModal(true);
+  }, [needsPermissionPrompt]);
 
   // On mount: check for an existing Supabase session.
   // Think of this as the app "waking up" and checking if someone
   // is already logged in (like a hotel checking if a guest's
   // keycard is still active).
   useEffect(() => {
-    initialize();
-
-    // Configure RevenueCat — fire-and-forget since it's just a configure call.
-    // Think of this as "registering" with RevenueCat's servers so they know
-    // which app is talking to them. No user data is sent yet.
+    // Configure RevenueCat before initialize() so the native SDK has
+    // a head start. initialize() will later call getCustomerInfo()
+    // in the background — the more time the SDK has to warm up, the
+    // faster that background call will resolve.
     initRevenueCat();
+
+    initialize();
 
     // Reset any drafts stuck in 'syncing' (app was killed mid-sync).
     // Think of it like checking a conveyor belt after a power outage —
@@ -104,14 +112,18 @@ function RootLayout() {
 
   // Deep link handler — catches URLs that open the app.
   //
-  // When a user taps the "Reset Password" link in their email,
-  // it opens a URL like:
-  //   forever-fireflies://reset-password#access_token=xxx&refresh_token=yyy&type=recovery
+  // Password reset flow:
+  // 1. User clicks reset link in email → goes to Supabase server (https:// URL)
+  // 2. Supabase verifies the token → redirects to our website:
+  //    https://foreverfireflies.app/auth/callback#access_token=xxx&refresh_token=yyy&type=recovery
+  // 3. Website redirect page opens the app via custom scheme:
+  //    forever-fireflies://reset-password#access_token=xxx&refresh_token=yyy&type=recovery
+  // 4. This handler picks up the tokens and calls setSession()
+  // 5. Supabase fires PASSWORD_RECOVERY event → navigates to reset screen
   //
-  // We need to:
-  // 1. Parse the tokens out of the URL fragment (the part after #)
-  // 2. Give them to Supabase via setSession() to prove the user is verified
-  // 3. Supabase then fires the PASSWORD_RECOVERY event (handled above)
+  // Why the website in the middle? Email clients block custom URL schemes
+  // (forever-fireflies://) but allow https:// links. The website is a bridge
+  // that email clients trust, which then redirects to the app.
   //
   // Two cases to handle:
   // - "Warm start": app is already open → addEventListener fires
@@ -171,6 +183,11 @@ function RootLayout() {
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(main)" />
         </Stack>
+        <NotificationPermissionModal
+          visible={showPermissionModal}
+          onResolve={resolvePermissionMismatch}
+          onDone={() => setShowPermissionModal(false)}
+        />
       </ErrorBoundary>
     </SafeAreaProvider>
   );

@@ -81,7 +81,7 @@ export default function EmailAuthScreen() {
       // New users → add-child, returning users → home.
       const { hasCompletedOnboarding } = useAuthStore.getState();
       if (hasCompletedOnboarding) {
-        router.replace('/(main)/home');
+        router.replace('/(main)/(tabs)/home');
       } else {
         router.replace('/(onboarding)/add-child');
       }

@@ -83,23 +83,43 @@ export function useDraftSync() {
         }
       }
 
-      // Step 3: Clean up local audio file
+      // Step 3: Upload photo attachments, if any.
+      if (draft.photoLocalUris.length > 0) {
+        let displayOrder = 0;
+        for (const photoUri of draft.photoLocalUris) {
+          const photoFile = new File(photoUri);
+          if (!photoFile.exists) {
+            displayOrder += 1;
+            continue;
+          }
+
+          const storagePath = await storageService.uploadEntryPhoto(entryId, photoUri, displayOrder);
+          await entriesService.addEntryPhoto(entryId, {
+            storage_path: storagePath,
+            display_order: displayOrder,
+          });
+          await audioCleanupService.deleteLocalFile(photoUri);
+          displayOrder += 1;
+        }
+      }
+
+      // Step 4: Clean up local audio file
       if (draft.audioLocalUri) {
         await audioCleanupService.deleteLocalFile(draft.audioLocalUri);
       }
 
-      // Step 4: Fire-and-forget AI processing (title + transcript cleanup)
+      // Step 5: Fire-and-forget AI processing (title + transcript cleanup)
       entriesService.processWithAI(entryId).catch(() => {});
 
-      // Step 5: Fetch the full entry (with joins) and add to local cache
+      // Step 6: Fetch the full entry (with joins) and add to local cache
       const fullRow = await entriesService.getEntry(entryId);
       const mapped = mapSupabaseEntry(fullRow);
       addEntryLocal(mapped);
 
-      // Step 6: Start the free trial if this is the user's first entry.
+      // Step 7: Start the free trial if this is the user's first entry.
       await startTrialIfNeeded();
 
-      // Step 7: Remove the draft — it's fully synced!
+      // Step 8: Remove the draft — it's fully synced!
       removeDraft(draft.localId);
       return true;
     } catch (err) {

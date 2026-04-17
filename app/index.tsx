@@ -27,5 +27,5 @@ export default function RootIndex() {
   }
 
   // Fully set up — go to main app
-  return <Redirect href="/(main)/home" />;
+  return <Redirect href="/(main)/(tabs)/home" />;
 }

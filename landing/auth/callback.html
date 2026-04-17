@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forever Fireflies</title>
+</head>
+<body>
+  <p style="font-family: sans-serif; text-align: center; margin-top: 80px; color: #8C7E74;">
+    Opening Forever Fireflies...
+  </p>
+  <script>
+    // This page is the bridge between email links and the app.
+    //
+    // Email clients block custom URL schemes (forever-fireflies://)
+    // but allow https:// links. So the reset email links here first,
+    // and this page redirects to the app.
+    //
+    // Supabase appends tokens as a URL fragment:
+    //   https://foreverfireflies.app/auth/callback#access_token=xxx&refresh_token=yyy&type=recovery
+    //
+    // We pass that same fragment to the app's deep link:
+    //   forever-fireflies://reset-password#access_token=xxx&refresh_token=yyy&type=recovery
+    //
+    // Security: only redirect if the fragment contains the expected
+    // Supabase auth params. This prevents the page from being used
+    // as an open redirector with arbitrary fragments.
+    var fragment = window.location.hash;
+    if (fragment) {
+      var params = new URLSearchParams(fragment.substring(1));
+      if (params.get('access_token') && params.get('refresh_token')) {
+        window.location.href = 'forever-fireflies://reset-password' + fragment;
+      }
+    }
+  </script>
+</body>
+</html>

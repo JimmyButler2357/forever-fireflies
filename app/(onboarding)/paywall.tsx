@@ -16,6 +16,7 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 import { useSubscriptionStore } from '@/stores/subscriptionStore';
 import { profilesService } from '@/services/profiles.service';
+import { capture } from '@/lib/posthog';
 import PrimaryButton from '@/components/PrimaryButton';
 import { PAYWALL_VALUE_PROPS } from '@/lib/subscriptionHelpers';
 
@@ -39,7 +40,8 @@ export default function PaywallScreen() {
       console.warn('Failed to mark onboarding complete on server:', error);
     }
     setOnboarded();
-    router.replace('/(main)/home');
+    capture('onboarding_completed');
+    router.replace('/(main)/(tabs)/home');
   };
 
   return (

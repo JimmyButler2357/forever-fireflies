@@ -59,7 +59,7 @@ export default function ResetPasswordScreen() {
       // Check if this user has completed onboarding to decide where to go.
       const { hasCompletedOnboarding } = useAuthStore.getState();
       if (hasCompletedOnboarding) {
-        router.replace('/(main)/home');
+        router.replace('/(main)/(tabs)/home');
       } else {
         router.replace('/(onboarding)/add-child');
       }
