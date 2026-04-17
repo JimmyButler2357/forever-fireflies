@@ -39,6 +39,8 @@ import TagPill from '@/components/TagPill';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import FavoriteAnimation from '@/components/FavoriteAnimation';
 import ChildSelectModal from '@/components/ChildSelectModal';
+import EntryDetailSkeleton from '@/components/EntryDetailSkeleton';
+import Skeleton from '@/components/Skeleton';
 import CityAutocomplete from '@/components/CityAutocomplete';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -224,6 +226,7 @@ export default function EntryDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const titleWasImmediate = useRef(false);
+  const aiTitleArrived = useRef(false);
 
   // Location — lightweight check for UI visibility decisions
   const { granted: permissionGranted } = useLocationPermission();
@@ -481,6 +484,7 @@ export default function EntryDetailScreen() {
           // If AI was fast and title is already here, skip the fade-in animation
           if (mapped.title) {
             titleWasImmediate.current = true;
+            aiTitleArrived.current = true;
           }
 
           // Also add to local cache so Home shows it immediately
@@ -514,6 +518,7 @@ export default function EntryDetailScreen() {
             aiPromise.then((result) => {
               if (cancelled) return;
               if (!result?.title) return;
+              aiTitleArrived.current = true;
               setEntry((prev) => prev ? { ...prev, title: result.title } : prev);
               updateEntryLocal(row.id, { title: result.title });
             });
@@ -764,8 +769,17 @@ export default function EntryDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.accent} />
+      <View style={styles.container}>
+        <View style={[styles.topBar, { paddingTop: insets.top + spacing(3) }]}>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={hitSlop.icon}
+            style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.6 }]}
+          >
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
+          </Pressable>
+        </View>
+        <EntryDetailSkeleton />
       </View>
     );
   }
@@ -809,6 +823,9 @@ export default function EntryDetailScreen() {
     (c) => !entry.childIds.includes(c.id),
   );
   const allChildrenTagged = untaggedChildren.length === 0;
+
+  const isAwaitingAITitle =
+    !entry.title && !!params.transcript && !titleWasImmediate.current && !aiTitleArrived.current;
 
   // ─── Handlers ──────────────────────────────────────────
 
@@ -1089,19 +1106,27 @@ export default function EntryDetailScreen() {
         )}
 
         {/* ── 1. Title — the hero element ── */}
-        <FadeInUp skip={reduceMotion || titleWasImmediate.current}>
-          <TextInput
-            style={styles.titleText}
-            value={entry.title ?? ''}
-            onChangeText={handleTitleChange}
-            placeholder="Add a title..."
-            placeholderTextColor={colors.textMuted}
-            maxLength={60}
-            multiline
-            blurOnSubmit
-            editable={hasAccess}
+        {isAwaitingAITitle ? (
+          <Skeleton
+            width="60%"
+            height={26}
+            style={{ marginBottom: spacing(2) }}
           />
-        </FadeInUp>
+        ) : (
+          <FadeInUp skip={reduceMotion || titleWasImmediate.current}>
+            <TextInput
+              style={styles.titleText}
+              value={entry.title ?? ''}
+              onChangeText={handleTitleChange}
+              placeholder="Add a title..."
+              placeholderTextColor={colors.textMuted}
+              maxLength={60}
+              multiline
+              blurOnSubmit
+              editable={hasAccess}
+            />
+          </FadeInUp>
+        )}
 
         {/* ── 2. Gradient divider — child colors ── */}
         <LinearGradient
