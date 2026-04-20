@@ -2,7 +2,38 @@
 
 Everything we're building and when — from MVP checklist to future vision. For detailed feature specs, see [Product Spec](product-spec.md). For screen-by-screen layouts, see [App Workflow](../design/app-workflow.md). For visual rules, see [Design Style Guide](../design/design-style.md).
 
-Last updated: March 2026
+Last updated: April 2026
+
+---
+
+## Current Status (April 2026)
+
+**Where we are:** Phases 1–9 are shipped. The app works end-to-end in development and Android APK preview builds. All launch-gating work now lives in **Phase 10A (Before Beta)** and **Phase 10B (Before Public Launch)** below.
+
+### In Progress
+
+- **Home screen redesign** — tabs, calendar view, notifications modal (WIP commit `92990ff`)
+- **Entry detail refinements** — polish to transcript display, metadata editing (uncommitted)
+- **Raw transcript display fix** — 4 bugs around showing raw speech-to-text before `process-entry` edge function cleans it. Plan: replace live transcript with "Capturing your memory" + bouncing dots, return `cleaned_transcript` from edge function, shimmer UI while AI processes
+- **Prompts system expansion** — ✅ shipped. Category column (everyday/milestones/funny/feelings/firsts), 25 new age-bucketed prompts (0–7yr), two-row filter UI with atomic snapshot transitions
+- **Landing page build-out** — `landing/` folder has `index.html`, `privacy.html`, `delete-account.html`, `auth/callback.html`, + design playgrounds. **Not yet deployed** to Cloudflare Pages at foreverfireflies.app
+
+### Blocked (awaiting payment or hardware)
+
+| Blocker | Cost | Gates |
+|---------|------|-------|
+| Apple Developer Program | $99/yr | TestFlight, App Store, RevenueCat↔App Store, Small Business Program |
+| Google Play Console | $25 one-time | Play Internal Testing, Play Store listing, RevenueCat↔Play |
+| Physical iPhone | hardware | iOS-specific testing (simulator can't do voice, social auth, or push) |
+| Xcode on Mac | hardware | iOS builds via EAS |
+
+### Next Unblocked Work
+
+1. **Supabase dev/prod split** — biggest unblocker for safely inviting beta testers (see Phase 10A)
+2. **RevenueCat account creation** — can start without store accounts; connecting to stores comes later
+3. **App icon + splash screen** — needed for any store submission
+4. **Landing page deployment** — Cloudflare Pages, needed for privacy policy URL and pre-launch signups
+5. **Terms page** — add at `foreverfireflies.app/terms`, link from login and Settings
 
 ---
 
@@ -254,8 +285,9 @@ Polish, legal, and marketing — everything needed between "beta works" and "App
 
 #### Legal & Compliance
 
-- [ ] Privacy policy (required for App Store and Play Store)
-- [ ] Terms of service
+- [x] Privacy policy HTML drafted (`landing/privacy.html`) — still needs to be deployed + review pass
+- [ ] Deploy landing site to Cloudflare Pages at `foreverfireflies.app` so privacy policy has a real URL
+- [ ] Terms of service — add `landing/terms.html` hosted at `foreverfireflies.app/terms`, link from login screen and Settings
 - [ ] **COPPA compliance review** *(see Product Spec §8)* — app records children's info; Lifestyle category helps but still needs careful handling
 - [ ] Apply for **Apple Small Business Program** (15% commission) before first sale
 

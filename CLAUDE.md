@@ -2,9 +2,9 @@
 
 **Session prefix: CM**
 
-## Kanban Board
+## Roadmap
 
-The project kanban lives at `kanban/kanban.json`. Check it at the start of sessions to understand priorities. When you complete work that matches a card, move it to Done and add a brief note. Add new cards for bugs or tasks discovered during a session.
+Current priorities live in `docs/product/feature-roadmap.md` — specifically the **Current Status** section at the top and **Phase 10A / 10B** for launch-gating work. Check at the start of sessions to understand what's active, what's blocked, and what ships next.
 
 ## Landing Site (`landing/`)
 
