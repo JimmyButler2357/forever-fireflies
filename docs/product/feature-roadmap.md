@@ -299,6 +299,23 @@ Polish, legal, and marketing — everything needed between "beta works" and "App
 - [ ] Google Play Store screenshots
 - [ ] App Store listing copy — description, keywords, subtitle (Lifestyle category, NOT Kids)
 
+#### Photo System Hardening
+
+Polish on the shipped V1.0 photo system (child profile photos + entry photos). Photos work today but have rough edges worth cleaning up before beta/public launch. Full spec in [product-spec.md §V1.5 Photo Attachments → Hardening](product-spec.md).
+
+- [ ] **Client-side compression** — add `expo-image-manipulator` pipeline before upload. Resize to ~1600px longest edge, 0.8 JPEG quality. Currently uploads full-resolution (~4MB per photo) wasting bandwidth and Supabase storage quota. Applies to both `uploadChildPhoto` (settings.tsx:322) and `uploadEntryPhoto` (entry-detail.tsx:1042)
+- [ ] **Signed URL refresh on focus** — entry photo URLs expire after 1 hour. If a user opens an entry, walks away, and comes back later, images 403. Refresh URLs when Entry Detail regains focus (entry-detail.tsx:756)
+- [ ] **Orphaned storage cleanup** — entry photo flow uploads to storage then inserts DB row. If the DB insert fails after the upload succeeds, the storage file orphans. Wrap in try/catch that deletes the storage file on DB failure (entries.service.ts addEntryPhoto)
+- [ ] **Cache child photo signed URLs** — home screen re-fetches URLs for every child on every mount (N+1 API calls). Cache in Zustand with ~50-minute TTL (under the 1-hour expiry)
+- [ ] **Distinguish "no photo" vs "failed to load"** — home screen silently falls back to initials on any error (home.tsx:263). Split into separate states so retry is possible
+- [ ] **Accessibility labels on `<Image>` components** — no alt text today; screen readers skip photos entirely. Add `accessibilityLabel` to all photo views (entry-detail.tsx:1641, FamilySection.tsx:56, ChildModal.tsx:102)
+- [ ] **Loading skeletons** for photos in Entry Detail while URLs resolve — currently pops in jarringly after useEffect fetch completes
+- [ ] **Add child photo upload to onboarding** — the onboarding `add-child.tsx` flow collects name, birthday, nickname, and color but NOT the child's photo. Settings already supports this; port the same `expo-image-picker` flow to onboarding so new users set a photo during first-run. Optional step — skippable. Ties directly to the "Welcome Preview" and "Memory Saved" screens feeling more personal from the start
+
+#### Camera Integration (optional for V1.0, backlog candidate)
+
+- [ ] **Add camera option** alongside gallery picker in photo upload flow. Today both child photos and entry photos are gallery-only. Parents often want to snap-and-save in the moment. Small action sheet: "Take photo" / "Choose from library". Adds `expo-image-picker` camera permission. Low effort, meaningful UX win — consider before public launch if time allows, otherwise V1.5
+
 #### Accessibility & Performance
 
 - [ ] Accessibility audit (labels, touch targets ≥44pt, contrast ≥4.5:1, Dynamic Type)
@@ -360,7 +377,7 @@ Make the app smarter, more useful, and harder to leave. Focus on AI features and
 | Milestone celebrations | AI detects milestone language, flags with star badge + celebration animation |
 | Age milestone markers | Divider cards at birthday boundaries in the timeline |
 | Developmental prompts | Age-appropriate prompt suggestions that evolve as children grow |
-| **Add photos (cap 3)** | Attach up to 3 photos per entry. Gallery picker only (no camera in V1.5). Photos are extras — every entry still requires voice or text. New `entry_media` table (pre-wired for video). 3 new packages: `expo-image-picker`, `expo-image-manipulator`, `expo-image`. Photos compressed client-side (~800px, 80% JPEG). 3 new UI components: PhotoPicker, PhotoThumbnailRow, PhotoViewer. See product-spec.md §V1.5 for full spec and database-schema.md §4.1 for table definition |
+| ~~**Add photos (cap 2)**~~ ✅ | **Done — pulled forward to V1.0.** Photos ship in V1.0 for both child profiles (`profile-photos` bucket) and entries (`entry_media` table, cap 2). Gallery picker via `expo-image-picker`. Hardening items — compression, signed-URL refresh, orphan cleanup, alt text, onboarding child-photo step — tracked in Phase 10B "Photo System Hardening" below |
 | **Birthday quiz** | On a child's birthday, app sends special notification with guided questions (favorite food, funny words, current obsessions). Saves as a structured text entry — annual snapshot |
 | **Help / menu section** | Expandable menu with FAQ, "Ways to Use Your Memories" articles (link to website), Contact Us, mission/about |
 | **Shareable memory cards** | Tap "Share" on any entry card → generates a branded quote-card image (child's words, name + age, date, subtle Forever Fireflies watermark). Static image works everywhere — iMessage, Instagram Stories, Facebook, etc. Uses native share sheet. Replaces plain-link sharing |

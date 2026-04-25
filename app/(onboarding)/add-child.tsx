@@ -11,6 +11,7 @@ import {
   Alert,
   LayoutAnimation,
   UIManager,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,12 +28,25 @@ import {
   childColors,
 } from '@/constants/theme';
 import { useChildrenStore, mapSupabaseChild } from '@/stores/childrenStore';
+import { useAuthStore } from '@/stores/authStore';
 import { childrenService } from '@/services/children.service';
+import { storageService } from '@/services/storage.service';
 import { formatDate } from '@/lib/dateUtils';
+import { compressPhoto } from '@/lib/imageCompression';
+import PhotoCropper from '@/components/PhotoCropper';
 import PrimaryButton from '@/components/PrimaryButton';
 import BirthdayPicker from '@/components/BirthdayPicker';
 import ColorPicker from '@/components/ColorPicker';
 import { capture } from '@/lib/posthog';
+
+// Tracks what (if anything) needs to happen to the child's photo at save time.
+// 'none'   — no change (leave whatever's already in storage alone)
+// 'upload' — user picked a new photo; upload localUri then link the path
+// 'remove' — user tapped Remove on an existing photo; delete from storage
+type PendingPhotoAction =
+  | { type: 'none' }
+  | { type: 'upload'; localUri: string }
+  | { type: 'remove' };
 
 // ─── Add Child Screen ─────────────────────────────────────
 //
@@ -61,6 +75,7 @@ export default function AddChildScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { children, addChildLocal, removeChildLocal, updateChildLocal } = useChildrenStore();
+  const familyId = useAuthStore((s) => s.familyId);
 
   const [name, setName] = useState('');
   const [nickname, setNickname] = useState('');
@@ -69,6 +84,17 @@ export default function AddChildScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showForm, setShowForm] = useState(true);
   const [editingChildId, setEditingChildId] = useState<string | null>(null);
+
+  // Photo state — `photoPreviewUri` is what the circle shows in the UI
+  // (local file URI for a freshly-picked photo OR signed URL for an
+  // existing one loaded in edit mode). `photoAction` tells the save
+  // handler what actually needs to happen in storage.
+  const [photoPreviewUri, setPhotoPreviewUri] = useState<string | null>(null);
+  const [photoAction, setPhotoAction] = useState<PendingPhotoAction>({ type: 'none' });
+  const [isPhotoBusy, setIsPhotoBusy] = useState(false);
+  // URI of the freshly-picked photo while the user adjusts the
+  // circular crop. Null when the cropper isn't open.
+  const [cropSourceUri, setCropSourceUri] = useState<string | null>(null);
 
   const hasChildren = children.length > 0;
   const isAtLimit = children.length >= 15;
@@ -105,14 +131,77 @@ export default function AddChildScreen() {
     return `Add ${name.trim()}`;
   };
 
+  // Launch the photo library, let the user crop square, and stage
+  // the result for upload at save time. We don't upload yet — the
+  // child row may not exist (add mode), and we want one atomic save.
+  const handlePickPhoto = async () => {
+    let ImagePicker: typeof import('expo-image-picker');
+    try {
+      ImagePicker = await import('expo-image-picker');
+    } catch {
+      Alert.alert(
+        'Photo module unavailable',
+        'Please reinstall dependencies and restart the app to enable photo picking.',
+      );
+      return;
+    }
+
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Photo Access Needed', 'Allow photo library access to choose a child photo.');
+      return;
+    }
+
+    setIsPhotoBusy(true);
+    try {
+      // Skip the OS native crop UI — our circular cropper opens next
+      // and lets the user see the actual avatar framing before saving.
+      const picked = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: (ImagePicker as any).MediaTypeOptions?.Images ?? ['images'],
+        allowsEditing: false,
+        quality: 1,
+      });
+      if (picked.canceled || !picked.assets[0]?.uri) return;
+
+      setCropSourceUri(picked.assets[0].uri);
+    } finally {
+      setIsPhotoBusy(false);
+    }
+  };
+
+  // Called by PhotoCropper after the user confirms framing.
+  // We stage the cropped URI for upload at save time, mirroring the
+  // existing pattern (upload happens in applyPhotoAction).
+  const handleCroppedPhoto = (croppedUri: string) => {
+    setCropSourceUri(null);
+    setPhotoPreviewUri(croppedUri);
+    setPhotoAction({ type: 'upload', localUri: croppedUri });
+  };
+
+  // Clear the preview. In edit mode where an existing photo lives in
+  // storage, flag it for removal at save time. In add mode or after a
+  // picked-but-unsaved photo, nothing in storage yet — just forget it.
+  const handleRemovePhoto = () => {
+    const editingChild = editingChildId
+      ? children.find((c) => c.id === editingChildId)
+      : null;
+    const hasExistingPhotoInStorage = !!editingChild?.photoPath;
+
+    setPhotoPreviewUri(null);
+    setPhotoAction(hasExistingPhotoInStorage ? { type: 'remove' } : { type: 'none' });
+  };
+
   // Save a child to Supabase, then update local store.
   // Returns true if successful, false if it failed.
   const saveChildToSupabase = async (): Promise<boolean> => {
     setIsLoading(true);
     try {
+      // The child row we'll sync photo changes against. In add mode this
+      // is the just-created row; in edit mode it's the existing one.
+      let targetChildId: string;
+
       if (editingChildId) {
         // ── Edit mode ──
-        // Update the existing child in Supabase, then sync local store.
         const updates = {
           name: name.trim(),
           birthday,
@@ -126,6 +215,7 @@ export default function AddChildScreen() {
           nickname: updates.nickname ?? undefined,
           colorIndex: updates.color_index,
         });
+        targetChildId = editingChildId;
       } else {
         // ── Add mode ──
         // Send to Supabase. The `color_index` auto-increments based
@@ -143,6 +233,24 @@ export default function AddChildScreen() {
         // and add it to the local store for instant display.
         addChildLocal(mapSupabaseChild(row));
         capture('child_added', { childIndex: children.length });
+        targetChildId = row.id;
+      }
+
+      // ── Photo sync ──
+      // Run after the child row is saved so we always have a valid
+      // child ID. Wrapped in its own try/catch so a photo failure
+      // doesn't lose the name/birthday/color the user just entered —
+      // the child saves; we just tell them about the photo problem.
+      if (photoAction.type !== 'none') {
+        try {
+          await applyPhotoAction(targetChildId, photoAction);
+        } catch (photoErr) {
+          const msg = photoErr instanceof Error ? photoErr.message : 'Could not save photo';
+          Alert.alert(
+            "Photo didn't save",
+            `${msg}\n\nYou can add or change the photo later in Settings.`,
+          );
+        }
       }
 
       // Reset form fields and collapse it. LayoutAnimation makes
@@ -153,6 +261,8 @@ export default function AddChildScreen() {
       setBirthday('');
       setColorIndex((children.length + 1) % childColors.length);
       setEditingChildId(null);
+      setPhotoPreviewUri(null);
+      setPhotoAction({ type: 'none' });
       setShowForm(false);
       return true;
     } catch (error) {
@@ -161,6 +271,29 @@ export default function AddChildScreen() {
       return false;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Upload or remove the child's photo based on the pending action.
+  // Also keeps the local store's photoPath in sync so the UI reflects
+  // the change immediately.
+  const applyPhotoAction = async (childId: string, action: PendingPhotoAction) => {
+    if (action.type === 'none') return;
+    if (!familyId) throw new Error('Family not loaded yet — try again in a moment');
+
+    if (action.type === 'upload') {
+      const compressed = await compressPhoto(action.localUri);
+      const path = await storageService.uploadChildPhoto(familyId, childId, compressed.uri);
+      await childrenService.updateChild(childId, { photo_url: path });
+      updateChildLocal(childId, { photoPath: path });
+    } else {
+      // remove
+      const child = children.find((c) => c.id === childId);
+      if (child?.photoPath) {
+        await storageService.removeChildPhoto(child.photoPath);
+      }
+      await childrenService.updateChild(childId, { photo_url: null });
+      updateChildLocal(childId, { photoPath: undefined });
     }
   };
 
@@ -200,7 +333,29 @@ export default function AddChildScreen() {
     setBirthday(child.birthday ?? '');
     setColorIndex(child.colorIndex);
     setEditingChildId(child.id);
+    setPhotoPreviewUri(null);
+    setPhotoAction({ type: 'none' });
     setShowForm(true);
+
+    // Resolve the signed URL for the existing photo asynchronously.
+    // If it fails (expired token, offline), we just show the empty
+    // placeholder — the user can re-pick or leave it unchanged.
+    if (child.photoPath) {
+      storageService
+        .getChildPhotoUrl(child.photoPath)
+        .then((url) => {
+          // Only restore the preview if the user hasn't already interacted
+          // with the photo control. Otherwise we'd clobber a fresh pick
+          // or undo a Remove tap that landed first.
+          setPhotoAction((currentAction) => {
+            if (currentAction.type === 'none') {
+              setPhotoPreviewUri(url);
+            }
+            return currentAction;
+          });
+        })
+        .catch((err) => console.warn('Failed to load child photo preview:', err));
+    }
   };
 
   // Collapse the form without saving
@@ -210,6 +365,8 @@ export default function AddChildScreen() {
     setNickname('');
     setBirthday('');
     setEditingChildId(null);
+    setPhotoPreviewUri(null);
+    setPhotoAction({ type: 'none' });
     setShowForm(false);
   };
 
@@ -324,6 +481,44 @@ export default function AddChildScreen() {
               <Text style={styles.fieldLabel}>Color</Text>
               <ColorPicker selectedIndex={colorIndex} onSelect={setColorIndex} />
             </View>
+
+            {/* Photo field — optional. Tap the circle to pick; tap "Remove"
+                to clear. The circle shows either the picked/stored photo
+                or the child's color-tinted placeholder with a + icon. */}
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Photo (optional)</Text>
+              <View style={styles.photoRow}>
+                <Pressable
+                  onPress={handlePickPhoto}
+                  disabled={isLoading || isPhotoBusy}
+                  accessibilityLabel={photoPreviewUri ? 'Change photo' : 'Add photo'}
+                  style={({ pressed }) => [
+                    styles.photoCircle,
+                    { borderColor: childColors[colorIndex]?.hex ?? childColors[0].hex },
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  {photoPreviewUri ? (
+                    <Image source={{ uri: photoPreviewUri }} style={styles.photoImage} />
+                  ) : (
+                    <Ionicons
+                      name="add"
+                      size={28}
+                      color={childColors[colorIndex]?.hex ?? childColors[0].hex}
+                    />
+                  )}
+                </Pressable>
+                {photoPreviewUri && (
+                  <Pressable
+                    onPress={handleRemovePhoto}
+                    disabled={isLoading || isPhotoBusy}
+                    hitSlop={hitSlop.icon}
+                  >
+                    <Text style={styles.photoRemoveLink}>Remove photo</Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
           </View>
         )}
 
@@ -355,6 +550,16 @@ export default function AddChildScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* In-app circular cropper — appears after the user picks a photo.
+          Replaces the OS native cropper so the framing matches the
+          actual circular avatar. */}
+      <PhotoCropper
+        visible={!!cropSourceUri}
+        sourceUri={cropSourceUri}
+        onCancel={() => setCropSourceUri(null)}
+        onConfirm={handleCroppedPhoto}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -483,6 +688,30 @@ const styles = StyleSheet.create({
   },
   limitNote: {
     ...typography.caption,
+    color: colors.textMuted,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(4),
+  },
+  photoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    backgroundColor: colors.bg,
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  photoRemoveLink: {
+    ...typography.formLabel,
     color: colors.textMuted,
   },
 });

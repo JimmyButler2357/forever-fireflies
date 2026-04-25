@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { View, Text, Pressable, Modal, StyleSheet, Image } from 'react-native';
+import { View, Text, Pressable, Modal, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   colors,
@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/dateUtils';
 import { useUIStore } from '@/stores/uiStore';
 import type { Child } from '@/stores/childrenStore';
 import type { Entry } from '@/stores/entriesStore';
+import type { PhotoState } from '@/lib/photoUrlCache';
 
 /**
  * Modal overlay showing detailed stats for a single child.
@@ -30,7 +31,7 @@ interface ChildModalProps {
   childId: string | null;
   children: Child[];
   entries: Entry[];
-  photoUrls?: Record<string, string | undefined>;
+  photoStates?: Record<string, PhotoState>;
 }
 
 export default function ChildModal({
@@ -39,7 +40,7 @@ export default function ChildModal({
   childId,
   children,
   entries,
-  photoUrls = {},
+  photoStates = {},
 }: ChildModalProps) {
   const router = useRouter();
 
@@ -98,13 +99,20 @@ export default function ChildModal({
               },
             ]}
           >
-            {photoUrls[child.id] ? (
-              <Image source={{ uri: photoUrls[child.id] }} style={styles.avatarImage} />
-            ) : (
-              <Text style={[styles.avatarLetter, { color: hex }]}>
-                {child.name[0]}
-              </Text>
-            )}
+            {(() => {
+              const state: PhotoState = photoStates[child.id] ?? { status: 'none' };
+              if (state.status === 'loaded') {
+                return <Image source={{ uri: state.url }} style={styles.avatarImage} />;
+              }
+              if (state.status === 'loading') {
+                return <ActivityIndicator size="small" color={hex} />;
+              }
+              return (
+                <Text style={[styles.avatarLetter, { color: hex }]}>
+                  {child.name[0]}
+                </Text>
+              );
+            })()}
           </View>
 
           {/* Name + age */}

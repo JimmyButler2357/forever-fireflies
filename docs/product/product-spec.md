@@ -436,7 +436,7 @@ The parent is the sole owner of contributor identities. Contributors never type 
 - [ ] Improved transcription (cloud fallback for low-confidence entries — see Section 2.1.1)
 - [ ] "Quiet week" prompt for inactive users — see Section 4b
 - [ ] LLM-powered auto-tagging upgrade (Claude Haiku — see Section 3.3)
-- [ ] **Add photos (cap 3)** — attach up to 3 photos per entry. Full spec below
+- [x] ~~**Add photos (cap 3)**~~ — **Pulled forward to V1.0.** Shipped with cap of 2 photos per entry (reduced from 3 based on implementation). Hardening work tracked below
 
 #### Photo Attachments — V1.5 Feature Spec
 
@@ -492,6 +492,31 @@ Photos are compressed client-side before upload to keep storage costs low and up
 - The `entry_media` table uses a `media_type` column (`'photo'` or `'video'`) instead of a photo-specific table name
 - Video-ready columns (`thumbnail_path`, `duration_seconds`) exist as nullable fields — zero cost now, avoids a migration later
 - See feature-roadmap.md for video research notes
+
+**Hardening (Phase 10B — Before Public Launch):**
+
+The V1.0 shipped photo system works end-to-end but has rough edges worth cleaning up before beta/public launch. Tracked as "Photo System Hardening" in feature-roadmap.md Phase 10B.
+
+- **No client-side compression today** — `expo-image-manipulator` is installed but unused; both child photo uploads (`settings.tsx:322`) and entry photo uploads (`entry-detail.tsx:1042`) send full-resolution images (often ~4MB per photo). Add compression step: resize to ~1600px longest edge + 0.8 JPEG quality → typically 5–10× smaller files, visually identical for mobile viewing. Saves bandwidth on uploads, Supabase storage quota, and signed-URL bandwidth on every view
+- **Signed URL expiry with no refresh mechanism** — photo URLs from `entry-media` bucket expire after 1 hour (signed URL is like a hotel keycard that stops working at checkout). Entry Detail fetches URLs once in `useEffect` (`entry-detail.tsx:756`). If a user opens an entry, walks away for >1 hour, and comes back, photos show broken-image state (HTTP 403). Fix: refresh URLs when screen regains focus (Expo Router's `useFocusEffect`), or track an in-memory expiry timestamp and refetch on render if stale
+- **Orphaned storage files on partial failures** — entry photo flow uploads the file to storage first, then inserts a row in `entry_media`. If the storage upload succeeds but the DB insert fails (network blip, RLS edge case, etc.), the file sits in storage with nothing pointing to it. Over time this bloats the bucket. Fix: wrap in try/catch that deletes the orphaned storage file if the DB insert throws
+- **N+1 signed URL fetches on Home screen** — every time the Home tab renders, `home.tsx:251–275` calls `getChildPhotoUrl()` for every child in the family. A family with 10 children = 10 Supabase API calls per tab switch. Fix: cache signed URLs in Zustand with a ~50-minute TTL (just under the 1-hour expiry), key by child ID
+- **Silent photo load failures** — `home.tsx:263–264` catches any error from URL resolution and falls back to initials. User can't tell if a child has no photo set, the URL expired, or the network is down. Fix: separate `photoStatus: 'none' | 'loading' | 'loaded' | 'error'` state so the UI can show a retry affordance
+- **No accessibility labels** — `<Image>` components rendering photos (`entry-detail.tsx:1641`, `FamilySection.tsx:56`, `ChildModal.tsx:102`) have no `accessibilityLabel`. Screen readers skip them entirely. Fix: add labels like `accessibilityLabel={`Photo of ${child.name}`}` or `accessibilityLabel="Entry photo"`
+- **Onboarding missing child photo step** — the onboarding `add-child.tsx` flow collects name, birthday, nickname, and color but not the child's photo. Settings already supports child photos end-to-end; port the same picker flow to onboarding as an optional (skippable) step. Makes Welcome Preview and Memory Saved screens feel more personal from the first launch. See UI spec below
+
+**Onboarding — Child photo step (Phase 10B):**
+
+Add an optional photo upload to the `add-child.tsx` onboarding screen (`app/(onboarding)/add-child.tsx`). Keep the step optional — parents who don't have a photo handy shouldn't be blocked from finishing onboarding.
+
+- **Placement:** After the Color field inside the form card, before the Save button. Visible only when form is expanded (not on saved child cards)
+- **Control:** Circular photo placeholder (80×80) with a "+" icon overlay when empty. When set, shows the selected photo. Tapping opens the same `expo-image-picker` flow used in Settings
+- **Cropping:** Use `allowsEditing: true` with `aspect: [1, 1]` so the preview matches how the photo displays on Home (circular avatar)
+- **Optional:** No inline validation — users can save a child without a photo and add one later from Settings. Keep the existing "Add {name}" button enabled once name + birthday are set
+- **Compression:** Apply the same compression pipeline added in Phase 10B hardening (resize + quality pass) so onboarding doesn't upload a 4MB image on first run
+- **Error handling:** If the picker or upload fails, fall back to saving the child without a photo rather than blocking onboarding — show a non-blocking toast "Couldn't save photo — you can add one in Settings"
+- **Edit mode:** When editing a child in onboarding (tapping a saved child card), the photo control is pre-populated if a photo already exists, same as the other fields
+- **Settings flow unchanged:** The existing Settings add/edit child modal keeps its photo upload; this is purely additive to onboarding
 - [ ] **Birthday quiz** — on a child's birthday, app sends a special push notification or shows an in-app interstitial with guided questions ("What's their favorite food right now?" "What word do they say funny?" "What are they obsessed with?"). Responses saved as a structured text entry tagged with the child and a "birthday" tag. Creates an annual snapshot tradition. Overlaps with Keepsakes' core workflow, validating demand
 - [ ] **Help / menu section** — expandable dropdown or dedicated screen accessible from the top bar. Includes: FAQ, "Ways to Use Your Memories" (4 articles linking to website — e.g., "Share with Grandparents," "Create a Birthday Tradition," "Build a Bedtime Routine," "Make a Keepsake Book"), Contact Us, mission/about, and a deeper dive into family connection. Content links to external website rather than living in-app
 - [ ] **Shareable memory cards** — tap a "Share" button on any entry card (Home, Firefly Jar, or Entry Detail) to generate a branded quote-card image. The card displays: transcript text (truncated to ~3 lines for readability), child's name + age at time of entry, entry date, and a subtle "Forever Fireflies" watermark at the bottom. Card uses the app's warm visual language (cream background, Merriweather serif for the quote, warm brown text). Image generated client-side via `react-native-view-shot` or similar. Opens native share sheet — works with iMessage, Instagram Stories, Facebook, text, email, etc. Static image format ensures universal compatibility (no audio, no link required). Organic growth loop: every shared card is a branded touchpoint

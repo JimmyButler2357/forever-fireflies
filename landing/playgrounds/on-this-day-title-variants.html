@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>On This Day — Title Variants</title>
+<style>
+  :root {
+    --bg: #1a1613;
+    --panel: #221c18;
+    --border: #2e2722;
+    --text: #ece4db;
+    --text-soft: #a89a8a;
+    --text-muted: #7a6f62;
+    --accent: #d4a574;
+
+    /* Card tokens from the app */
+    --card-text: #2c2420;
+    --card-text-soft: #6b5a4d;
+    --card-text-muted: #9b8a7a;
+    --card-gradient-start: #fdf8f0;
+    --card-gradient-end: #f5ede3;
+    --card-bg: #fbf6ee;
+    --warm-shadow: rgba(44, 36, 32, 0.18);
+    --child-color: #c97b5e; /* warm terracotta for "Maya" */
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ── Left rail ────────────────────────── */
+  .rail {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .rail h1 {
+    font-size: 18px;
+    margin: 0;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .rail p.hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .pick-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+  .pick {
+    display: grid;
+    gap: 8px;
+  }
+  .pick button {
+    all: unset;
+    cursor: pointer;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: #2a221c;
+    border: 1px solid transparent;
+    color: var(--text);
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 120ms, border-color 120ms;
+  }
+  .pick button:hover { background: #33291f; }
+  .pick button.active {
+    background: #3a2d1e;
+    border-color: var(--accent);
+  }
+  .pick button .meta {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .pick button.active .meta { color: var(--accent); }
+
+  .prompt-wrap {
+    margin-top: auto;
+    display: grid;
+    gap: 8px;
+  }
+  .prompt-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+  .prompt {
+    background: #14100d;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--text-soft);
+    white-space: pre-wrap;
+    max-height: 240px;
+    overflow: auto;
+  }
+  .copy {
+    all: unset;
+    cursor: pointer;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #1a1613;
+    font-weight: 600;
+    font-size: 13px;
+    transition: opacity 120ms;
+  }
+  .copy:hover { opacity: 0.9; }
+  .copy.flash { background: #a1d4a8; }
+
+  /* ── Stage (preview) ──────────────────── */
+  .stage {
+    padding: 40px 32px 80px;
+    background:
+      radial-gradient(1200px 600px at 20% 0%, #231b15 0%, transparent 60%),
+      var(--bg);
+  }
+  .stage-title {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin: 0 0 24px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 36px 28px;
+    max-width: 1200px;
+  }
+  .variant {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .variant-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .variant-label .tag {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+  .variant-label .name {
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* ── Polaroid card (matches app) ──────── */
+  .polaroid {
+    width: 300px;
+    background: #fbf6ee;
+    border-radius: 8px;
+    padding: 12px 12px 24px;
+    transform: rotate(-1.5deg);
+    box-shadow:
+      0 2px 4px var(--warm-shadow),
+      0 8px 20px rgba(44, 36, 32, 0.22);
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+  .variant:hover .polaroid {
+    transform: rotate(-1.5deg) translateY(-2px);
+    box-shadow:
+      0 4px 6px var(--warm-shadow),
+      0 14px 28px rgba(44, 36, 32, 0.28);
+  }
+  .polaroid.selected {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+  }
+  .inner {
+    border-radius: 8px;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--card-gradient-start), var(--card-gradient-end));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* Fixed card interior height so scrolling can happen */
+    height: 260px;
+  }
+  .time-badge {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--card-text);
+    line-height: 1.25;
+  }
+  .child-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .child-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--child-color);
+  }
+  .child-name {
+    font-size: 10px;
+    color: var(--card-text-soft);
+    letter-spacing: 0.02em;
+  }
+
+  /* Scroll region for body */
+  .scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    -webkit-overflow-scrolling: touch;
+    /* Warm, quiet scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(107, 90, 77, 0.35) transparent;
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      black 10px,
+      black calc(100% - 18px),
+      transparent 100%
+    );
+  }
+  .scroll::-webkit-scrollbar { width: 4px; }
+  .scroll::-webkit-scrollbar-thumb {
+    background: rgba(107, 90, 77, 0.35);
+    border-radius: 2px;
+  }
+  .scroll::-webkit-scrollbar-track { background: transparent; }
+
+  .body {
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--card-text);
+  }
+
+  .date-footer {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 11px;
+    color: var(--card-text-muted);
+    margin-top: 6px;
+    padding: 0 4px;
+    text-align: left;
+  }
+
+  /* ── Variant-specific header styles ──── */
+
+  /* V1: Title directly under time, then child row */
+  .v1 .title {
+    font-family: Georgia, serif;
+    font-size: 14px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--card-text);
+    line-height: 1.35;
+    margin-top: 2px;
+  }
+
+  /* V2: Title + child on same line */
+  .v2 .title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 2px;
+  }
+  .v2 .title {
+    font-family: Georgia, serif;
+    font-size: 14px;
+    font-style: italic;
+    color: var(--card-text);
+    line-height: 1.3;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .v2 .child-inline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  /* V3: Title with subtle divider, then child row */
+  .v3 .title {
+    font-family: Georgia, serif;
+    font-size: 14px;
+    font-style: italic;
+    color: var(--card-text);
+    line-height: 1.35;
+    margin-top: 2px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(107, 90, 77, 0.18);
+  }
+
+  /* V4: Title as quieter subtitle */
+  .v4 .title {
+    font-family: Georgia, serif;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--card-text-soft);
+    letter-spacing: 0.01em;
+    line-height: 1.4;
+    margin-top: 0;
+  }
+
+  /* Subtle helper text under each card */
+  .note {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 260px;
+    line-height: 1.45;
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail">
+      <h1>On This Day — Title Variants</h1>
+      <p class="hint">
+        Four takes on placing the entry title under the time badge.
+        The body area is scrollable — try scrolling inside each card to see the preview extend.
+      </p>
+
+      <div class="pick-label">Pick your favorite</div>
+      <div class="pick" id="pick">
+        <button data-pick="1"><span>Variant 1</span><span class="meta">Title · Child row</span></button>
+        <button data-pick="2"><span>Variant 2</span><span class="meta">Title + child inline</span></button>
+        <button data-pick="3"><span>Variant 3</span><span class="meta">Title · divider · Child</span></button>
+        <button data-pick="4"><span>Variant 4</span><span class="meta">Title as quiet subtitle</span></button>
+      </div>
+
+      <div class="prompt-wrap">
+        <div class="prompt-label">Prompt</div>
+        <div class="prompt" id="prompt"></div>
+        <button class="copy" id="copy">Copy Prompt</button>
+      </div>
+    </aside>
+
+    <main class="stage">
+      <p class="stage-title">On this day — card mockups</p>
+      <div class="grid" id="grid"></div>
+    </main>
+  </div>
+
+<script>
+  const ENTRY = {
+    title: "First steps at the park",
+    child: "Maya",
+    timeLabel: "One week ago",
+    date: "April 14, 2026",
+    body: `She let go of the bench and just… went. Three wobbly steps across the grass, arms straight out like she was walking a tightrope. Then she looked back at me, stunned, like she couldn't believe she'd done it. The dog walker beside us clapped. A jogger slowed down and grinned. Maya plopped down onto her diaper, laughed, got up, and tried again. I think I said "oh my god" about twelve times. The sky was that soft April blue and the cherry blossoms were halfway gone — a few petals stuck to her shoes when we finally left.`
+  };
+
+  const VARIANTS = {
+    1: {
+      name: "Title · Child row",
+      description: "Title sits on its own line directly under the time badge, with the child row below it. Gives the title real presence.",
+      render: (inner) => {
+        inner.classList.add('v1');
+        inner.innerHTML = `
+          <div class="time-badge">${ENTRY.timeLabel}</div>
+          <div class="title">${ENTRY.title}</div>
+          <div class="child-row">
+            <div class="child-dot"></div>
+            <div class="child-name">${ENTRY.child}</div>
+          </div>
+          <div class="scroll">
+            <div class="body">${ENTRY.body}</div>
+          </div>
+        `;
+      }
+    },
+    2: {
+      name: "Title + child inline",
+      description: "Title and child name share a row — title on the left, child pushed to the right. Saves vertical space but truncates long titles.",
+      render: (inner) => {
+        inner.classList.add('v2');
+        inner.innerHTML = `
+          <div class="time-badge">${ENTRY.timeLabel}</div>
+          <div class="title-row">
+            <div class="title">${ENTRY.title}</div>
+            <div class="child-inline">
+              <div class="child-dot"></div>
+              <div class="child-name">${ENTRY.child}</div>
+            </div>
+          </div>
+          <div class="scroll">
+            <div class="body">${ENTRY.body}</div>
+          </div>
+        `;
+      }
+    },
+    3: {
+      name: "Title · divider · Child",
+      description: "A hairline divider separates the title from the child row. Feels more like a printed photo caption.",
+      render: (inner) => {
+        inner.classList.add('v3');
+        inner.innerHTML = `
+          <div class="time-badge">${ENTRY.timeLabel}</div>
+          <div class="title">${ENTRY.title}</div>
+          <div class="child-row">
+            <div class="child-dot"></div>
+            <div class="child-name">${ENTRY.child}</div>
+          </div>
+          <div class="scroll">
+            <div class="body">${ENTRY.body}</div>
+          </div>
+        `;
+      }
+    },
+    4: {
+      name: "Title as quiet subtitle",
+      description: "Title is rendered smaller and softer — more like a subtitle to the time badge. Keeps the time badge dominant.",
+      render: (inner) => {
+        inner.classList.add('v4');
+        inner.innerHTML = `
+          <div class="time-badge">${ENTRY.timeLabel}</div>
+          <div class="title">${ENTRY.title}</div>
+          <div class="child-row">
+            <div class="child-dot"></div>
+            <div class="child-name">${ENTRY.child}</div>
+          </div>
+          <div class="scroll">
+            <div class="body">${ENTRY.body}</div>
+          </div>
+        `;
+      }
+    }
+  };
+
+  const state = { pick: null };
+
+  // ── Build the grid ─────────────────────
+  const grid = document.getElementById('grid');
+  Object.entries(VARIANTS).forEach(([key, v]) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'variant';
+    wrap.dataset.variant = key;
+    wrap.innerHTML = `
+      <div class="variant-label">
+        <div class="tag">Variant ${key}</div>
+        <div class="name">${v.name}</div>
+      </div>
+      <div class="polaroid" data-card="${key}">
+        <div class="inner"></div>
+      </div>
+      <div class="date-footer">${ENTRY.date}</div>
+      <div class="note">${v.description}</div>
+    `;
+    const inner = wrap.querySelector('.inner');
+    v.render(inner);
+
+    wrap.querySelector('.polaroid').addEventListener('click', () => {
+      setPick(key);
+    });
+
+    grid.appendChild(wrap);
+  });
+
+  // ── Pick selection ────────────────────
+  const pickButtons = document.querySelectorAll('#pick button');
+  pickButtons.forEach(btn => {
+    btn.addEventListener('click', () => setPick(btn.dataset.pick));
+  });
+
+  function setPick(key) {
+    state.pick = key;
+    pickButtons.forEach(b => b.classList.toggle('active', b.dataset.pick === key));
+    document.querySelectorAll('.polaroid').forEach(p => {
+      p.classList.toggle('selected', p.dataset.card === key);
+    });
+    updatePrompt();
+  }
+
+  // ── Prompt output ─────────────────────
+  const promptEl = document.getElementById('prompt');
+  function updatePrompt() {
+    if (!state.pick) {
+      promptEl.textContent =
+        `In components/home/OnThisDaySection.tsx, update the polaroid card so that:\n\n` +
+        `1. The entry title is shown directly under the "One week ago" time badge.\n` +
+        `2. The body preview area inside the card becomes scrollable (instead of being clamped to 3 lines with numberOfLines={3}), so users can scroll to read more of the entry without leaving the home screen.\n\n` +
+        `I haven't picked a title-placement variant yet — see on-this-day-title-variants.html for the four options.`;
+      return;
+    }
+
+    const v = VARIANTS[state.pick];
+    promptEl.textContent =
+      `In components/home/OnThisDaySection.tsx, update the polaroid card's header layout to Variant ${state.pick} — "${v.name}":\n\n` +
+      `${v.description}\n\n` +
+      `Also change the body preview so it becomes scrollable inside the card (drop numberOfLines={3} and wrap the body Text in a ScrollView with a fixed interior height, so the card itself keeps its current footprint but the body can be scrolled to read more of the entry in place).\n\n` +
+      `Keep all existing typography and color tokens from constants/theme — don't hardcode values. Reference playground: landing/playgrounds/on-this-day-title-variants.html.`;
+  }
+  updatePrompt();
+
+  // ── Copy ──────────────────────────────
+  const copy = document.getElementById('copy');
+  copy.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(promptEl.textContent);
+      copy.textContent = 'Copied!';
+      copy.classList.add('flash');
+      setTimeout(() => {
+        copy.textContent = 'Copy Prompt';
+        copy.classList.remove('flash');
+      }, 1200);
+    } catch {
+      copy.textContent = 'Copy failed';
+      setTimeout(() => (copy.textContent = 'Copy Prompt'), 1200);
+    }
+  });
+</script>
+</body>
+</html>

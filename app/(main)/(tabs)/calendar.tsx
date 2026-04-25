@@ -82,9 +82,8 @@ export default function CalendarTab() {
         setEntries(entryRows.map(mapSupabaseEntry));
       } catch (error) {
         if (cancelled) return;
-        setLoadError(
-          error instanceof Error ? error.message : 'Could not load data',
-        );
+        setLoadError('Check your connection and try again.');
+        console.warn('Calendar data fetch failed:', error);
       } finally {
         if (!cancelled) setIsLoading(false);
       }

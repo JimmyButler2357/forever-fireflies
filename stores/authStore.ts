@@ -24,7 +24,19 @@ import { notificationsService } from '@/services/notifications.service';
 import { setSentryUser, clearSentryUser } from '@/lib/sentry';
 import { identifyPostHogUser, resetPostHogUser, capture } from '@/lib/posthog';
 import { useSubscriptionStore } from '@/stores/subscriptionStore';
+import { useChildrenStore } from '@/stores/childrenStore';
+import { useEntriesStore } from '@/stores/entriesStore';
 import { identifyUser } from '@/lib/revenueCat';
+
+// Wipe all per-user cached data. Called whenever the active user
+// changes (sign-in with a different account, sign-out, delete-account).
+// The children + entries stores are persisted to AsyncStorage, so
+// without this the NEXT user would see the previous user's rows —
+// and then silently hit RLS errors when they try to edit them.
+function clearUserData() {
+  useChildrenStore.getState().clearChildren();
+  useEntriesStore.getState().clearEntries();
+}
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -139,6 +151,7 @@ export const useAuthStore = create<AuthState>()(
           // Signed out — clear everything except onboarding flag
           clearSentryUser();
           resetPostHogUser();
+          clearUserData();
           set({
             session: null,
             user: null,
@@ -146,6 +159,16 @@ export const useAuthStore = create<AuthState>()(
             familyId: null,
           });
           return;
+        }
+
+        // If a DIFFERENT user is arriving, wipe the previous user's
+        // cached children + entries before loading the new ones.
+        // Without this, screens that read from the store (like Settings)
+        // would render stale rows for a moment — and any edit attempt
+        // on those rows fails RLS with a confusing PGRST116 error.
+        const previousUserId = get().user?.id;
+        if (previousUserId && previousUserId !== session.user.id) {
+          clearUserData();
         }
 
         // Signed in — load profile and family
@@ -247,6 +270,7 @@ export const useAuthStore = create<AuthState>()(
         await authService.signOut();
         clearSentryUser();
         resetPostHogUser();
+        clearUserData();
         set({
           session: null,
           user: null,
@@ -282,6 +306,7 @@ export const useAuthStore = create<AuthState>()(
         // because the user no longer exists — there's no session to end.
         clearSentryUser();
         resetPostHogUser();
+        clearUserData();
         set({
           session: null,
           user: null,

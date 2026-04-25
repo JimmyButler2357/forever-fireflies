@@ -20,7 +20,13 @@
       "WebFetch(domain:docs.sentry.io)",
       "WebFetch(domain:mcp.sentry.dev)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:sentry.io)"
+      "WebFetch(domain:sentry.io)",
+      "Bash(deno check *)",
+      "Bash(supabase --version)",
+      "Bash(find /c/Projects/forever-fireflies -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec grep -l \"photo\\\\|image.*picker\\\\|ImagePicker\" {} \\\\;)",
+      "Bash(grep -i \".js$\")",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__get_logs"
     ]
   }
 }

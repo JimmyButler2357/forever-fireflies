@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Forever Fireflies — Nav Bar Notch Playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Playground chrome (dark panel) */
+    --p-bg: #1a1614;
+    --p-panel: #241e1b;
+    --p-panel-2: #2d2623;
+    --p-border: #3a302c;
+    --p-text: #f4ebe1;
+    --p-dim: #a89b8f;
+
+    /* Forever Fireflies theme tokens (from design-style.md) */
+    --ff-bg: #FAF8F5;
+    --ff-card: #FEFCF9;
+    --ff-text: #2C2420;
+    --ff-textSoft: #8C7E74;
+    --ff-textMuted: #B5AAA0;
+    --ff-accent: #E8724A;
+    --ff-accentSoft: rgba(232,114,74,0.08);
+    --ff-accentPressed: #CC6441;
+    --ff-border: #EDE8E3;
+    --ff-tag: #F3EDE8;
+    --ff-glow: #F2C94C;
+    --ff-glowSoft: #FDF6E3;
+
+    /* Per-child colors */
+    --ch-blue: #7BAFD4;
+    --ch-amber: #D4A07B;
+    --ch-green: #9BC49B;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--p-bg); color: var(--p-text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .app { display: grid; grid-template-columns: 340px 1fr; height: 100vh; }
+
+  .controls { background: var(--p-panel); border-right: 1px solid var(--p-border); padding: 20px; overflow-y: auto; }
+  .stage { display: grid; grid-template-rows: 1fr auto; min-height: 0; }
+  .preview { display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, #2a211d 0%, #15110f 100%); padding: 24px; overflow: auto; }
+  .prompt-wrap { background: var(--p-panel); border-top: 1px solid var(--p-border); padding: 16px 20px; }
+
+  h1 { font-size: 14px; margin: 0 0 4px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--ff-accent); }
+  .sub { font-size: 12px; color: var(--p-dim); margin-bottom: 16px; }
+  .group { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--p-border); }
+  .group:last-child { border-bottom: none; }
+  .group-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--p-dim); margin-bottom: 10px; }
+
+  .variants { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .variant-btn { background: var(--p-panel-2); border: 1px solid var(--p-border); color: var(--p-text); padding: 8px 6px; border-radius: 8px; cursor: pointer; font-size: 11px; transition: all 0.15s; }
+  .variant-btn:hover { background: #362c28; }
+  .variant-btn.active { background: var(--ff-accent); color: #fff; border-color: var(--ff-accent); font-weight: 600; }
+
+  .presets { display: flex; flex-wrap: wrap; gap: 5px; }
+  .preset-btn { background: transparent; border: 1px solid var(--p-border); color: var(--p-dim); padding: 5px 10px; border-radius: 999px; cursor: pointer; font-size: 11px; }
+  .preset-btn:hover { border-color: var(--ff-accent); color: var(--ff-accent); }
+
+  .slider-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .slider-row label { font-size: 12px; color: var(--p-text); }
+  .slider-row .val { font-family: ui-monospace, 'SF Mono', Consolas, monospace; font-size: 11px; color: var(--p-dim); min-width: 42px; text-align: right; }
+  input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--ff-accent); }
+
+  /* ---------- Phone frame ---------- */
+  .phone {
+    width: 340px;
+    height: 700px;
+    background: linear-gradient(180deg, #3a2f29 0%, #2a221d 100%);
+    border-radius: 44px;
+    padding: 8px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6), 0 0 0 2px #1a1412;
+    position: relative;
+  }
+  .phone-screen {
+    width: 100%; height: 100%;
+    background: var(--ff-bg);
+    border-radius: 36px;
+    overflow: hidden;
+    position: relative;
+  }
+  .status-bar {
+    height: 44px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 24px 0 28px;
+    font-size: 14px; font-weight: 600; color: var(--ff-text);
+    position: relative; z-index: 5;
+  }
+  .status-icons { display: flex; gap: 5px; align-items: center; }
+  .status-icons svg { fill: var(--ff-text); }
+
+  .home-top-gradient {
+    position: absolute; top: 44px; left: 0; right: 0; height: 160px;
+    background: linear-gradient(180deg, rgba(237,232,227,0.25) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .top-bar {
+    padding: 12px 20px 8px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative; z-index: 2;
+  }
+  .app-title {
+    font-family: 'Merriweather', Georgia, serif;
+    font-weight: 900;
+    font-size: 22px;
+    color: var(--ff-text);
+    letter-spacing: -0.2px;
+  }
+  .top-actions { display: flex; gap: 8px; }
+  .glass-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(243,237,232,0.6);
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--ff-border);
+  }
+  .glass-btn svg { width: 18px; height: 18px; stroke: var(--ff-text); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .greeting {
+    padding: 8px 20px 14px;
+    font-family: 'Merriweather', Georgia, serif;
+    font-size: 15px; color: var(--ff-textSoft);
+    font-style: italic;
+  }
+
+  .section {
+    padding: 0 20px;
+  }
+  .section-header {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--ff-textSoft); margin: 4px 0 10px;
+  }
+
+  .child-tabs {
+    display: flex; gap: 6px; padding: 0 20px 14px; overflow-x: auto;
+  }
+  .child-tab {
+    padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 700;
+    background: var(--ff-card); border: 2px solid transparent;
+    color: var(--ff-textMuted); white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(44,36,32,0.04);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .child-tab .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .child-tab.active {
+    border-color: var(--ch-blue);
+    background: rgba(123,175,212,0.12);
+    color: var(--ch-blue);
+    box-shadow: 0 2px 8px rgba(123,175,212,0.18);
+  }
+
+  .entry-card {
+    background: var(--ff-card);
+    border: 1px solid var(--ff-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin: 0 20px 10px;
+    box-shadow: 0 1px 3px rgba(44,36,32,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+  .entry-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--ch-blue);
+  }
+  .entry-card.amber::before { background: var(--ch-amber); }
+  .entry-card .card-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    font-size: 11px;
+  }
+  .entry-card .card-head .name {
+    font-family: 'Merriweather', Georgia, serif;
+    font-weight: 700; font-size: 11px;
+    color: var(--ch-blue);
+  }
+  .entry-card.amber .card-head .name { color: var(--ch-amber); }
+  .entry-card .card-head .meta {
+    color: var(--ff-textMuted); font-weight: 500;
+  }
+  .entry-card .preview {
+    font-family: 'Merriweather', Georgia, serif;
+    font-size: 14px; font-weight: 400;
+    color: var(--ff-text); line-height: 1.55;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .entry-card .heart {
+    position: absolute; top: 14px; right: 14px;
+    width: 18px; height: 18px;
+    stroke: #D9D2CB; fill: none; stroke-width: 2;
+  }
+
+  /* Bottom gradient fade */
+  .bottom-fade {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 160px;
+    background: linear-gradient(to bottom, rgba(250,248,245,0) 0%, rgba(250,248,245,0.75) 55%, var(--ff-bg) 100%);
+    pointer-events: none; z-index: 3;
+  }
+
+  /* ---------- Nav bar ---------- */
+  .nav-wrap { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; pointer-events: none; }
+  svg.nav-svg { display: block; width: 100%; overflow: visible; }
+
+  .nav-labels {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; padding: 0; pointer-events: none;
+  }
+  .nav-labels .slot {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    gap: 3px;
+  }
+  .nav-labels .slot.center { visibility: hidden; }
+  .nav-labels .label {
+    font-size: 10px; font-weight: 600; color: var(--ff-textMuted);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .nav-labels .slot.active .label { color: var(--ff-accent); }
+  .nav-labels .slot svg { stroke: var(--ff-textMuted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .nav-labels .slot.active svg { stroke: var(--ff-accent); fill: var(--ff-accent); }
+
+  pre.prompt { background: var(--p-panel-2); border: 1px solid var(--p-border); border-radius: 8px; padding: 12px; font-size: 12px; color: var(--p-text); font-family: ui-monospace, 'SF Mono', Consolas, monospace; white-space: pre-wrap; margin: 0 0 8px; max-height: 140px; overflow-y: auto; }
+  .copy-btn { background: var(--ff-accent); color: #fff; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; }
+  .copy-btn:hover { background: var(--ff-accentPressed); }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="controls">
+    <h1>Nav Bar Notch</h1>
+    <div class="sub">High-fidelity mockup using Forever Fireflies tokens.</div>
+
+    <div class="group">
+      <div class="group-title">Variant</div>
+      <div class="variants" id="variants">
+        <button class="variant-btn active" data-variant="notch">Notch Curve</button>
+        <button class="variant-btn" data-variant="dip">Concave Dip</button>
+        <button class="variant-btn" data-variant="pill">Raised Pill</button>
+        <button class="variant-btn" data-variant="island">Floating Island</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Presets</div>
+      <div class="presets" id="presets">
+        <button class="preset-btn" data-preset="subtle">Subtle</button>
+        <button class="preset-btn" data-preset="balanced">Balanced</button>
+        <button class="preset-btn" data-preset="pronounced">Pronounced</button>
+        <button class="preset-btn" data-preset="minimal">Minimal</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Notch Shape</div>
+      <div class="slider-row"><label>Notch depth</label><span class="val" id="v-depth">22</span>
+        <input type="range" id="depth" min="0" max="50" value="22"></div>
+      <div class="slider-row"><label>Notch width</label><span class="val" id="v-width">110</span>
+        <input type="range" id="width" min="60" max="180" value="110"></div>
+      <div class="slider-row"><label>Curve softness</label><span class="val" id="v-soft">60</span>
+        <input type="range" id="soft" min="10" max="100" value="60"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Bar</div>
+      <div class="slider-row"><label>Bar height</label><span class="val" id="v-bar">74</span>
+        <input type="range" id="bar" min="50" max="110" value="74"></div>
+      <div class="slider-row"><label>Top corner radius</label><span class="val" id="v-radius">0</span>
+        <input type="range" id="radius" min="0" max="40" value="0"></div>
+      <div class="slider-row"><label>Show labels</label><span class="val" id="v-labels">on</span>
+        <input type="range" id="labels" min="0" max="1" value="1"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Record Button</div>
+      <div class="slider-row"><label>Mic size</label><span class="val" id="v-mic">64</span>
+        <input type="range" id="mic" min="48" max="84" value="64"></div>
+      <div class="slider-row"><label>Mic elevation</label><span class="val" id="v-elev">14</span>
+        <input type="range" id="elev" min="0" max="40" value="14"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Shadow</div>
+      <div class="slider-row"><label>Bar shadow</label><span class="val" id="v-shadow">10</span>
+        <input type="range" id="shadow" min="0" max="40" value="10"></div>
+      <div class="slider-row"><label>Mic glow</label><span class="val" id="v-micshadow">20</span>
+        <input type="range" id="micshadow" min="0" max="40" value="20"></div>
+    </div>
+  </aside>
+
+  <div class="stage">
+    <div class="preview">
+      <div class="phone">
+        <div class="phone-screen">
+          <!-- Status bar -->
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="status-icons">
+              <svg width="16" height="11" viewBox="0 0 16 11"><path d="M1 8h2v2H1zM5 6h2v4H5zM9 3h2v7H9zM13 0h2v10h-2z"/></svg>
+              <svg width="15" height="11" viewBox="0 0 15 11"><path d="M7.5 2a7 7 0 0 1 5 2l-1.2 1.2a5.3 5.3 0 0 0-7.6 0L2.5 4a7 7 0 0 1 5-2zm0 3a4 4 0 0 1 2.8 1.2L9 7.5a2.2 2.2 0 0 0-3 0L4.7 6.2A4 4 0 0 1 7.5 5zm0 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg>
+              <svg width="25" height="12" viewBox="0 0 25 12"><rect x="0.5" y="0.5" width="21" height="11" rx="2.5" fill="none" stroke="#2C2420"/><rect x="2" y="2" width="18" height="8" rx="1.5"/><rect x="22" y="4" width="2" height="4" rx="0.5"/></svg>
+            </div>
+          </div>
+
+          <div class="home-top-gradient"></div>
+
+          <div class="top-bar">
+            <div class="app-title">Forever Fireflies</div>
+            <div class="top-actions">
+              <div class="glass-btn" title="Notifications">
+                <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              </div>
+              <div class="glass-btn" title="Settings">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="greeting">Hope your coffee is still warm</div>
+
+          <div class="child-tabs">
+            <div class="child-tab active"><span class="dot" style="background:var(--ch-blue)"></span>Emma</div>
+            <div class="child-tab"><span class="dot" style="background:var(--ch-amber)"></span>Liam</div>
+            <div class="child-tab" style="color:var(--ff-textMuted)">All</div>
+          </div>
+
+          <div class="entry-card">
+            <svg class="heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <div class="card-head">
+              <span class="name">Emma</span>
+              <span class="meta">· Today · 8:42 PM</span>
+            </div>
+            <div class="preview">She wobbled once on the scooter, then pushed off down the sidewalk like she'd been doing it forever. I think this is the first time she's outrun me.</div>
+          </div>
+
+          <div class="entry-card amber">
+            <svg class="heart" viewBox="0 0 24 24" style="fill:var(--ff-accent); stroke:var(--ff-accent)"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <div class="card-head">
+              <span class="name">Liam</span>
+              <span class="meta">· Yesterday · 7:15 PM</span>
+            </div>
+            <div class="preview">Asked me why the moon follows us home. I didn't have a good answer so I just said "because it likes you" and he seemed satisfied.</div>
+          </div>
+
+          <div class="entry-card">
+            <div class="card-head">
+              <span class="name">Emma</span>
+              <span class="meta">· Yesterday · 6:02 PM</span>
+            </div>
+            <div class="preview">Tracked half the yard into the kitchen with her muddy boots. Worth it for the grin on her face when she saw the puddle.</div>
+          </div>
+
+          <div class="bottom-fade"></div>
+          <div class="nav-wrap" id="navWrap"></div>
+          <div class="nav-labels" id="navLabels"></div>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-wrap">
+      <pre class="prompt" id="prompt"></pre>
+      <button class="copy-btn" id="copyBtn">Copy Prompt</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULTS = { variant:'notch', depth:22, width:110, soft:60, bar:74, radius:0, labels:1, mic:64, elev:14, shadow:10, micshadow:20 };
+const state = { ...DEFAULTS };
+
+const PRESETS = {
+  subtle:     { variant:'notch',  depth:14, width:96,  soft:70, bar:70, radius:0, labels:1, mic:58, elev:10, shadow:8,  micshadow:16 },
+  balanced:   { variant:'notch',  depth:24, width:116, soft:60, bar:76, radius:0, labels:1, mic:64, elev:16, shadow:12, micshadow:22 },
+  pronounced: { variant:'pill',   depth:36, width:150, soft:40, bar:82, radius:0, labels:1, mic:72, elev:22, shadow:18, micshadow:28 },
+  minimal:    { variant:'dip',    depth:10, width:92,  soft:80, bar:64, radius:0, labels:0, mic:54, elev:4,  shadow:6,  micshadow:14 },
+};
+
+const SCREEN_W = 324;
+const TAB_LABELS = ['Home', 'Journal', '', 'Calendar', 'Favorites'];
+const TAB_ACTIVE = 0; // Home is active
+
+const TAB_ICONS_SVG = [
+  // home (filled)
+  '<path d="M3 12l9-9 9 9M5 10v10h14V10" fill="var(--ff-accent)" stroke="var(--ff-accent)"/>',
+  // journal (book outline)
+  '<path d="M4 4h12a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><path d="M4 17h15"/>',
+  // (center mic — rendered in SVG)
+  '',
+  // calendar
+  '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+  // heart
+  '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+];
+
+function buildNavPath(variant, W, H, depth, width, soft, radius) {
+  const cx = W / 2;
+  const nHalf = width / 2;
+  const r = Math.min(radius, H / 2);
+  const t = soft / 100;
+
+  let topY = depth;
+  let p = '';
+
+  if (variant === 'notch') {
+    p += `M 0 ${topY + r}`;
+    if (r > 0) p += ` Q 0 ${topY} ${r} ${topY}`;
+    const nStart = cx - nHalf;
+    const nEnd = cx + nHalf;
+    p += ` L ${nStart} ${topY}`;
+    const handle = nHalf * (0.4 + 0.6 * t);
+    p += ` C ${nStart + handle} ${topY}, ${cx - handle} ${0}, ${cx} ${0}`;
+    p += ` C ${cx + handle} ${0}, ${nEnd - handle} ${topY}, ${nEnd} ${topY}`;
+    p += ` L ${W - r} ${topY}`;
+    if (r > 0) p += ` Q ${W} ${topY} ${W} ${topY + r}`;
+  } else if (variant === 'pill') {
+    p += `M 0 ${topY + r}`;
+    if (r > 0) p += ` Q 0 ${topY} ${r} ${topY}`;
+    const nStart = cx - nHalf;
+    const nEnd = cx + nHalf;
+    const riseR = Math.min(nHalf * 0.45, topY);
+    p += ` L ${nStart} ${topY}`;
+    p += ` Q ${nStart} ${0} ${nStart + riseR} ${0}`;
+    p += ` L ${nEnd - riseR} ${0}`;
+    p += ` Q ${nEnd} ${0} ${nEnd} ${topY}`;
+    p += ` L ${W - r} ${topY}`;
+    if (r > 0) p += ` Q ${W} ${topY} ${W} ${topY + r}`;
+  } else if (variant === 'dip') {
+    p += `M 0 ${topY + r}`;
+    if (r > 0) p += ` Q 0 ${topY} ${r} ${topY}`;
+    const nStart = cx - nHalf;
+    const nEnd = cx + nHalf;
+    p += ` L ${nStart} ${topY}`;
+    const dipBottom = topY + depth * 0.95;
+    const handle = nHalf * (0.4 + 0.6 * t);
+    p += ` C ${nStart + handle} ${topY}, ${cx - handle} ${dipBottom}, ${cx} ${dipBottom}`;
+    p += ` C ${cx + handle} ${dipBottom}, ${nEnd - handle} ${topY}, ${nEnd} ${topY}`;
+    p += ` L ${W - r} ${topY}`;
+    if (r > 0) p += ` Q ${W} ${topY} ${W} ${topY + r}`;
+  } else {
+    // island — flat top
+    p += `M 0 ${topY + r}`;
+    if (r > 0) p += ` Q 0 ${topY} ${r} ${topY}`;
+    p += ` L ${W - r} ${topY}`;
+    if (r > 0) p += ` Q ${W} ${topY} ${W} ${topY + r}`;
+  }
+
+  p += ` L ${W} ${H} L 0 ${H} Z`;
+  return p;
+}
+
+function renderPreview() {
+  const wrap = document.getElementById('navWrap');
+  const W = SCREEN_W;
+  const barH = state.bar;
+  const depth = state.variant === 'island' ? 0 : state.depth;
+  const topPad = Math.max(depth + state.mic / 2 + state.elev + 12, 50);
+  const H = topPad + barH;
+
+  const path = buildNavPath(state.variant, W, H, depth, state.width, state.soft, state.radius);
+
+  let micCy;
+  if (state.variant === 'notch' || state.variant === 'pill') {
+    micCy = (topPad - depth) + (state.mic/2) - state.elev;
+  } else if (state.variant === 'dip') {
+    micCy = topPad + (depth * 0.95) - state.mic/2 + state.elev;
+  } else {
+    micCy = topPad - state.mic/2 - state.elev;
+  }
+
+  const shadowStd = state.shadow;
+  const micShadowStd = state.micshadow;
+  const micR = state.mic/2;
+
+  wrap.innerHTML = `
+    <svg class="nav-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="height:${H}px">
+      <defs>
+        <filter id="barShadow" x="-20%" y="-100%" width="140%" height="300%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="${Math.max(0.01, shadowStd/2)}"/>
+          <feOffset dy="-2"/>
+          <feComponentTransfer><feFuncA type="linear" slope="0.22"/></feComponentTransfer>
+          <feColorMatrix values="0.17 0 0 0 0.17  0 0.14 0 0 0.14  0 0.12 0 0 0.12  0 0 0 1 0"/>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="micGlow" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="${Math.max(0.01, micShadowStd/2)}"/>
+          <feOffset dy="3"/>
+          <feComponentTransfer><feFuncA type="linear" slope="0.45"/></feComponentTransfer>
+          <feColorMatrix values="0.91 0 0 0 0.91  0 0.44 0 0 0.44  0 0.29 0 0 0.29  0 0 0 1 0"/>
+          <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <path d="${path}" fill="#FEFCF9" filter="url(#barShadow)" stroke="#EDE8E3" stroke-width="1"/>
+      ${state.variant === 'island' ? `
+        <circle cx="${W/2}" cy="${micCy}" r="${micR + 8}" fill="#FEFCF9" filter="url(#barShadow)" stroke="#EDE8E3"/>
+      ` : ''}
+      <circle cx="${W/2}" cy="${micCy}" r="${micR}" fill="#E8724A" filter="url(#micGlow)"/>
+      <g transform="translate(${W/2 - micR*0.32}, ${micCy - micR*0.38})">
+        <svg width="${micR*0.64}" height="${micR*0.76}" viewBox="0 0 24 28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="3" width="6" height="14" rx="3"/>
+          <path d="M5 14a7 7 0 0 0 14 0"/>
+          <line x1="12" y1="21" x2="12" y2="25"/>
+        </svg>
+      </g>
+    </svg>
+  `;
+
+  // Labels layer
+  const labelsEl = document.getElementById('navLabels');
+  labelsEl.style.height = barH + 'px';
+  labelsEl.style.paddingBottom = '8px';
+  labelsEl.innerHTML = [0,1,2,3,4].map(i => {
+    if (i === 2) return `<div class="slot center"></div>`;
+    const active = i === TAB_ACTIVE;
+    return `
+      <div class="slot ${active ? 'active' : ''}">
+        <svg width="24" height="24" viewBox="0 0 24 24">${TAB_ICONS_SVG[i]}</svg>
+        ${state.labels ? `<div class="label">${TAB_LABELS[i]}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function qualitative(val, thresholds, words) {
+  for (let i = 0; i < thresholds.length; i++) if (val <= thresholds[i]) return words[i];
+  return words[words.length - 1];
+}
+
+function updatePrompt() {
+  const variantDesc = {
+    notch: "a smooth upward notch in the top edge that curves around the record button like a cradle",
+    dip: "a concave dip in the top edge so the record button sits in a shallow well",
+    pill: "a raised pill-shaped platform at the center that the record button sits inside",
+    island: "a flat bar with the record button floating above it on its own circular island",
+  }[state.variant];
+
+  const depthWord = qualitative(state.depth, [10, 22, 35], ['shallow', 'moderate', 'deep', 'dramatic']);
+  const curveWord = qualitative(state.soft, [30, 60, 85], ['tight', 'gentle', 'soft', 'very soft']);
+  const shadowWord = qualitative(state.shadow, [6, 16, 28], ['barely-there', 'subtle', 'medium', 'pronounced']);
+  const micShadowWord = qualitative(state.micshadow, [6, 16, 28], ['barely-there', 'subtle', 'medium', 'pronounced']);
+
+  const parts = [];
+  parts.push(`In components/CustomTabBar.tsx, reshape the bottom tab bar so the card-colored surface (colors.card, #FEFCF9) has ${variantDesc}.`);
+  if (state.variant !== 'island') {
+    parts.push(`Use a ${depthWord} notch ${state.depth}px tall and ${state.width}px wide, with a ${curveWord} curve transition (softness ${state.soft}/100 — controls bezier handle length).`);
+  } else {
+    parts.push(`Mic island is a separate circular card (${state.mic + 16}px diameter) floating ${state.elev}px above the flat bar.`);
+  }
+  parts.push(`Bar height ${state.bar}px (sits on top of safe-area insets.bottom), top corners ${state.radius}px.`);
+  parts.push(`Record button: ${state.mic}px diameter, colors.accent (#E8724A) fill, white mic icon, ${state.elev}px raised into the notch.`);
+  parts.push(`Shadows: ${shadowWord} warm-brown shadow on the bar (rgba(44,36,32,~0.22), upward offset), ${micShadowWord} accent glow on the mic (rgba(232,114,74,~0.35)).`);
+  parts.push(`Side tabs: Home · Journal · [record] · Calendar · Favorites, 10px/600 labels in colors.textMuted (#B5AAA0), active tab uses colors.accent. ${state.labels ? 'Show' : 'Hide'} the text labels under the icons.`);
+  parts.push(`Implementation hint: replace the straight-edged container with an absolutely positioned SVG that paints the notched shape, and position the record button overlay so its center sits at the top of the notch. Keep paddingBottom: insets.bottom and the 44×44 hit areas.`);
+
+  document.getElementById('prompt').textContent = parts.join(' ');
+}
+
+function updateAll() {
+  document.getElementById('v-depth').textContent = state.depth;
+  document.getElementById('v-width').textContent = state.width;
+  document.getElementById('v-soft').textContent = state.soft;
+  document.getElementById('v-bar').textContent = state.bar;
+  document.getElementById('v-radius').textContent = state.radius;
+  document.getElementById('v-labels').textContent = state.labels ? 'on' : 'off';
+  document.getElementById('v-mic').textContent = state.mic;
+  document.getElementById('v-elev').textContent = state.elev;
+  document.getElementById('v-shadow').textContent = state.shadow;
+  document.getElementById('v-micshadow').textContent = state.micshadow;
+  renderPreview();
+  updatePrompt();
+}
+
+function bindSlider(id, key) {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => { state[key] = +el.value; updateAll(); });
+}
+['depth','width','soft','bar','radius','labels','mic','elev','shadow','micshadow'].forEach(k => bindSlider(k, k));
+
+document.getElementById('variants').addEventListener('click', e => {
+  if (e.target.matches('.variant-btn')) {
+    document.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    state.variant = e.target.dataset.variant;
+    updateAll();
+  }
+});
+
+document.getElementById('presets').addEventListener('click', e => {
+  if (e.target.matches('.preset-btn')) {
+    const p = PRESETS[e.target.dataset.preset];
+    Object.assign(state, p);
+    document.querySelectorAll('.variant-btn').forEach(b => b.classList.toggle('active', b.dataset.variant === state.variant));
+    ['depth','width','soft','bar','radius','labels','mic','elev','shadow','micshadow'].forEach(k => { document.getElementById(k).value = state[k]; });
+    updateAll();
+  }
+});
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById('prompt').textContent);
+  const btn = document.getElementById('copyBtn');
+  const orig = btn.textContent;
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = orig, 1200);
+});
+
+updateAll();
+</script>
+</body>
+</html>

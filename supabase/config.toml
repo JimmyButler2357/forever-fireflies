@@ -360,9 +360,10 @@ authorization_url_path = "/oauth/consent"
 allow_dynamic_registration = false
 
 [functions.process-entry]
-# React Native's functions.invoke() doesn't reliably send the JWT header,
-# so we disable JWT verification here. The function uses the service role
-# key for DB access instead — no auth.uid() context needed.
+# Called from React Native which can't reliably send the JWT header.
+# The function extracts the Bearer token manually and verifies identity
+# via auth.getUser(token) with the service role client, then checks
+# that the authenticated user owns the entry.
 verify_jwt = false
 
 [functions.send-notifications]

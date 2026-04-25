@@ -15,7 +15,7 @@ import {
   Dimensions,
   Image,
 } from 'react-native';
-import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useRouter, useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -56,6 +56,8 @@ import { audioCleanupService } from '@/services/audioCleanup.service';
 import { notificationsService } from '@/services/notifications.service';
 import { startTrialIfNeeded } from '@/lib/subscriptionHelpers';
 import { capture } from '@/lib/posthog';
+import { compressPhoto } from '@/lib/imageCompression';
+import { getCachedPhotoUrl } from '@/lib/photoUrlCache';
 
 // ─── FadeInUp Wrapper ────────────────────────────────────
 
@@ -221,6 +223,121 @@ function TranscriptShimmer() {
         />
       ))}
     </Animated.View>
+  );
+}
+
+// ─── Photo Thumb with loading skeleton ─────────────────────
+//
+// Shows a pulsing placeholder while an entry photo is being fetched
+// and decoded. Without this the user sees a blank tile on slower
+// networks for a noticeable beat — makes the app feel sluggish even
+// when everything's actually working.
+//
+// Two failure modes we handle:
+//   - No URL yet (storagePath exists, signed URL not resolved) → skeleton
+//   - URL present but <Image> can't load (404, expired, network) → error icon
+//
+// The skeleton uses the same pulse pattern as TranscriptShimmer, keyed
+// on the photo id so each thumb animates independently.
+
+function PhotoThumb({
+  uri,
+  hasUri,
+  size,
+  borderRadius,
+  onRemove,
+  canRemove,
+}: {
+  uri: string | undefined;
+  hasUri: boolean;
+  size: number;
+  borderRadius: number;
+  onRemove?: () => void;
+  canRemove: boolean;
+}) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const pulse = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    if (isLoaded) return;
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 0.8, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.4, duration: 600, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [isLoaded, pulse]);
+
+  // If the uri changes (e.g. a fresh signed URL after focus refresh),
+  // retry rendering: clear the error + reset the loaded flag so the
+  // skeleton shows during the re-decode.
+  useEffect(() => {
+    setHasError(false);
+    setIsLoaded(false);
+  }, [uri]);
+
+  const showSkeleton = !hasUri || (!isLoaded && !hasError);
+
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius,
+        overflow: 'hidden',
+        backgroundColor: colors.bg,
+      }}
+    >
+      {hasUri && uri && !hasError && (
+        <Image
+          source={{ uri }}
+          style={{ width: '100%', height: '100%' }}
+          onLoad={() => setIsLoaded(true)}
+          onError={() => setHasError(true)}
+        />
+      )}
+      {showSkeleton && (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: colors.card,
+            opacity: pulse,
+          }}
+        />
+      )}
+      {hasError && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="image-outline" size={28} color={colors.textMuted} />
+        </View>
+      )}
+      {canRemove && onRemove && (
+        <Pressable
+          onPress={onRemove}
+          style={{ position: 'absolute', top: spacing(2), right: spacing(2) }}
+          hitSlop={hitSlop.icon}
+        >
+          <Ionicons name="close-circle" size={20} color={colors.card} />
+        </Pressable>
+      )}
+    </View>
   );
 }
 
@@ -630,10 +747,10 @@ export default function EntryDetailScreen() {
           return;
         }
 
-        const msg = err instanceof Error ? err.message : String(err);
-        // Give a friendlier message for network errors — also offer to save as draft
-        if (msg.includes('network') || msg.includes('fetch') || msg.includes('timeout')) {
-          // Try to save as a draft so the recording isn't lost
+        // Only treat this as a network error if the device is actually offline.
+        // Matching on error message text (e.g. "failed to fetch") produced false
+        // positives for backend errors like a missing table relationship.
+        if (!isOnlineRef.current) {
           if (session?.user?.id && familyId && (params.transcript !== undefined || params.audioUri)) {
             try {
               await saveDraftAndNavigate(params.onboarding === 'true');
@@ -644,7 +761,7 @@ export default function EntryDetailScreen() {
           }
           setError('No internet connection — check your network and try again');
         } else {
-          setError(msg || 'Something went wrong');
+          setError('Something went wrong. Please try again.');
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -752,33 +869,47 @@ export default function EntryDetailScreen() {
     return unsubscribe;
   }, [navigation, entry?.id]);
 
-  useEffect(() => {
-    if (!entry?.photos || entry.photos.length === 0) return;
-    const unresolved = entry.photos.filter((photo) => !photo.uri.startsWith('http') && photo.storagePath);
-    if (unresolved.length === 0) return;
+  // Resolve signed URLs for entry photos every time the screen gains focus.
+  // Why useFocusEffect instead of useEffect: signed URLs expire after an
+  // hour. If a user opens an entry, backgrounds the app for 2 hours, and
+  // comes back, a mount-only effect would hold a dead URL and silently 403.
+  // useFocusEffect re-runs on every focus (mount + returning from another
+  // screen or the app background) — the cache inside handles the dedupe so
+  // we aren't hammering Supabase when the URL is actually fresh.
+  //
+  // Keyed on entry?.id so switching entries triggers a fresh resolve.
+  // Deliberately NOT keyed on entry?.photos to avoid an infinite loop —
+  // the effect updates entry.photos, which would re-trigger itself.
+  useFocusEffect(
+    useCallback(() => {
+      if (!entry?.photos || entry.photos.length === 0) return;
+      const photosWithPath = entry.photos.filter((photo) => photo.storagePath);
+      if (photosWithPath.length === 0) return;
 
-    let cancelled = false;
-    (async () => {
-      const resolved = await Promise.all(
-        entry.photos!.map(async (photo) => {
-          const path = photo.storagePath ?? photo.uri;
-          if (photo.uri.startsWith('http') || !path) return photo;
-          try {
-            const signedUri = await storageService.getEntryMediaUrl(path);
-            return { ...photo, uri: signedUri, storagePath: path };
-          } catch {
-            return photo;
-          }
-        }),
-      );
+      let cancelled = false;
+      (async () => {
+        const resolved = await Promise.all(
+          entry.photos!.map(async (photo) => {
+            const path = photo.storagePath;
+            if (!path) return photo;
+            try {
+              const signedUri = await getCachedPhotoUrl(path, storageService.getEntryMediaUrl);
+              return { ...photo, uri: signedUri, storagePath: path };
+            } catch {
+              return photo;
+            }
+          }),
+        );
 
-      if (cancelled) return;
-      setEntry((prev) => prev ? { ...prev, photos: resolved } : prev);
-      updateEntryLocal(entry.id, { photos: resolved });
-    })();
+        if (cancelled) return;
+        setEntry((prev) => prev ? { ...prev, photos: resolved } : prev);
+        updateEntryLocal(entry.id, { photos: resolved });
+      })();
 
-    return () => { cancelled = true; };
-  }, [entry?.id, entry?.photos]);
+      return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [entry?.id]),
+  );
 
 
   // ─── Auto-Retry on Signed URL Expiry ─────────────────────
@@ -1014,8 +1145,8 @@ export default function EntryDetailScreen() {
       return;
     }
     const currentPhotos = entry.photos ?? [];
-    if (currentPhotos.length >= 4) {
-      Alert.alert('Photo limit reached', 'You can attach up to 4 photos per memory.');
+    if (currentPhotos.length >= 2) {
+      Alert.alert('Photo limit reached', 'You can attach up to 2 photos per memory.');
       return;
     }
 
@@ -1044,20 +1175,32 @@ export default function EntryDetailScreen() {
     if (picked.canceled || !picked.assets[0]?.uri) return;
 
     setIsPhotoSaving(true);
+    // Track the uploaded storage path so we can delete the orphan if the
+    // DB insert fails after the file is already in the bucket. Each Supabase
+    // call is its own transaction — without this rollback, a network blip
+    // between upload and insert would leave a file with nothing pointing at it.
+    let uploadedStoragePath: string | null = null;
     try {
       const asset = picked.assets[0];
+
+      // Shrink + re-encode before upload. Metadata we store should match
+      // the bytes actually in storage, so we use the compressed result.
+      const compressed = await compressPhoto(asset.uri);
 
       const displayOrder = currentPhotos.length === 0
         ? 0
         : Math.max(...currentPhotos.map((photo, index) => photo.displayOrder ?? index)) + 1;
-      const storagePath = await storageService.uploadEntryPhoto(entry.id, asset.uri, displayOrder);
+      const storagePath = await storageService.uploadEntryPhoto(entry.id, compressed.uri, displayOrder);
+      uploadedStoragePath = storagePath;
       const mediaRow = await entriesService.addEntryPhoto(entry.id, {
         storage_path: storagePath,
         display_order: displayOrder,
-        width: asset.width ?? null,
-        height: asset.height ?? null,
-        file_size_bytes: asset.fileSize ?? null,
+        width: compressed.width,
+        height: compressed.height,
+        file_size_bytes: compressed.size,
       });
+      // DB insert succeeded — the file is now referenced, clear the rollback marker.
+      uploadedStoragePath = null;
       const signedUri = await storageService.getEntryMediaUrl(storagePath);
       const updatedPhotos = [
         ...currentPhotos,
@@ -1066,6 +1209,15 @@ export default function EntryDetailScreen() {
       setEntry((prev) => prev ? { ...prev, photos: updatedPhotos } : prev);
       updateEntryLocal(entry.id, { photos: updatedPhotos });
     } catch (err) {
+      if (uploadedStoragePath) {
+        try {
+          await storageService.deleteEntryMedia(uploadedStoragePath);
+        } catch (cleanupErr) {
+          // Don't mask the original failure — log and move on. The worst
+          // case is one orphaned file, not a confusing double-error Alert.
+          console.warn('Failed to clean up orphaned entry photo:', cleanupErr);
+        }
+      }
       const msg = err instanceof Error ? err.message : 'Could not add photo';
       Alert.alert('Add Photo Failed', msg);
     } finally {
@@ -1632,27 +1784,29 @@ export default function EntryDetailScreen() {
           </View>
         )}
 
-        {/* ── 7. Photos — 2×2 grid below transcript ── */}
+        {/* ── 7. Photos — up to 2 thumbnails below transcript ── */}
         {entry.photos && entry.photos.length > 0 && (
           <View style={styles.photoSection}>
             <View style={styles.photoGrid}>
-              {entry.photos.slice(0, 4).map((photo, index) => (
-                <View key={photo.id ?? index} style={styles.photoThumb}>
-                  <Image source={{ uri: photo.uri }} style={styles.photoImage} />
-                  {hasAccess && (
-                    <Pressable
-                      onPress={() => handleRemovePhoto(photo.id)}
-                      style={styles.photoRemoveBtn}
-                      hitSlop={hitSlop.icon}
-                      disabled={isPhotoSaving}
-                    >
-                      <Ionicons name="close-circle" size={20} color={colors.card} />
-                    </Pressable>
-                  )}
-                </View>
-              ))}
+              {entry.photos.slice(0, 2).map((photo, index) => {
+                // Only treat the uri as usable when it's a signed http URL.
+                // Local file uris from the picker are shown inline during
+                // upload but the actual storage-backed uri lands later.
+                const hasUri = !!photo.uri && photo.uri.startsWith('http');
+                return (
+                  <PhotoThumb
+                    key={photo.id ?? index}
+                    uri={hasUri ? photo.uri : undefined}
+                    hasUri={hasUri}
+                    size={PHOTO_THUMB_SIZE}
+                    borderRadius={radii.card}
+                    canRemove={hasAccess && !isPhotoSaving}
+                    onRemove={() => handleRemovePhoto(photo.id)}
+                  />
+                );
+              })}
             </View>
-            {hasAccess && entry.photos.length < 4 && (
+            {hasAccess && entry.photos.length < 2 && (
               <Pressable style={styles.addPhotosLink} onPress={handleAddPhoto} disabled={isPhotoSaving}>
                 <Text style={styles.addPhotosText}>
                   {isPhotoSaving ? 'Saving photo...' : '+ Add photos'}
@@ -1810,6 +1964,8 @@ const styles = StyleSheet.create({
   emptyText: {
     ...typography.formLabel,
     color: colors.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: spacing(6),
   },
   backLink: {
     ...typography.formLabel,
@@ -2180,21 +2336,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: PHOTO_GRID_GAP,
-  },
-  photoThumb: {
-    width: PHOTO_THUMB_SIZE,
-    height: PHOTO_THUMB_SIZE,
-    borderRadius: radii.card,
-    overflow: 'hidden',
-  },
-  photoImage: {
-    width: '100%',
-    height: '100%',
-  },
-  photoRemoveBtn: {
-    position: 'absolute',
-    top: spacing(2),
-    right: spacing(2),
   },
   addPhotosLink: {
     marginTop: spacing(2),

@@ -58,6 +58,9 @@ import TimePicker from '@/components/TimePicker';
 import { useDraftStore } from '@/stores/draftStore';
 import { capture } from '@/lib/posthog';
 import { openAppSettings } from '@/lib/openSettings';
+import { compressPhoto } from '@/lib/imageCompression';
+import { invalidatePhotoUrl } from '@/lib/photoUrlCache';
+import PhotoCropper from '@/components/PhotoCropper';
 
 // ─── Helpers ──────────────────────────────────────────────
 
@@ -99,6 +102,9 @@ export default function SettingsScreen() {
   const [editPhotoPath, setEditPhotoPath] = useState<string | undefined>(undefined);
   const [editPhotoPreviewUri, setEditPhotoPreviewUri] = useState<string | undefined>(undefined);
   const [isPhotoBusy, setIsPhotoBusy] = useState(false);
+  // URI of the freshly-picked photo while the user adjusts the
+  // circular crop. Null when the cropper isn't open.
+  const [cropSourceUri, setCropSourceUri] = useState<string | null>(null);
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
@@ -106,6 +112,11 @@ export default function SettingsScreen() {
   const [newChildBirthday, setNewChildBirthday] = useState('');
   const [newChildColorIndex, setNewChildColorIndex] = useState(children.length % childColors.length);
   const [newChildNickname, setNewChildNickname] = useState('');
+  // Photo for the Add modal is staged locally and uploaded only after
+  // createChild() returns a real id — the upload path needs that id.
+  const [newChildPhotoPreviewUri, setNewChildPhotoPreviewUri] = useState<string | undefined>(undefined);
+  const [newChildPhotoLocalUri, setNewChildPhotoLocalUri] = useState<string | undefined>(undefined);
+  const [isNewChildPhotoBusy, setIsNewChildPhotoBusy] = useState(false);
 
   // Change password modal state
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -316,24 +327,42 @@ export default function SettingsScreen() {
       return;
     }
 
+    // Skip the OS native crop UI — we show our own circular cropper
+    // after the user picks, so they can see exactly how the avatar
+    // will frame inside the round mask.
     const picked = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: (ImagePicker as any).MediaTypeOptions?.Images ?? ['images'],
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 1,
     });
     if (picked.canceled || !picked.assets[0]?.uri) return;
 
+    setCropSourceUri(picked.assets[0].uri);
+  };
+
+  // Called by PhotoCropper after the user confirms their framing.
+  // Runs the existing compress + upload pipeline against the
+  // pre-cropped square the cropper hands us.
+  const handleCroppedChildPhoto = async (croppedUri: string) => {
+    if (!editingChild || !familyId) {
+      setCropSourceUri(null);
+      return;
+    }
+    setCropSourceUri(null);
     setIsPhotoBusy(true);
     try {
-      const asset = picked.assets[0];
-
+      const compressed = await compressPhoto(croppedUri);
       const path = await storageService.uploadChildPhoto(
         familyId,
         editingChild.id,
-        asset.uri,
+        compressed.uri,
       );
+      // Drop the stale signed URL so the home bubble refetches a fresh
+      // one against the just-overwritten file (storage upserts to the
+      // same path, so the cache key doesn't change on its own).
+      invalidatePhotoUrl(path);
       setEditPhotoPath(path);
-      setEditPhotoPreviewUri(asset.uri);
+      setEditPhotoPreviewUri(compressed.uri);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not upload photo';
       Alert.alert('Upload Failed', msg);
@@ -347,6 +376,7 @@ export default function SettingsScreen() {
     setIsPhotoBusy(true);
     try {
       await storageService.removeChildPhoto(editPhotoPath);
+      invalidatePhotoUrl(editPhotoPath);
       setEditPhotoPath(undefined);
       setEditPhotoPreviewUri(undefined);
     } catch (err) {
@@ -396,7 +426,11 @@ export default function SettingsScreen() {
 
   // ─── Add Child Handler ─────────────────────────────────
 
-  // Create child in Supabase, then add to local store.
+  // Create child in Supabase, then add to local store. If the user
+  // staged a photo, upload it after the row exists (we need the new
+  // child's id for the storage path) and patch photo_url onto the
+  // record. Photo failures don't roll back the create — the child is
+  // saved and we surface a "you can add it later" message.
   const handleAddChild = async () => {
     if (!newChildName.trim() || !newChildBirthday) return;
 
@@ -410,10 +444,30 @@ export default function SettingsScreen() {
         display_order: children.length,
       });
       addChildLocal(mapSupabaseChild(row));
+
+      if (newChildPhotoLocalUri && familyId) {
+        try {
+          const compressed = await compressPhoto(newChildPhotoLocalUri);
+          const path = await storageService.uploadChildPhoto(
+            familyId,
+            row.id,
+            compressed.uri,
+          );
+          await childrenService.updateChild(row.id, { photo_url: path });
+          invalidatePhotoUrl(path);
+          updateChildLocal(row.id, { photoPath: path });
+        } catch (photoErr) {
+          const msg = photoErr instanceof Error ? photoErr.message : 'Could not save photo';
+          Alert.alert("Photo didn't save", `${msg}\n\nYou can add it later from Settings.`);
+        }
+      }
+
       setNewChildName('');
       setNewChildBirthday('');
       setNewChildNickname('');
       setNewChildColorIndex((children.length + 1) % childColors.length);
+      setNewChildPhotoPreviewUri(undefined);
+      setNewChildPhotoLocalUri(undefined);
       setShowAddChildModal(false);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Could not add child';
@@ -428,7 +482,52 @@ export default function SettingsScreen() {
     setNewChildBirthday('');
     setNewChildNickname('');
     setNewChildColorIndex(children.length % childColors.length);
+    setNewChildPhotoPreviewUri(undefined);
+    setNewChildPhotoLocalUri(undefined);
     setShowAddChildModal(true);
+  };
+
+  // Photo picker for the Add modal. Stages the asset URI locally so
+  // the actual upload can run after createChild() returns the new id.
+  const pickNewChildPhoto = async () => {
+    let ImagePicker: typeof import('expo-image-picker');
+    try {
+      ImagePicker = await import('expo-image-picker');
+    } catch {
+      Alert.alert(
+        'Photo module unavailable',
+        'Please reinstall dependencies and restart/rebuild the app to enable photo picking.',
+      );
+      return;
+    }
+
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Photo Access Needed', 'Allow photo library access to choose a child photo.');
+      return;
+    }
+
+    setIsNewChildPhotoBusy(true);
+    try {
+      const picked = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: (ImagePicker as any).MediaTypeOptions?.Images ?? ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+      if (picked.canceled || !picked.assets[0]?.uri) return;
+
+      const uri = picked.assets[0].uri;
+      setNewChildPhotoLocalUri(uri);
+      setNewChildPhotoPreviewUri(uri);
+    } finally {
+      setIsNewChildPhotoBusy(false);
+    }
+  };
+
+  const removeNewChildPhoto = () => {
+    setNewChildPhotoLocalUri(undefined);
+    setNewChildPhotoPreviewUri(undefined);
   };
 
   // ─── Change Password Handlers ─────────────────────────
@@ -1114,6 +1213,48 @@ export default function SettingsScreen() {
               placeholderTextColor={colors.textMuted}
             />
 
+            {/* Photo */}
+            <Text style={styles.inputLabel}>Photo (optional)</Text>
+            <View style={styles.photoEditorRow}>
+              <View style={styles.photoAvatarWrap}>
+                {newChildPhotoPreviewUri ? (
+                  <Image source={{ uri: newChildPhotoPreviewUri }} style={styles.photoAvatarImage} />
+                ) : (
+                  <Text style={styles.photoAvatarLetter}>
+                    {(newChildName.trim()[0] ?? '?').toUpperCase()}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.photoEditorActions}>
+                <Pressable
+                  onPress={pickNewChildPhoto}
+                  disabled={isNewChildPhotoBusy || isSaving}
+                  style={({ pressed }) => [
+                    styles.photoActionBtn,
+                    pressed && { opacity: 0.7 },
+                    (isNewChildPhotoBusy || isSaving) && { opacity: 0.5 },
+                  ]}
+                >
+                  <Text style={styles.photoActionText}>
+                    {isNewChildPhotoBusy ? 'Working...' : (newChildPhotoLocalUri ? 'Change photo' : 'Add photo')}
+                  </Text>
+                </Pressable>
+                {newChildPhotoLocalUri && (
+                  <Pressable
+                    onPress={removeNewChildPhoto}
+                    disabled={isNewChildPhotoBusy || isSaving}
+                    style={({ pressed }) => [
+                      styles.photoActionBtnGhost,
+                      pressed && { opacity: 0.7 },
+                      (isNewChildPhotoBusy || isSaving) && { opacity: 0.5 },
+                    ]}
+                  >
+                    <Text style={styles.photoActionGhostText}>Remove</Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
+
             {/* Add button */}
             <View style={styles.fullModalButtonArea}>
               <PrimaryButton
@@ -1123,7 +1264,7 @@ export default function SettingsScreen() {
                     ? `Add ${newChildName.trim()}`
                     : 'Fill name & birthday to continue'}
                 onPress={handleAddChild}
-                disabled={!newChildName.trim() || !newChildBirthday || isSaving}
+                disabled={!newChildName.trim() || !newChildBirthday || isSaving || isNewChildPhotoBusy}
               />
             </View>
           </ScrollView>
@@ -1405,6 +1546,15 @@ export default function SettingsScreen() {
 
       {/* Post-trial paywall — shown when user taps the expired subscription row */}
       <PostTrialPaywall visible={showPaywall} onClose={() => setShowPaywall(false)} />
+
+      {/* In-app circular cropper — appears after the user picks a photo
+          for the child being edited. Replaces the OS native cropper. */}
+      <PhotoCropper
+        visible={!!cropSourceUri}
+        sourceUri={cropSourceUri}
+        onCancel={() => setCropSourceUri(null)}
+        onConfirm={handleCroppedChildPhoto}
+      />
 
       {/* ─── Deleting Account Overlay ────────────── */}
       {isDeletingAccount && (

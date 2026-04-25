@@ -45,13 +45,35 @@ Deno.serve(async (req) => {
 
     // ─── Supabase client (service role for DB writes) ──
     // Service role bypasses RLS so the function can read/write
-    // any entry. The JWT check at the edge (verify_jwt: true
-    // in deployment config) already ensures the caller is
-    // authenticated — we don't need RLS here.
+    // any entry. Because verify_jwt = false in config.toml (RN's
+    // functions.invoke() can't reliably send the JWT header), we
+    // extract the Bearer token manually and verify identity via
+    // auth.getUser(token) — mirroring delete-account's pattern.
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
+
+    // ─── Verify caller identity ───────────────────────
+    // Extract the Bearer token from the Authorization header and
+    // resolve it to a user via auth.getUser. Never trust a
+    // caller-supplied userId — always derive it from the token.
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    const userId = user.id;
 
     // ─── Fetch the entry from DB ──────────────────────
     // We read the transcript from the database instead of
@@ -59,7 +81,7 @@ Deno.serve(async (req) => {
     // the rule: "Never trust caller-supplied data."
     const { data: entry, error: fetchError } = await supabase
       .from('entries')
-      .select('id, transcript, original_transcript')
+      .select('id, transcript, original_transcript, user_id')
       .eq('id', entry_id)
       .single();
 
@@ -67,6 +89,16 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Entry not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // ─── Enforce ownership ────────────────────────────
+    // Only the entry's author may process it — matches the
+    // entries_update_own RLS policy (user_id = auth.uid()).
+    if (entry.user_id !== userId) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
@@ -230,7 +262,8 @@ Return ONLY valid JSON. No markdown, no explanation, no code fences.`;
       const { error: updateError } = await supabase
         .from('entries')
         .update(updates)
-        .eq('id', entry_id);
+        .eq('id', entry_id)
+        .eq('user_id', userId);
 
       if (updateError) {
         console.error('Failed to update entry:', updateError);

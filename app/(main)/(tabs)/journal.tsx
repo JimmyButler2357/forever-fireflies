@@ -159,8 +159,7 @@ export default function JournalScreen() {
         setEntries(entryRows.map(mapSupabaseEntry));
       } catch (error) {
         if (cancelled) return;
-        const message = error instanceof Error ? error.message : 'Could not load data';
-        setLoadError(message);
+        setLoadError('Check your connection and try again.');
         console.warn('Journal data fetch failed:', error);
       } finally {
         if (!cancelled) setIsLoadingData(false);

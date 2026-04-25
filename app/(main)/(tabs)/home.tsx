@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -43,6 +43,7 @@ import { openAppSettings } from '@/lib/openSettings';
 import { notificationsService } from '@/services/notifications.service';
 import NoticesBanner, { type Notice } from '@/components/home/NoticesBanner';
 import { storageService } from '@/services/storage.service';
+import { getCachedPhotoUrl, type PhotoState } from '@/lib/photoUrlCache';
 
 // ─── Greeting System ──────────────────────────────────────
 //
@@ -109,7 +110,7 @@ export default function HomeTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [childPhotoUrls, setChildPhotoUrls] = useState<Record<string, string | undefined>>({});
+  const [childPhotoStates, setChildPhotoStates] = useState<Record<string, PhotoState>>({});
 
   useEffect(() => { capture('screen_viewed', { screen: 'Home' }); }, []);
 
@@ -234,7 +235,8 @@ export default function HomeTab() {
         setEntries(entryRows.map(mapSupabaseEntry));
       } catch (error) {
         if (cancelled) return;
-        setLoadError(error instanceof Error ? error.message : 'Could not load data');
+        setLoadError('Check your connection and try again.');
+        console.warn('Home data fetch failed:', error);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -249,28 +251,78 @@ export default function HomeTab() {
 
     const loadPhotoUrls = async () => {
       if (children.length === 0) {
-        setChildPhotoUrls({});
+        setChildPhotoStates({});
         return;
       }
 
-      const pairs = await Promise.all(
+      // Seed state machine: each child starts as 'none' (no photo) or
+      // 'loading' (fetch in flight). We update to 'loaded' or 'error'
+      // per-child as results come back, rather than waiting on Promise.all —
+      // this way a single slow child can't make every avatar show a spinner.
+      //
+      // Preserve already-'loaded' entries across effect re-runs. The cache
+      // returns instantly but resolves on the next microtask; without this
+      // branch, a children-array reference change (e.g. after editing a
+      // sibling) would flash every avatar back to a spinner before the
+      // cache lookup repopulates them. Modal-open during that gap was the
+      // "photo pops in" bug.
+      if (cancelled) return;
+      setChildPhotoStates((prev) => {
+        const next: Record<string, PhotoState> = {};
+        for (const child of children) {
+          const existing = prev[child.id];
+          if (!child.photoPath) {
+            next[child.id] = { status: 'none' };
+          } else if (existing?.status === 'loaded') {
+            next[child.id] = existing;
+          } else {
+            next[child.id] = { status: 'loading' };
+          }
+        }
+        return next;
+      });
+
+      await Promise.all(
         children.map(async (child) => {
-          if (!child.photoPath) return [child.id, undefined] as const;
+          if (!child.photoPath) return;
           try {
-            const url = await storageService.getChildPhotoUrl(child.photoPath);
-            return [child.id, url] as const;
+            const url = await getCachedPhotoUrl(child.photoPath, storageService.getChildPhotoUrl);
+            if (cancelled) return;
+            setChildPhotoStates((prev) => {
+              const cur = prev[child.id];
+              if (cur?.status === 'loaded' && cur.url === url) return prev;
+              return { ...prev, [child.id]: { status: 'loaded', url } };
+            });
           } catch {
-            return [child.id, undefined] as const;
+            if (cancelled) return;
+            setChildPhotoStates((prev) => ({ ...prev, [child.id]: { status: 'error' } }));
           }
         }),
       );
-
-      if (cancelled) return;
-      setChildPhotoUrls(Object.fromEntries(pairs));
     };
 
     loadPhotoUrls();
     return () => { cancelled = true; };
+  }, [children]);
+
+  // Retry a single child's photo fetch — used when a signed-URL fetch
+  // failed (e.g. a blip of no connectivity on initial load). We clear
+  // the cache so we're actually refetching, not returning the failure
+  // implicitly, then rerun the same fetch path.
+  const handleRetryChildPhoto = useCallback((childId: string) => {
+    const child = children.find((c) => c.id === childId);
+    if (!child?.photoPath) return;
+    const path = child.photoPath;
+
+    setChildPhotoStates((prev) => ({ ...prev, [childId]: { status: 'loading' } }));
+    (async () => {
+      try {
+        const url = await getCachedPhotoUrl(path, storageService.getChildPhotoUrl);
+        setChildPhotoStates((prev) => ({ ...prev, [childId]: { status: 'loaded', url } }));
+      } catch {
+        setChildPhotoStates((prev) => ({ ...prev, [childId]: { status: 'error' } }));
+      }
+    })();
   }, [children]);
 
   // Active (non-deleted) entries
@@ -355,8 +407,9 @@ export default function HomeTab() {
         <View style={styles.section}>
           <FamilySection
             children={children}
-            photoUrls={childPhotoUrls}
+            photoStates={childPhotoStates}
             onChildPress={(id) => { setModalChildId(id); setModalVisible(true); }}
+            onRetryPhoto={handleRetryChildPhoto}
           />
         </View>
 
@@ -388,7 +441,7 @@ export default function HomeTab() {
         childId={modalChildId}
         children={children}
         entries={activeEntries}
-        photoUrls={childPhotoUrls}
+        photoStates={childPhotoStates}
       />
 
       {/* Paywall for lapsed users */}

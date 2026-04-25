@@ -1,8 +1,10 @@
-import { View, Text, Pressable, ScrollView, StyleSheet, Image } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Image, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, shadows, fonts, childColors, childColorWithOpacity } from '@/constants/theme';
 import { getAge } from '@/lib/dateUtils';
 import SectionLabel from './SectionLabel';
 import type { Child } from '@/stores/childrenStore';
+import type { PhotoState } from '@/lib/photoUrlCache';
 
 /**
  * Family section — row of child avatars with names, ages,
@@ -18,10 +20,16 @@ const RING_WIDTH = 3;
 interface FamilySectionProps {
   children: Child[];
   onChildPress: (childId: string) => void;
-  photoUrls?: Record<string, string | undefined>;
+  photoStates?: Record<string, PhotoState>;
+  onRetryPhoto?: (childId: string) => void;
 }
 
-export default function FamilySection({ children, onChildPress, photoUrls = {} }: FamilySectionProps) {
+export default function FamilySection({
+  children,
+  onChildPress,
+  photoStates = {},
+  onRetryPhoto,
+}: FamilySectionProps) {
   return (
     <View style={styles.container}>
       <SectionLabel label="Your family" />
@@ -34,10 +42,21 @@ export default function FamilySection({ children, onChildPress, photoUrls = {} }
       >
         {children.map((child) => {
           const hex = childColors[child.colorIndex]?.hex ?? childColors[0].hex;
+          // Default to 'none' if the effect hasn't populated state yet —
+          // avoids a flash of undefined behavior on the very first render.
+          const state: PhotoState = photoStates[child.id] ?? { status: 'none' };
+          // Tapping an errored avatar retries the photo fetch instead of
+          // opening the modal. Without this, users have no way to recover
+          // from a transient network failure short of a full screen reload.
+          const isError = state.status === 'error';
+          const handlePress = isError && onRetryPhoto
+            ? () => onRetryPhoto(child.id)
+            : () => onChildPress(child.id);
+
           return (
             <Pressable
               key={child.id}
-              onPress={() => onChildPress(child.id)}
+              onPress={handlePress}
               style={({ pressed }) => [
                 styles.avatarColumn,
                 pressed && { transform: [{ translateY: -2 }] },
@@ -52,12 +71,19 @@ export default function FamilySection({ children, onChildPress, photoUrls = {} }
                   },
                 ]}
               >
-                {photoUrls[child.id] ? (
-                  <Image source={{ uri: photoUrls[child.id] }} style={styles.avatarImage} />
+                {state.status === 'loaded' ? (
+                  <Image source={{ uri: state.url }} style={styles.avatarImage} />
+                ) : state.status === 'loading' ? (
+                  <ActivityIndicator size="small" color={hex} />
                 ) : (
                   <Text style={[styles.avatarLetter, { color: hex }]}>
                     {child.name[0]}
                   </Text>
+                )}
+                {isError && (
+                  <View style={styles.errorBadge}>
+                    <Ionicons name="refresh" size={12} color={colors.card} />
+                  </View>
                 )}
               </View>
               <Text style={styles.name}>{child.name}</Text>
@@ -98,6 +124,19 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%',
     height: '100%',
+  },
+  errorBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.textMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.card,
   },
   avatarLetter: {
     fontFamily: fonts.serifBold,

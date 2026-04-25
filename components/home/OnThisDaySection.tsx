@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef } from 'react';
-import { View, Text, FlatList, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, FlatList, Pressable, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
@@ -117,6 +117,12 @@ export default function OnThisDaySection({ entries, children }: { entries: Entry
                 >
                   <Text style={styles.timeBadge}>{item.label}</Text>
 
+                  {item.entry.title && (
+                    <Text style={styles.title} numberOfLines={2}>
+                      {item.entry.title}
+                    </Text>
+                  )}
+
                   {child && (
                     <View style={styles.childRow}>
                       <View style={[styles.childDot, { backgroundColor: childColor }]} />
@@ -124,9 +130,16 @@ export default function OnThisDaySection({ entries, children }: { entries: Entry
                     </View>
                   )}
 
-                  <Text style={styles.preview} numberOfLines={3}>
-                    {item.entry.text || item.entry.title || ''}
-                  </Text>
+                  <ScrollView
+                    style={styles.bodyScroll}
+                    contentContainerStyle={styles.bodyScrollContent}
+                    showsVerticalScrollIndicator
+                    nestedScrollEnabled
+                  >
+                    <Text style={styles.preview}>
+                      {item.entry.text || item.entry.title || ''}
+                    </Text>
+                  </ScrollView>
                 </LinearGradient>
 
                 <Text style={styles.dateFooter}>
@@ -188,6 +201,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
+  title: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: colors.textSoft,
+    lineHeight: 17,
+  },
   childRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -202,6 +221,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.textSoft,
   },
+  bodyScroll: {
+    height: 140,
+    marginTop: spacing(1),
+  },
+  bodyScrollContent: {
+    paddingBottom: spacing(1),
+  },
   preview: {
     fontFamily: fonts.serif,
     fontSize: 14,
@@ -213,7 +239,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serif,
     fontSize: 11,
     color: colors.textMuted,
-    marginTop: spacing(2),
+    marginTop: spacing(4),
     paddingHorizontal: spacing(1),
   },
   dots: {

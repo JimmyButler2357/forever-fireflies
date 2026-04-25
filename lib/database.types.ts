@@ -192,6 +192,76 @@ export type Database = {
           },
         ]
       }
+      entry_media: {
+        Row: {
+          created_at: string
+          display_order: number
+          duration_seconds: number | null
+          entry_id: string
+          family_id: string
+          file_size_bytes: number | null
+          height: number | null
+          id: string
+          media_type: string
+          storage_path: string
+          thumbnail_path: string | null
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          duration_seconds?: number | null
+          entry_id: string
+          family_id: string
+          file_size_bytes?: number | null
+          height?: number | null
+          id?: string
+          media_type: string
+          storage_path: string
+          thumbnail_path?: string | null
+          user_id: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          duration_seconds?: number | null
+          entry_id?: string
+          family_id?: string
+          file_size_bytes?: number | null
+          height?: number | null
+          id?: string
+          media_type?: string
+          storage_path?: string
+          thumbnail_path?: string | null
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_media_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_media_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_media_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entry_tags: {
         Row: {
           auto_applied: boolean

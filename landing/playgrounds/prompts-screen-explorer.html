@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prompts Screen Explorer — Forever Fireflies</title>
+<style>
+  :root {
+    --bg: #15120F;
+    --panel: #1E1A16;
+    --panel-2: #26211C;
+    --ink: #EDE6DC;
+    --ink-soft: #A89D90;
+    --ink-muted: #746A5F;
+    --line: #2F2925;
+    --hit: #E8724A;
+    --hit-soft: rgba(232,114,74,0.14);
+
+    /* Brand (used inside the phone) */
+    --ff-bg: #FAF8F5;
+    --ff-card: #FEFCF9;
+    --ff-text: #2C2420;
+    --ff-textSoft: #8C7E74;
+    --ff-textMuted: #B5AAA0;
+    --ff-accent: #E8724A;
+    --ff-accentSoft: rgba(232,114,74,0.08);
+    --ff-border: #EDE8E3;
+    --ff-tag: #F3EDE8;
+    --ff-glow: #F2C94C;
+
+    --cat-everyday: #8C7E74;
+    --cat-milestones: #F2C94C;
+    --cat-funny: #D4857A;
+    --cat-feelings: #B88BB4;
+    --cat-firsts: #6BB5A8;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ─── Left panel (controls) ─────────────────── */
+  .controls {
+    padding: 24px 20px 120px;
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    max-height: 100vh;
+  }
+
+  .title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .subtitle {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin: 0 0 24px;
+  }
+
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+  .preset {
+    font-size: 11px;
+    padding: 6px 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 120ms ease;
+  }
+  .preset:hover {
+    background: var(--panel);
+    color: var(--ink);
+    border-color: var(--hit-soft);
+  }
+
+  .group {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .group:last-child { border-bottom: none; }
+  .group-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 10px;
+  }
+
+  label.opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    margin: 0 -10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 100ms ease;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+  label.opt:hover { background: var(--panel); color: var(--ink); }
+  label.opt input { margin-top: 3px; accent-color: var(--hit); }
+  label.opt.active { color: var(--ink); }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+  }
+  .slider-row input[type=range] {
+    flex: 1;
+    accent-color: var(--hit);
+  }
+  .slider-val {
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: var(--ink);
+    min-width: 20px;
+    text-align: right;
+  }
+
+  .warn {
+    background: rgba(232,114,74,0.08);
+    border: 1px solid rgba(232,114,74,0.30);
+    color: #F4A079;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    margin-top: 10px;
+    line-height: 1.4;
+  }
+
+  /* ─── Right side: preview + prompt ─────────── */
+  .right {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    min-height: 100vh;
+  }
+
+  .stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    background:
+      radial-gradient(ellipse at top, rgba(232,114,74,0.05), transparent 60%),
+      var(--bg);
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 380px;
+    height: 760px;
+    background: #0A0807;
+    border-radius: 46px;
+    padding: 12px;
+    box-shadow:
+      0 0 0 2px #1a1613,
+      0 30px 80px rgba(0,0,0,0.5),
+      0 0 60px rgba(232,114,74,0.08);
+    position: relative;
+  }
+  .notch {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 26px;
+    background: #0A0807;
+    border-radius: 9999px;
+    z-index: 10;
+  }
+  .screen {
+    width: 100%;
+    height: 100%;
+    background: var(--ff-bg);
+    border-radius: 34px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--ff-text);
+  }
+
+  /* Top bar */
+  .top-bar {
+    height: 58px;
+    padding: 18px 20px 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .back {
+    font-size: 22px;
+    color: var(--ff-text);
+    line-height: 1;
+  }
+  .top-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ff-text);
+  }
+  .top-menu-btn {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--ff-textSoft);
+    background: var(--ff-tag);
+    padding: 6px 10px;
+    border-radius: 9999px;
+    display: none;
+  }
+
+  /* Theme pills */
+  .pill-row {
+    display: flex;
+    gap: 8px;
+    padding: 6px 16px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-shrink: 0;
+  }
+  .pill-row::-webkit-scrollbar { display: none; }
+  .pill {
+    padding: 8px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--ff-textSoft);
+    background: var(--ff-tag);
+  }
+  .pill.active {
+    background: var(--ff-accent);
+    color: var(--ff-card);
+  }
+
+  /* Child tabs */
+  .child-row {
+    display: flex;
+    gap: 8px;
+    padding: 4px 16px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-shrink: 0;
+    align-items: center;
+  }
+  .child-row::-webkit-scrollbar { display: none; }
+  .child-tab {
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    background: var(--ff-card);
+    border: 1px solid var(--ff-border);
+    color: var(--ff-text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .child-tab .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+  }
+  .child-tab.active {
+    background: rgba(123,175,212,0.16);
+    border-color: transparent;
+  }
+  .divider-pipe {
+    width: 1px;
+    height: 18px;
+    background: var(--ff-border);
+    margin: 0 2px;
+    flex-shrink: 0;
+  }
+
+  /* Hint */
+  .hint {
+    padding: 4px 20px 12px;
+    font-size: 11px;
+    color: var(--ff-textMuted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .hint .mic { font-size: 12px; opacity: 0.8; }
+
+  /* Card list */
+  .card-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px 16px;
+    scrollbar-width: none;
+  }
+  .card-scroll::-webkit-scrollbar { display: none; }
+
+  .card-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--ff-card);
+    border: 1px solid var(--ff-border);
+    border-radius: 14px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-text {
+    font-family: Georgia, "Merriweather", serif;
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--ff-text);
+    margin: 0;
+  }
+
+  /* Accent styles */
+  .card.stripe-left::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--cat);
+  }
+  .card.stripe-top::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 3px;
+    background: var(--cat);
+  }
+  .card.tinted {
+    background: color-mix(in srgb, var(--cat) 6%, var(--ff-card));
+    border-color: color-mix(in srgb, var(--cat) 18%, var(--ff-border));
+  }
+  .card .chip {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 24px;
+    height: 24px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    background: color-mix(in srgb, var(--cat) 14%, var(--ff-card));
+    color: var(--cat);
+    font-weight: 700;
+  }
+  .card.has-chip .card-text { padding-right: 36px; }
+
+  /* Bottom area */
+  .bottom-bar {
+    padding: 12px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    background: linear-gradient(to top, var(--ff-bg) 60%, transparent);
+  }
+  .count-chip {
+    font-size: 11px;
+    color: var(--ff-textSoft);
+    background: var(--ff-tag);
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-weight: 600;
+  }
+  .dot-pager {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 2px;
+  }
+  .dot-pager span {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--ff-textMuted);
+    opacity: 0.4;
+  }
+  .dot-pager span.active {
+    opacity: 1;
+    background: var(--ff-accent);
+    width: 16px;
+    border-radius: 9999px;
+  }
+  .shuffle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ff-card);
+    border: 1px solid var(--ff-border);
+    border-radius: 9999px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ff-accent);
+    box-shadow: 0 4px 12px rgba(44,36,32,0.08);
+  }
+  .shuffle-btn .count-inline {
+    color: var(--ff-textSoft);
+    font-weight: 500;
+    margin-right: 4px;
+  }
+  .shuffle-ico {
+    font-size: 14px;
+  }
+
+  /* Child menu button (layout 4) */
+  .inline-child-segment {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    background: var(--ff-tag);
+    padding: 3px;
+    border-radius: 9999px;
+  }
+  .inline-child-segment .seg {
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ff-textSoft);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .inline-child-segment .seg.active {
+    background: var(--ff-card);
+    color: var(--ff-text);
+    box-shadow: 0 1px 3px rgba(44,36,32,0.08);
+  }
+  .inline-child-segment .seg .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+  }
+
+  /* ─── Prompt output bar ──────────────────── */
+  .prompt-bar {
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    padding: 16px 24px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .prompt-text {
+    flex: 1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    white-space: pre-wrap;
+  }
+  .copy-btn {
+    background: var(--hit);
+    color: #1a0e08;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+    transition: all 120ms ease;
+  }
+  .copy-btn:hover { filter: brightness(1.08); }
+  .copy-btn.copied { background: #7BB98A; color: #0a1f10; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .controls { max-height: none; border-right: none; border-bottom: 1px solid var(--line); }
+    .phone { transform: scale(0.9); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- CONTROLS -->
+  <div class="controls">
+    <h1 class="title">Prompts Screen Explorer</h1>
+    <p class="subtitle">Four visual refinements — try combinations, then copy the prompt.</p>
+
+    <div class="presets">
+      <button class="preset" data-preset="current">Current</button>
+      <button class="preset" data-preset="quiet">Quiet polish</button>
+      <button class="preset" data-preset="warm">Warm + playful</button>
+      <button class="preset" data-preset="compact">Compact (1 kid)</button>
+    </div>
+
+    <div class="group">
+      <p class="group-label">1. Category accent</p>
+      <label class="opt"><input type="radio" name="accent" value="none" /><span>None (current)</span></label>
+      <label class="opt"><input type="radio" name="accent" value="stripe-left" /><span>Left stripe — 4px colored bar</span></label>
+      <label class="opt"><input type="radio" name="accent" value="chip" /><span>Icon chip — category dot top-right</span></label>
+      <label class="opt"><input type="radio" name="accent" value="tinted" /><span>Tinted background — 6% category wash</span></label>
+      <label class="opt"><input type="radio" name="accent" value="stripe-top" /><span>Top stripe — thin color line</span></label>
+    </div>
+
+    <div class="group">
+      <p class="group-label">2. Hint text</p>
+      <label class="opt"><input type="radio" name="hint" value="current" /><span>Tap any prompt to start recording</span></label>
+      <label class="opt"><input type="radio" name="hint" value="sparks" /><span>Pick one that sparks a memory</span></label>
+      <label class="opt"><input type="radio" name="hint" value="feels" /><span>Tap one that feels right today</span></label>
+      <label class="opt"><input type="radio" name="hint" value="story" /><span>Any one of these could start a story</span></label>
+      <label class="opt"><input type="radio" name="hint" value="answer" /><span>Pick the one you'd want to answer</span></label>
+    </div>
+
+    <div class="group">
+      <p class="group-label">3. Counter indicator</p>
+      <label class="opt"><input type="radio" name="counter" value="none" /><span>None (current)</span></label>
+      <label class="opt"><input type="radio" name="counter" value="inline" /><span>Inline with shuffle — "5 of 23"</span></label>
+      <label class="opt"><input type="radio" name="counter" value="chip" /><span>Count chip above shuffle</span></label>
+      <label class="opt"><input type="radio" name="counter" value="dots" /><span>Dot pagination</span></label>
+    </div>
+
+    <div class="group">
+      <p class="group-label">4. Filter row layout</p>
+      <label class="opt"><input type="radio" name="layout" value="two-rows" /><span>Two rows (current)</span></label>
+      <label class="opt"><input type="radio" name="layout" value="merged" /><span>Single merged row with divider</span></label>
+      <label class="opt"><input type="radio" name="layout" value="segment" /><span>Themes + compact child segment</span></label>
+      <label class="opt"><input type="radio" name="layout" value="menu" /><span>Themes only + child menu button</span></label>
+      <div id="layout-warn" class="warn" style="display:none;">
+        Heads up — the merged row gets crowded with 3+ kids. Consider the segmented layout instead.
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="group-label">5. Number of kids</p>
+      <div class="slider-row">
+        <input id="kids" type="range" min="0" max="4" value="1" step="1" />
+        <span id="kids-val" class="slider-val">1</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT SIDE -->
+  <div class="right">
+    <div class="stage">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen" id="screen">
+          <!-- rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="prompt-bar">
+      <div id="prompt" class="prompt-text"></div>
+      <button id="copy" class="copy-btn">Copy prompt</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ─── Data ─────────────────────────────────────
+  const PROMPTS = [
+    { text: "What made Emma laugh today?",                 cat: "funny" },
+    { text: "What new word is Emma trying to say?",        cat: "milestones" },
+    { text: "What made Emma feel proud today?",            cat: "feelings" },
+    { text: "What did Emma point at for the first time?",  cat: "firsts" },
+    { text: "What was breakfast like with Emma?",          cat: "everyday" },
+  ];
+
+  const CAT_COLOR = {
+    everyday:   "#8C7E74",
+    milestones: "#F2C94C",
+    funny:      "#D4857A",
+    feelings:   "#B88BB4",
+    firsts:     "#6BB5A8",
+  };
+
+  const CAT_GLYPH = {
+    everyday:   "●",
+    milestones: "★",
+    funny:      "•",
+    feelings:   "♥",
+    firsts:     "+",
+  };
+
+  const KIDS = [
+    { name: "Emma", color: "#7BAFD4" },
+    { name: "Leo",  color: "#D4A07B" },
+    { name: "Maya", color: "#9BC49B" },
+    { name: "Theo", color: "#B88BB4" },
+  ];
+
+  const THEMES = ["All", "Everyday", "Milestones", "Funny", "Feelings", "Firsts"];
+
+  const HINT_COPY = {
+    current: "Tap any prompt to start recording",
+    sparks:  "Pick one that sparks a memory",
+    feels:   "Tap one that feels right today",
+    story:   "Any one of these could start a story",
+    answer:  "Pick the one you'd want to answer",
+  };
+
+  const LAYOUT_LABEL = {
+    "two-rows": "the two-row layout (current)",
+    "merged":   "a single merged row with a divider between themes and kids",
+    "segment":  "themes on their own row and a compact child segmented control in the header",
+    "menu":     "themes only with a child menu button in the header",
+  };
+
+  const ACCENT_LABEL = {
+    "none":        "no category accent",
+    "stripe-left": "a 4px left stripe in the category color",
+    "chip":        "a small category icon chip in the top-right",
+    "tinted":      "a subtle tinted background (~6%) in the category color",
+    "stripe-top":  "a thin top stripe in the category color",
+  };
+
+  const COUNTER_LABEL = {
+    "none":   "no counter",
+    "inline": "an inline counter on the shuffle button (\"5 of 23\")",
+    "chip":   "a count chip above the shuffle button",
+    "dots":   "dot pagination above the shuffle button",
+  };
+
+  // ─── Defaults + state ─────────────────────────
+  const DEFAULTS = {
+    accent:  "none",
+    hint:    "current",
+    counter: "none",
+    layout:  "two-rows",
+    kids:    1,
+  };
+
+  const PRESETS = {
+    current: { accent: "none",        hint: "current", counter: "none",   layout: "two-rows", kids: 1 },
+    quiet:   { accent: "stripe-left", hint: "sparks",  counter: "inline", layout: "two-rows", kids: 2 },
+    warm:    { accent: "tinted",      hint: "story",   counter: "dots",   layout: "segment",  kids: 2 },
+    compact: { accent: "stripe-left", hint: "feels",   counter: "inline", layout: "merged",   kids: 1 },
+  };
+
+  const state = { ...DEFAULTS };
+
+  // ─── Wire controls ────────────────────────────
+  function setRadios() {
+    ["accent","hint","counter","layout"].forEach(name => {
+      document.querySelectorAll(`input[name=${name}]`).forEach(r => {
+        r.checked = r.value === state[name];
+        r.parentElement.classList.toggle("active", r.checked);
+      });
+    });
+    document.getElementById("kids").value = state.kids;
+    document.getElementById("kids-val").textContent = state.kids;
+  }
+
+  document.querySelectorAll("input[type=radio]").forEach(r => {
+    r.addEventListener("change", e => {
+      state[e.target.name] = e.target.value;
+      setRadios();
+      updateAll();
+    });
+  });
+
+  document.getElementById("kids").addEventListener("input", e => {
+    state.kids = Number(e.target.value);
+    document.getElementById("kids-val").textContent = state.kids;
+    updateAll();
+  });
+
+  document.querySelectorAll(".preset").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const p = PRESETS[btn.dataset.preset];
+      Object.assign(state, p);
+      setRadios();
+      updateAll();
+    });
+  });
+
+  // ─── Render preview ───────────────────────────
+  function renderPreview() {
+    const kidList = KIDS.slice(0, state.kids);
+    const screen = document.getElementById("screen");
+
+    // Top bar — includes child menu button for layout "menu"
+    const topMenu = state.layout === "menu" && state.kids > 0
+      ? `<div class="top-menu-btn" style="display:inline-flex;">Emma ▾</div>`
+      : "";
+
+    // Segment (layout 3)
+    const segment = state.layout === "segment" && state.kids > 0
+      ? `<div class="inline-child-segment">
+           <span class="seg active"><span class="dot" style="background:${kidList[0].color}"></span>${kidList[0].name}</span>
+           ${kidList.slice(1).map(k => `<span class="seg"><span class="dot" style="background:${k.color}"></span>${k.name}</span>`).join("")}
+         </div>`
+      : "";
+
+    // Theme pills
+    const themePills = THEMES.map((t,i) =>
+      `<div class="pill ${i===0 ? "active" : ""}">${t}</div>`
+    ).join("");
+
+    // Child tabs
+    const childTabs = kidList.length
+      ? `<div class="child-tab active"><span class="dot" style="background:${kidList[0].color}"></span>${kidList[0].name}</div>
+         ${kidList.slice(1).map(k => `<div class="child-tab"><span class="dot" style="background:${k.color}"></span>${k.name}</div>`).join("")}`
+      : `<div class="child-tab active">All</div>`;
+
+    // Filter row markup — depends on layout
+    let filters = "";
+    if (state.layout === "two-rows") {
+      filters = `
+        <div class="pill-row">${themePills}</div>
+        <div class="child-row">${childTabs}</div>
+      `;
+    } else if (state.layout === "merged") {
+      filters = `
+        <div class="pill-row">
+          ${themePills}
+          ${kidList.length ? '<div class="divider-pipe"></div>' : ""}
+          ${childTabs}
+        </div>
+      `;
+    } else if (state.layout === "segment") {
+      filters = `<div class="pill-row">${themePills}</div>`;
+    } else if (state.layout === "menu") {
+      filters = `<div class="pill-row">${themePills}</div>`;
+    }
+
+    // Cards
+    const cards = PRESETS && PROMPTS.map(p => {
+      const classes = ["card"];
+      let chip = "";
+      if (state.accent === "stripe-left")  classes.push("stripe-left");
+      if (state.accent === "stripe-top")   classes.push("stripe-top");
+      if (state.accent === "tinted")       classes.push("tinted");
+      if (state.accent === "chip") {
+        classes.push("has-chip");
+        chip = `<div class="chip">${CAT_GLYPH[p.cat]}</div>`;
+      }
+      const style = `--cat:${CAT_COLOR[p.cat]}`;
+      return `
+        <div class="${classes.join(" ")}" style="${style}">
+          ${chip}
+          <p class="card-text">${p.text}</p>
+        </div>
+      `;
+    }).join("");
+
+    // Bottom (shuffle area + counter)
+    let bottomTop = "";
+    if (state.counter === "chip") {
+      bottomTop = `<div class="count-chip">5 of 23 prompts</div>`;
+    } else if (state.counter === "dots") {
+      bottomTop = `<div class="dot-pager"><span></span><span></span><span class="active"></span><span></span><span></span></div>`;
+    }
+
+    const shuffleInline = state.counter === "inline"
+      ? `<span class="count-inline">5 of 23</span>`
+      : "";
+
+    // Build screen
+    screen.innerHTML = `
+      <div class="top-bar">
+        <span class="back">‹</span>
+        <span class="top-title">Prompts</span>
+        ${topMenu}
+        ${segment}
+      </div>
+      ${filters}
+      <div class="hint">
+        <span class="mic">◉</span>
+        <span>${HINT_COPY[state.hint]}</span>
+      </div>
+      <div class="card-scroll">
+        <div class="card-grid">${cards}</div>
+      </div>
+      <div class="bottom-bar">
+        ${bottomTop}
+        <div class="shuffle-btn">${shuffleInline}<span class="shuffle-ico">⤭</span>Shuffle</div>
+      </div>
+    `;
+
+    // Layout + kids warning
+    const warn = document.getElementById("layout-warn");
+    warn.style.display = (state.layout === "merged" && state.kids >= 3) ? "block" : "none";
+  }
+
+  // ─── Prompt output ─────────────────────────────
+  function updatePrompt() {
+    const parts = [];
+
+    if (state.accent !== DEFAULTS.accent) {
+      parts.push(`add ${ACCENT_LABEL[state.accent]} per category`);
+    }
+    if (state.hint !== DEFAULTS.hint) {
+      parts.push(`change the hint text to "${HINT_COPY[state.hint]}"`);
+    }
+    if (state.counter !== DEFAULTS.counter) {
+      parts.push(`add ${COUNTER_LABEL[state.counter]} so users see how much is left`);
+    }
+    if (state.layout !== DEFAULTS.layout) {
+      parts.push(`use ${LAYOUT_LABEL[state.layout]}`);
+    }
+
+    let body;
+    if (parts.length === 0) {
+      body = "No changes from current — everything is at its default.";
+    } else {
+      body = `On the Prompts screen (app/(main)/prompts.tsx):\n\n• ` + parts.join(";\n• ") + ".";
+      body += `\n\nCategory colors should pull from theme tokens — everyday=textSoft, milestones=glow, funny=coral, feelings=plum, firsts=teal. Add a new token for each if not present. Keep all card text serif (Georgia). Preserve the existing fade-out → swap → fade-in transition.`;
+    }
+
+    document.getElementById("prompt").textContent = body;
+  }
+
+  // ─── Copy ─────────────────────────────────────
+  document.getElementById("copy").addEventListener("click", () => {
+    const text = document.getElementById("prompt").textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById("copy");
+      btn.classList.add("copied");
+      btn.textContent = "Copied!";
+      setTimeout(() => {
+        btn.classList.remove("copied");
+        btn.textContent = "Copy prompt";
+      }, 1400);
+    });
+  });
+
+  function updateAll() {
+    renderPreview();
+    updatePrompt();
+  }
+
+  // Init
+  setRadios();
+  updateAll();
+</script>
+</body>
+</html>

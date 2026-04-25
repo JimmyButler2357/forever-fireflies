@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Forever Fireflies — Mic Nestle Playground</title>
+<style>
+  :root {
+    --p-bg: #1a1614;
+    --p-panel: #241e1b;
+    --p-panel-2: #2d2623;
+    --p-border: #3a302c;
+    --p-text: #f4ebe1;
+    --p-dim: #a89b8f;
+
+    /* Forever Fireflies tokens */
+    --ff-bg: #FAF8F5;
+    --ff-card: #FEFCF9;
+    --ff-text: #2C2420;
+    --ff-textSoft: #8C7E74;
+    --ff-textMuted: #B5AAA0;
+    --ff-accent: #E8724A;
+    --ff-border: #EDE8E3;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--p-bg); color: var(--p-text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+  }
+  .app { display: grid; grid-template-columns: 340px 1fr; height: 100vh; }
+
+  .controls { background: var(--p-panel); border-right: 1px solid var(--p-border); padding: 20px; overflow-y: auto; }
+  .stage { display: grid; grid-template-rows: 1fr auto; min-height: 0; }
+  .preview {
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, #2a211d 0%, #15110f 100%);
+    padding: 24px; overflow: auto;
+  }
+  .prompt-wrap { background: var(--p-panel); border-top: 1px solid var(--p-border); padding: 16px 20px; }
+
+  h1 { font-size: 13px; margin: 0 0 4px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--ff-accent); }
+  .sub { font-size: 12px; color: var(--p-dim); margin-bottom: 16px; }
+  .group { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--p-border); }
+  .group:last-child { border-bottom: none; }
+  .group-title { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--p-dim); margin-bottom: 10px; font-weight: 600; }
+  .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 12px; }
+  .row label { font-size: 12px; color: var(--p-text); flex: 1; }
+  .row .val { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 11px; color: var(--ff-accent); min-width: 42px; text-align: right; }
+  input[type="range"] { width: 100%; accent-color: var(--ff-accent); }
+  select, button {
+    background: var(--p-panel-2); color: var(--p-text);
+    border: 1px solid var(--p-border); border-radius: 6px;
+    padding: 6px 10px; font-size: 12px; font-family: inherit;
+  }
+  select { width: 100%; cursor: pointer; }
+
+  .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .preset-btn {
+    cursor: pointer; text-align: left; padding: 8px 10px;
+    border-radius: 8px; border: 1px solid var(--p-border);
+    background: var(--p-panel-2); color: var(--p-text);
+    font-size: 11px; line-height: 1.3; transition: all 0.15s;
+  }
+  .preset-btn:hover { border-color: var(--ff-accent); }
+  .preset-btn.active { border-color: var(--ff-accent); background: rgba(232,114,74,0.12); }
+  .preset-btn .pt { font-weight: 600; display: block; margin-bottom: 2px; }
+  .preset-btn .pd { color: var(--p-dim); font-size: 10px; }
+
+  .toggle-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .toggle-btn {
+    padding: 6px 10px; border-radius: 6px; border: 1px solid var(--p-border);
+    background: var(--p-panel-2); color: var(--p-text);
+    cursor: pointer; font-size: 11px;
+  }
+  .toggle-btn.active { border-color: var(--ff-accent); background: rgba(232,114,74,0.12); color: var(--ff-accent); }
+
+  /* Phone frame */
+  .phone {
+    width: 360px; height: 720px;
+    background: var(--ff-bg);
+    border-radius: 42px;
+    border: 10px solid #0a0806;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .phone-notch {
+    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+    width: 90px; height: 22px; background: #0a0806;
+    border-radius: 0 0 14px 14px; z-index: 10;
+  }
+  .screen-content {
+    flex: 1; padding: 44px 16px 100px; overflow: hidden;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .app-title { font-family: Georgia, serif; font-weight: 900; font-size: 22px; color: var(--ff-text); letter-spacing: -0.5px; margin: 8px 4px 4px; }
+  .mock-card {
+    background: var(--ff-card);
+    border: 1px solid var(--ff-border);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(44,36,32,0.06);
+  }
+  .mock-card .mc-meta { font-size: 11px; color: var(--ff-textMuted); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px; }
+  .mock-card .mc-title { font-family: Georgia, serif; font-size: 14px; color: var(--ff-text); line-height: 1.5; }
+
+  /* Nav bar container */
+  .nav-wrap {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+  }
+  .nav-svg { display: block; width: 100%; }
+
+  .labels-layer {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: flex-end;
+    pointer-events: none;
+  }
+  .tab-label {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 2px; padding-bottom: 10px;
+  }
+  .tab-label svg { width: 22px; height: 22px; }
+  .tab-label .tl { font-size: 10px; font-weight: 600; color: var(--ff-textMuted); }
+  .tab-label.center { visibility: hidden; }
+
+  /* Prompt output */
+  .prompt-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--p-dim); margin-bottom: 6px; font-weight: 600; }
+  .prompt-box {
+    background: var(--p-panel-2);
+    border: 1px solid var(--p-border);
+    border-radius: 8px; padding: 12px;
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 12px; line-height: 1.55;
+    color: var(--p-text);
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 140px; overflow-y: auto;
+  }
+  .copy-btn {
+    margin-top: 8px; padding: 8px 14px;
+    background: var(--ff-accent); color: white;
+    border: none; border-radius: 6px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { filter: brightness(1.1); }
+  .copy-btn.copied { background: #4CAF7C; }
+
+  .bg-toggle-row { display: flex; gap: 6px; }
+  .bg-swatch {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 2px solid var(--p-border); cursor: pointer;
+  }
+  .bg-swatch.active { border-color: var(--ff-accent); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="controls">
+    <h1>Mic Nestle</h1>
+    <div class="sub">Bottom nav bar shape around the record button</div>
+
+    <div class="group">
+      <div class="group-title">Presets</div>
+      <div class="presets" id="presets"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Notch Shape</div>
+      <div class="row">
+        <label>Style</label>
+        <select id="shape">
+          <option value="circle">Circular (U)</option>
+          <option value="bezier">Smooth bezier</option>
+          <option value="wide">Wide gentle scoop</option>
+          <option value="tab">Rounded tab</option>
+          <option value="flat">Flat (no notch)</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Notch depth</label>
+        <input type="range" id="depth" min="0" max="50" step="1" value="28">
+        <span class="val" id="depthVal">28</span>
+      </div>
+      <div class="row">
+        <label>Notch width</label>
+        <input type="range" id="width" min="60" max="180" step="2" value="100">
+        <span class="val" id="widthVal">100</span>
+      </div>
+      <div class="row">
+        <label>Edge softness</label>
+        <input type="range" id="soften" min="0" max="40" step="1" value="18">
+        <span class="val" id="softenVal">18</span>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Mic Button</div>
+      <div class="row">
+        <label>Size</label>
+        <input type="range" id="micSize" min="48" max="80" step="1" value="60">
+        <span class="val" id="micSizeVal">60</span>
+      </div>
+      <div class="row">
+        <label>Lift above bar</label>
+        <input type="range" id="micLift" min="-20" max="36" step="1" value="8">
+        <span class="val" id="micLiftVal">8</span>
+      </div>
+      <div class="row">
+        <label>Ring gap</label>
+        <input type="range" id="micGap" min="0" max="12" step="1" value="4">
+        <span class="val" id="micGapVal">4</span>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Bar</div>
+      <div class="row">
+        <label>Height</label>
+        <input type="range" id="barH" min="56" max="96" step="1" value="72">
+        <span class="val" id="barHVal">72</span>
+      </div>
+      <div class="row">
+        <label>Shadow</label>
+        <input type="range" id="shadow" min="0" max="30" step="1" value="12">
+        <span class="val" id="shadowVal">12</span>
+      </div>
+      <div class="row">
+        <label>Top border</label>
+        <div class="toggle-row">
+          <button class="toggle-btn active" data-border="yes">On</button>
+          <button class="toggle-btn" data-border="no">Off</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Preview</div>
+      <div class="row">
+        <label>Background</label>
+        <div class="bg-toggle-row" id="bgToggle">
+          <div class="bg-swatch active" data-bg="#FAF8F5" style="background:#FAF8F5"></div>
+          <div class="bg-swatch" data-bg="#F5E6C8" style="background:#F5E6C8"></div>
+          <div class="bg-swatch" data-bg="#F5F0EB" style="background:#F5F0EB"></div>
+          <div class="bg-swatch" data-bg="#2C2420" style="background:#2C2420"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="preview">
+      <div class="phone" id="phone">
+        <div class="phone-notch"></div>
+        <div class="screen-content" id="screen">
+          <div class="app-title">Forever Fireflies</div>
+          <div class="mock-card">
+            <div class="mc-meta">APR 19 · 7:42 PM</div>
+            <div class="mc-title">Mila chased the fireflies until she was laughing so hard she fell backwards in the grass.</div>
+          </div>
+          <div class="mock-card">
+            <div class="mc-meta">APR 18 · 8:15 AM</div>
+            <div class="mc-title">First time she asked "why is the sky blue?" at breakfast — wasn't ready for it.</div>
+          </div>
+          <div class="mock-card">
+            <div class="mc-meta">APR 17 · 6:30 PM</div>
+            <div class="mc-title">Tried broccoli without gagging. Progress.</div>
+          </div>
+        </div>
+        <div class="nav-wrap" id="navWrap"></div>
+        <div class="labels-layer" id="labels"></div>
+      </div>
+    </div>
+
+    <div class="prompt-wrap">
+      <div class="prompt-label">Prompt to send back to Claude</div>
+      <div class="prompt-box" id="prompt"></div>
+      <button class="copy-btn" id="copyBtn">Copy Prompt</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULTS = {
+  shape: 'circle',
+  depth: 28,
+  width: 100,
+  soften: 18,
+  micSize: 60,
+  micLift: 8,
+  micGap: 4,
+  barH: 72,
+  shadow: 12,
+  border: 'yes',
+  bg: '#FAF8F5',
+};
+
+const PRESETS = [
+  {
+    id: 'fullNestle',
+    title: 'Full nestle',
+    desc: 'Mic sits deep in the bar',
+    values: { shape: 'circle', depth: 34, width: 96, soften: 12, micSize: 60, micLift: 2, micGap: 4, barH: 72, shadow: 14, border: 'yes' },
+  },
+  {
+    id: 'gentleScoop',
+    title: 'Gentle scoop',
+    desc: 'Soft wide cradle',
+    values: { shape: 'wide', depth: 22, width: 140, soften: 28, micSize: 60, micLift: 14, micGap: 4, barH: 72, shadow: 12, border: 'yes' },
+  },
+  {
+    id: 'tabNotch',
+    title: 'Tab notch',
+    desc: 'Rounded rectangular cutout',
+    values: { shape: 'tab', depth: 30, width: 110, soften: 16, micSize: 58, micLift: 6, micGap: 4, barH: 72, shadow: 10, border: 'yes' },
+  },
+  {
+    id: 'deepEmbrace',
+    title: 'Deep embrace',
+    desc: 'Bar wraps most of the mic',
+    values: { shape: 'circle', depth: 42, width: 92, soften: 10, micSize: 60, micLift: -8, micGap: 6, barH: 76, shadow: 16, border: 'yes' },
+  },
+  {
+    id: 'floatingDome',
+    title: 'Floating dome',
+    desc: 'Hint of curve, mic stays up',
+    values: { shape: 'bezier', depth: 14, width: 110, soften: 34, micSize: 60, micLift: 22, micGap: 4, barH: 72, shadow: 12, border: 'yes' },
+  },
+  {
+    id: 'currentFloat',
+    title: 'Current (float)',
+    desc: 'What ships today',
+    values: { shape: 'flat', depth: 0, width: 100, soften: 0, micSize: 60, micLift: 32, micGap: 4, barH: 72, shadow: 10, border: 'yes' },
+  },
+];
+
+const state = { ...DEFAULTS };
+const PHONE_W = 340; // inner width minus border
+
+function buildPresets() {
+  const wrap = document.getElementById('presets');
+  wrap.innerHTML = PRESETS.map(p =>
+    `<button class="preset-btn" data-preset="${p.id}"><span class="pt">${p.title}</span><span class="pd">${p.desc}</span></button>`
+  ).join('');
+  wrap.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const preset = PRESETS.find(p => p.id === btn.dataset.preset);
+      Object.assign(state, preset.values);
+      syncControls();
+      updateAll();
+      wrap.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+}
+
+function syncControls() {
+  document.getElementById('shape').value = state.shape;
+  ['depth', 'width', 'soften', 'micSize', 'micLift', 'micGap', 'barH', 'shadow'].forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.value = state[k];
+    const v = document.getElementById(k + 'Val');
+    if (v) v.textContent = state[k];
+  });
+  document.querySelectorAll('[data-border]').forEach(b => {
+    b.classList.toggle('active', b.dataset.border === state.border);
+  });
+  document.querySelectorAll('.bg-swatch').forEach(s => {
+    s.classList.toggle('active', s.dataset.bg === state.bg);
+  });
+}
+
+function bindControls() {
+  document.getElementById('shape').addEventListener('change', e => {
+    state.shape = e.target.value; updateAll();
+  });
+  ['depth', 'width', 'soften', 'micSize', 'micLift', 'micGap', 'barH', 'shadow'].forEach(k => {
+    document.getElementById(k).addEventListener('input', e => {
+      state[k] = parseInt(e.target.value, 10);
+      document.getElementById(k + 'Val').textContent = state[k];
+      updateAll();
+    });
+  });
+  document.querySelectorAll('[data-border]').forEach(b => {
+    b.addEventListener('click', () => {
+      state.border = b.dataset.border;
+      syncControls();
+      updateAll();
+    });
+  });
+  document.querySelectorAll('.bg-swatch').forEach(s => {
+    s.addEventListener('click', () => {
+      state.bg = s.dataset.bg;
+      syncControls();
+      updateAll();
+    });
+  });
+}
+
+/**
+ * Build the SVG path for the nav bar shape.
+ * Coordinates: (0,0) is top-left of svg. The bar sits at the bottom.
+ * y=0 is the top-most part of the drawing (where the notch peaks);
+ * the bar's flat top edge is at y=depth.
+ */
+function buildBarPath(w, barH, depth, notchW, soften, shape) {
+  const h = barH + depth;           // total svg height (bar + notch bump)
+  const cx = w / 2;
+  const flatTop = depth;            // y value of the flat part of the bar top
+  const halfN = notchW / 2;
+
+  if (shape === 'flat' || depth === 0) {
+    return { path: `M 0 ${flatTop} L ${w} ${flatTop} L ${w} ${h} L 0 ${h} Z`, h };
+  }
+
+  const left = cx - halfN;
+  const right = cx + halfN;
+  const peakY = 0;                  // top of notch peak
+
+  // Control-point horizontal offset = "edge softness".
+  // Bigger soften = gentler transition into the notch.
+  const s = Math.min(soften, halfN - 4);
+
+  let top = '';
+
+  if (shape === 'circle') {
+    // Curve into notch, circular arc over mic, curve out.
+    const r = halfN; // radius of the arc portion
+    const arcStart = `${left + s} ${peakY + Math.max(0, depth - r)}`; // approximate
+    top =
+      `L ${left} ${flatTop} ` +
+      `C ${left + s} ${flatTop}, ${left + s} ${peakY}, ${cx - r + s} ${peakY} ` +
+      `A ${r - s} ${r - s} 0 0 1 ${cx + r - s} ${peakY} ` +
+      `C ${right - s} ${peakY}, ${right - s} ${flatTop}, ${right} ${flatTop} `;
+  } else if (shape === 'bezier') {
+    // Pure smooth hump using two cubic beziers meeting at peak
+    top =
+      `L ${left} ${flatTop} ` +
+      `C ${left + s} ${flatTop}, ${cx - s} ${peakY}, ${cx} ${peakY} ` +
+      `C ${cx + s} ${peakY}, ${right - s} ${flatTop}, ${right} ${flatTop} `;
+  } else if (shape === 'wide') {
+    // Wide, very gentle scoop using quadratics
+    top =
+      `L ${left} ${flatTop} ` +
+      `Q ${left + s} ${flatTop}, ${cx - (halfN - s) * 0.6} ${peakY + depth * 0.35} ` +
+      `Q ${cx} ${peakY}, ${cx + (halfN - s) * 0.6} ${peakY + depth * 0.35} ` +
+      `Q ${right - s} ${flatTop}, ${right} ${flatTop} `;
+  } else if (shape === 'tab') {
+    // Rounded rectangle cutout
+    const r = Math.min(soften, depth - 2, halfN - 2);
+    top =
+      `L ${left - r} ${flatTop} ` +
+      `Q ${left} ${flatTop}, ${left} ${flatTop - r} ` +
+      `L ${left} ${peakY + r} ` +
+      `Q ${left} ${peakY}, ${left + r} ${peakY} ` +
+      `L ${right - r} ${peakY} ` +
+      `Q ${right} ${peakY}, ${right} ${peakY + r} ` +
+      `L ${right} ${flatTop - r} ` +
+      `Q ${right} ${flatTop}, ${right + r} ${flatTop} `;
+  }
+
+  const path = `M 0 ${flatTop} ${top} L ${w} ${flatTop} L ${w} ${h} L 0 ${h} Z`;
+  return { path, h };
+}
+
+function renderPreview() {
+  const phone = document.getElementById('phone');
+  phone.style.background = state.bg;
+
+  const screen = document.getElementById('screen');
+  screen.style.background = state.bg;
+
+  // When bg is dark, flip text colors for the cards
+  const isDark = state.bg === '#2C2420';
+  screen.querySelectorAll('.mc-title').forEach(el => el.style.color = isDark ? '#FAF8F5' : '#2C2420');
+  screen.querySelectorAll('.app-title').forEach(el => el.style.color = isDark ? '#FAF8F5' : '#2C2420');
+
+  const w = PHONE_W;
+  const { path, h } = buildBarPath(w, state.barH, state.depth, state.width, state.soften, state.shape);
+
+  const cx = w / 2;
+  const flatTop = state.depth;
+  const micR = state.micSize / 2;
+  // Mic center y within the svg: flatTop minus lift (lift moves mic up out of bar)
+  const micCY = flatTop - state.micLift;
+
+  const borderStroke = state.border === 'yes' ? '#EDE8E3' : 'transparent';
+  const shadowOpacity = (state.shadow / 100).toFixed(2);
+  const shadowBlur = state.shadow;
+
+  const svg = `
+    <svg class="nav-svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" preserveAspectRatio="none">
+      <defs>
+        <filter id="barShadow" x="-20%" y="-50%" width="140%" height="200%">
+          <feDropShadow dx="0" dy="-2" stdDeviation="${shadowBlur / 2}" flood-color="#2C2420" flood-opacity="${shadowOpacity}"/>
+        </filter>
+        <filter id="micShadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#E8724A" flood-opacity="0.35"/>
+        </filter>
+      </defs>
+      <path d="${path}" fill="#FEFCF9" stroke="${borderStroke}" stroke-width="1" filter="url(#barShadow)"/>
+      ${state.micGap > 0 ? `<circle cx="${cx}" cy="${micCY}" r="${micR + state.micGap}" fill="${state.bg}"/>` : ''}
+      <circle cx="${cx}" cy="${micCY}" r="${micR}" fill="#E8724A" filter="url(#micShadow)"/>
+      <g transform="translate(${cx}, ${micCY})">
+        <!-- Microphone icon (simple outline) -->
+        <rect x="-6" y="-10" width="12" height="16" rx="6" fill="white"/>
+        <path d="M -10 0 Q -10 10 0 10 Q 10 10 10 0" fill="none" stroke="white" stroke-width="2"/>
+        <line x1="0" y1="10" x2="0" y2="14" stroke="white" stroke-width="2"/>
+      </g>
+    </svg>
+  `;
+
+  const navWrap = document.getElementById('navWrap');
+  navWrap.innerHTML = svg;
+  navWrap.style.height = h + 'px';
+
+  // Icon labels
+  const labels = document.getElementById('labels');
+  labels.style.height = state.barH + 'px';
+  const iconColor = '#B5AAA0';
+  const tabs = [
+    { name: 'Home', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2"><path d="M3 10l9-7 9 7v10a2 2 0 01-2 2h-3v-7H8v7H5a2 2 0 01-2-2V10z"/></svg>` },
+    { name: 'Journal', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2"><path d="M4 4h12a4 4 0 014 4v12H8a4 4 0 01-4-4V4z"/><line x1="8" y1="4" x2="8" y2="20"/></svg>` },
+    { name: 'Record', icon: '' },
+    { name: 'Calendar', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>` },
+    { name: 'Favorites', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2"><path d="M12 21s-7-4.5-9-9a5 5 0 019-3 5 5 0 019 3c-2 4.5-9 9-9 9z"/></svg>` },
+  ];
+  labels.innerHTML = tabs.map(t =>
+    `<div class="tab-label ${t.name === 'Record' ? 'center' : ''}">${t.icon}<span class="tl">${t.name}</span></div>`
+  ).join('');
+}
+
+function updatePrompt() {
+  const parts = [];
+  const shapeWords = {
+    circle: 'a circular U-shaped notch that cradles the mic button',
+    bezier: 'a smooth bezier hump beneath the mic',
+    wide: 'a wide gentle scoop that dips upward around the mic',
+    tab: 'a rounded rectangular tab cutout',
+    flat: 'no notch — a flat bar with the mic floating above',
+  };
+
+  const overlap = state.micSize / 2 - state.micLift;
+  let nestleDesc;
+  if (state.shape === 'flat') {
+    nestleDesc = `The mic floats ${state.micLift}px above the bar (current behavior).`;
+  } else if (state.micLift < 0) {
+    nestleDesc = `The mic sits ${Math.abs(state.micLift)}px below the bar's flat top — almost fully inside the notch.`;
+  } else if (state.micLift < state.micSize / 3) {
+    nestleDesc = `The mic is mostly nestled into the notch, lifting ${state.micLift}px above the flat bar edge.`;
+  } else {
+    nestleDesc = `The mic lifts ${state.micLift}px above the bar, so the notch cradles only its lower half.`;
+  }
+
+  parts.push(`Redesign the bottom nav bar so the white background flows up around the record button instead of the button floating on top.`);
+  parts.push(`\n\nShape: ${shapeWords[state.shape]}.`);
+  parts.push(`\nNotch depth: ${state.depth}px (how far the bar rises toward the mic).`);
+  parts.push(`\nNotch width: ${state.width}px across.`);
+  if (state.shape !== 'flat') {
+    parts.push(`\nEdge softness: ${state.soften}px on the transition curves — ${state.soften < 10 ? 'crisp' : state.soften < 25 ? 'balanced' : 'very soft'}.`);
+  }
+  parts.push(`\nMic button: ${state.micSize}px diameter.`);
+  parts.push(`\n${nestleDesc}`);
+  if (state.micGap > 0) {
+    parts.push(`\nA ${state.micGap}px gap ring separates the mic from the bar edge so the orange circle doesn't touch the white.`);
+  }
+  parts.push(`\nBar height: ${state.barH}px.`);
+  parts.push(`\nTop shadow: ${state.shadow === 0 ? 'none' : `warm brown rgba(44,36,32,${(state.shadow / 100).toFixed(2)}), ${state.shadow / 2}px blur, offset upward`}.`);
+  if (state.border === 'yes') parts.push(`\n1px top border in --border (#EDE8E3).`);
+
+  parts.push(`\n\nImplementation note: in React Native, render the bar background as an SVG <Path/> (react-native-svg) instead of a plain <View/>, since a View can't produce a concave top edge. Place the mic button absolutely over the notch center. Keep the 5-tab layout (Home, Journal, Record, Calendar, Favorites) — only the center slot changes.`);
+
+  document.getElementById('prompt').textContent = parts.join('');
+}
+
+function updateAll() {
+  renderPreview();
+  updatePrompt();
+}
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const btn = document.getElementById('copyBtn');
+  navigator.clipboard.writeText(document.getElementById('prompt').textContent).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy Prompt';
+      btn.classList.remove('copied');
+    }, 1400);
+  });
+});
+
+// Init
+buildPresets();
+bindControls();
+// Start with "Full nestle" preset
+Object.assign(state, PRESETS[0].values, { bg: DEFAULTS.bg });
+document.querySelector('[data-preset="fullNestle"]').classList.add('active');
+syncControls();
+updateAll();
+</script>
+</body>
+</html>
