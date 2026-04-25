@@ -112,3 +112,24 @@ export function ageInMonths(birthday: string): number {
   const now = new Date();
   return Math.max(0, (now.getFullYear() - b.getFullYear()) * 12 + (now.getMonth() - b.getMonth()));
 }
+
+/**
+ * Total age in months on a specific reference date (typically an entry's date).
+ * Mirrors the year/month math in `getAge`, but returns a number for range comparisons.
+ * Reference < birthday returns 0 (treats future dates as newborn).
+ */
+export function ageInMonthsAt(birthday: string, referenceDate: string): number {
+  const [by, bm, bd] = birthday.split('-').map(Number);
+  const [ry, rm, rd] = referenceDate.split('-').map(Number);
+  const b = new Date(by, bm - 1, bd);
+  const d = new Date(ry, rm - 1, rd);
+  if (b > d) return 0;
+  let years = d.getFullYear() - b.getFullYear();
+  let months = d.getMonth() - b.getMonth();
+  if (d.getDate() < b.getDate()) months--;
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+  return years * 12 + months;
+}

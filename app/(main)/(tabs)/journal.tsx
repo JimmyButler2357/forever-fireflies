@@ -35,7 +35,12 @@ import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
 import { childrenService } from '@/services/children.service';
 import { entriesService } from '@/services/entries.service';
-import { useSearchFilter, collectLocations, getAvailableTags } from '@/hooks/useSearchFilter';
+import {
+  useSearchFilter,
+  collectLocations,
+  collectYears,
+  getAvailableTags,
+} from '@/hooks/useSearchFilter';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { getAge } from '@/lib/dateUtils';
 import { buildChildMap, entryToCard, draftToCard, getFirstEntryBadges } from '@/lib/entryHelpers';
@@ -46,8 +51,7 @@ import TopBar from '@/components/TopBar';
 import ChildTab from '@/components/ChildTab';
 import EntryCard from '@/components/EntryCard';
 import SearchBar from '@/components/SearchBar';
-import FilterChips from '@/components/FilterChips';
-import DateRangePicker from '@/components/DateRangePicker';
+import FilterPanel from '@/components/FilterPanel';
 import { capture } from '@/lib/posthog';
 
 // ─── Animation duration ──────────────────────────────────
@@ -96,8 +100,6 @@ export default function JournalScreen() {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const searchBarRef = useRef<TextInput>(null);
-  const childTabsRef = useRef<ScrollView>(null);
-  const tabPositions = useRef<Record<number, number>>({});
   const searchFilter = useSearchFilter();
 
   // Animated expand/collapse for the search area
@@ -125,29 +127,12 @@ export default function JournalScreen() {
       capture('search_opened');
       const duration = reduceMotion ? 0 : ANIM_DURATION;
       searchAreaOpacity.value = withTiming(1, { duration });
-      // 200 is enough for search bar + filter chips + date picker when open
-      searchAreaHeight.value = withTiming(200, { duration });
+      // 720 leaves headroom for the four faceted rows when fully expanded.
+      // The actual content sets its own height; maxHeight just clamps it.
+      searchAreaHeight.value = withTiming(720, { duration });
       setTimeout(() => searchBarRef.current?.focus(), reduceMotion ? 50 : 280);
     }
   }, [isSearchActive, reduceMotion]);
-
-  // ─── Scroll child tabs to show the active filter ─────────
-  //
-  // When the active child filter changes (e.g. from the Home
-  // tab's "See all memories" link), scroll the child tabs
-  // so the selected pill is visible at the left edge.
-  useEffect(() => {
-    if (!activeFilter || !childTabsRef.current) return;
-
-    const childIndex = children.findIndex((c) => c.id === activeFilter);
-    if (childIndex < 0) return;
-
-    // Index in tabPositions is childIndex + 1 (because "All" is at index 0)
-    const tabX = tabPositions.current[childIndex + 1];
-    if (tabX !== undefined) {
-      childTabsRef.current.scrollTo({ x: tabX, animated: true });
-    }
-  }, [activeFilter, children]);
 
   // ─── Fetch real data from Supabase on mount ──────────────
 
@@ -199,11 +184,22 @@ export default function JournalScreen() {
     return activeEntries.filter((e) => e.childIds.includes(activeFilter));
   }, [activeEntries, activeFilter]);
 
+  // Build child lookup for fast access
+  const childMap = useMemo(() => buildChildMap(children), [children]);
+
+  // The child whose birthday powers age filtering — defined when one child
+  // is in scope (single-child family or active child tab).
+  const scopeChild = useMemo<Child | undefined>(() => {
+    if (activeFilter) return childMap[activeFilter];
+    if (children.length === 1) return children[0];
+    return undefined;
+  }, [activeFilter, children, childMap]);
+
   // Step 2: Apply search + tag + date filters on top
   const displayedEntries = useMemo(() => {
     if (!isSearchActive) return childFiltered;
-    return searchFilter.filterEntries(childFiltered);
-  }, [childFiltered, isSearchActive, searchFilter.filterEntries, searchFilter.query, searchFilter.selectedTags, searchFilter.selectedLocations, searchFilter.dateRangeIndex]);
+    return searchFilter.filterEntries(childFiltered, scopeChild);
+  }, [childFiltered, isSearchActive, searchFilter.filterEntries, scopeChild]);
 
   // Tags that would still produce results if selected (progressive disclosure)
   const availableTags = useMemo(
@@ -215,13 +211,10 @@ export default function JournalScreen() {
     [searchFilter.selectedTags, availableTags],
   );
   const allLocations = useMemo(() => collectLocations(entries), [entries]);
+  const availableYears = useMemo(() => collectYears(activeEntries), [activeEntries]);
 
-  const isMultiChild = children.length >= 2;
   const isSingleChild = children.length === 1;
   const isFirstEntry = activeEntries.length === 1;
-
-  // Build child lookup for fast access
-  const childMap = useMemo(() => buildChildMap(children), [children]);
 
   // Identify each child's earliest entry for "first memory" badges
   const firstMemoryBadges = useMemo(
@@ -292,24 +285,23 @@ export default function JournalScreen() {
           onChangeText={searchFilter.setQuery}
           onClear={() => searchFilter.setQuery('')}
         />
-        <FilterChips
-          allTags={visibleTags}
+        <FilterPanel
+          children={children}
+          activeChildId={activeFilter}
+          onSelectChild={setFilter}
+          visibleTags={visibleTags}
           selectedTags={searchFilter.selectedTags}
           onToggleTag={searchFilter.toggleTag}
           allLocations={allLocations}
           selectedLocations={searchFilter.selectedLocations}
           onToggleLocation={searchFilter.toggleLocation}
-          dateRangeIndex={searchFilter.dateRangeIndex}
-          onToggleDatePicker={() => searchFilter.setShowDatePicker(!searchFilter.showDatePicker)}
+          availableYears={availableYears}
+          scopeChild={scopeChild}
+          dateFilter={searchFilter.dateFilter}
+          onSetDateFilter={searchFilter.setDateFilter}
           hasActiveFilters={searchFilter.hasActiveFilters}
           onClearAll={searchFilter.clearAll}
         />
-        {searchFilter.showDatePicker && (
-          <DateRangePicker
-            activeIndex={searchFilter.dateRangeIndex}
-            onSelect={searchFilter.toggleDateRange}
-          />
-        )}
       </Animated.View>
 
       {/* First-entry celebration banner */}
@@ -333,42 +325,37 @@ export default function JournalScreen() {
         </View>
       )}
 
-      {/* Child tabs — multi-child only */}
-      {isMultiChild && (
+      {/* Multi-child tabs now live inside FilterPanel (Child row).
+          When search is closed, fall back to the inline child-tab row so
+          users can still filter without opening search. */}
+      {!isSearchActive && children.length >= 2 && (
         <ScrollView
-          ref={childTabsRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.tabScroll}
           contentContainerStyle={styles.tabRow}
         >
-          <View onLayout={(e) => { tabPositions.current[0] = e.nativeEvent.layout.x; }}>
+          <ChildTab
+            label="All"
+            color={colors.general}
+            active={activeFilter === null}
+            onPress={() => setFilter(null)}
+            showDot={false}
+          />
+          {children.map((child) => (
             <ChildTab
-              label="All"
-              color={colors.general}
-              active={activeFilter === null}
-              onPress={() => setFilter(null)}
-              showDot={false}
-            />
-          </View>
-          {children.map((child, i) => (
-            <View
               key={child.id}
-              onLayout={(e) => { tabPositions.current[i + 1] = e.nativeEvent.layout.x; }}
-            >
-              <ChildTab
-                label={child.name}
-                color={childColors[child.colorIndex]?.hex ?? childColors[0].hex}
-                active={activeFilter === child.id}
-                onPress={() => setFilter(child.id)}
-              />
-            </View>
+              label={child.name}
+              color={childColors[child.colorIndex]?.hex ?? childColors[0].hex}
+              active={activeFilter === child.id}
+              onPress={() => setFilter(child.id)}
+            />
           ))}
         </ScrollView>
       )}
 
       {/* Single child info pill */}
-      {isSingleChild && (
+      {isSingleChild && !isSearchActive && (
         <View style={styles.singleChildRow}>
           <View
             style={[
@@ -461,7 +448,13 @@ export default function JournalScreen() {
               <Ionicons name="search-outline" size={48} color={colors.textMuted} />
               <Text style={styles.emptyHeading}>No memories found</Text>
               <Text style={styles.emptyBody}>
-                Try different keywords or filters.
+                {searchFilter.dateFilter?.kind === 'year'
+                  ? `Nothing from ${searchFilter.dateFilter.year} yet.`
+                  : searchFilter.dateFilter?.kind === 'ageAt' && scopeChild
+                  ? `No memories from when ${scopeChild.name} was ${searchFilter.dateFilter.year}. Try a wider range.`
+                  : searchFilter.dateFilter?.kind === 'ageRange' && scopeChild
+                  ? `No memories from that age yet for ${scopeChild.name}. Try a wider range.`
+                  : 'Try different keywords or filters.'}
               </Text>
             </View>
           ) : userDrafts.length > 0 ? null : (
