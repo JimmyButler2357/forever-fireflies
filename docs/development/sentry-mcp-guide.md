@@ -85,7 +85,7 @@ new since the previous release.
 
 ## Workflow 4 — Weekly performance triage (automated, not yet applicable)
 
-Sentry's official cookbook recipe: a scheduled Claude Code task fires weekly, queries the slowest endpoints, runs Seer, opens PRs. **Don't use this yet** — Forever Fireflies is still in internal testing and doesn't have the error volume to justify automation. Revisit once you have a real user base generating real signal.
+Sentry's official cookbook recipe: a scheduled Claude Code task fires weekly, queries the slowest endpoints, runs Seer, opens PRs. **Don't use this yet** — Forever Fireflies is still in closed testing and doesn't have the error volume to justify automation. Revisit once you have a real user base generating real signal.
 
 When the time comes, the essentials are:
 - Scheduled task, e.g. Mondays 9am

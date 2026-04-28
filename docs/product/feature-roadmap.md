@@ -8,7 +8,7 @@ Last updated: April 2026
 
 ## Current Status (April 2026)
 
-**Where we are:** Phases 1–9 are shipped. The app works end-to-end in development and Android APK preview builds. All launch-gating work now lives in **Phase 10A (Before Beta)** and **Phase 10B (Before Public Launch)** below.
+**Where we are:** Phases 1–9 are shipped. The app works end-to-end in development and is live on **Google Play Closed Testing** with a small group of real parent testers (under 15). All launch-gating work now lives in **Phase 10A (Before Beta)** and **Phase 10B (Before Public Launch)** below.
 
 ### In Progress
 
@@ -23,7 +23,6 @@ Last updated: April 2026
 | Blocker | Cost | Gates |
 |---------|------|-------|
 | Apple Developer Program | $99/yr | TestFlight, App Store, RevenueCat↔App Store, Small Business Program |
-| Google Play Console | $25 one-time | Play Internal Testing, Play Store listing, RevenueCat↔Play |
 | Physical iPhone | hardware | iOS-specific testing (simulator can't do voice, social auth, or push) |
 | Xcode on Mac | hardware | iOS builds via EAS |
 
@@ -272,11 +271,11 @@ Right now there's one Supabase project for everything. Before beta testers recor
 #### Beta Distribution
 
 - [ ] Build **iOS beta** via EAS (`preview` profile) → upload to **TestFlight**
-- [ ] Build **Android beta** via EAS (`preview` profile, AAB) → upload to **Google Play Internal Testing** track
-  - Update `eas.json` preview profile: change `buildType` from `"apk"` to `"app-bundle"`
-  - Create app listing in Google Play Console (basics only — name + placeholder description)
-  - Add testers by email → they get a Play Store install link (auto-updates, no sideloading)
-- [ ] Recruit **15-25 real parents** as beta testers (mix of iOS + Android)
+- [x] Build **Android beta** via EAS (`preview` profile, AAB) → upload to **Google Play Closed Testing** track
+  - [x] Update `eas.json` preview profile: change `buildType` from `"apk"` to `"app-bundle"`
+  - [x] Create app listing in Google Play Console (basics only — name + placeholder description)
+  - [x] Add testers by email → they get a Play Store install link (auto-updates, no sideloading)
+- [ ] Recruit **15-25 real parents** as beta testers (mix of iOS + Android) — *in progress: <15 parents on Android closed testing; iOS pending Apple Dev enrollment*
 - [ ] Collect feedback → fix → rebuild → repeat
 
 ### Phase 10B: Before Public Launch
@@ -359,7 +358,7 @@ Polish on the shipped V1.0 photo system (child profile photos + entry photos). P
 | M7 | Habit loop | Personalized notifications drive daily recording | 7 ✅ |
 | M8 | Money works | Trial → paywall → subscribe via RevenueCat | 8 ✅ |
 | M9 | Beta ready | Dev/prod split, RevenueCat live, rebrand done | 10A |
-| M10 | Beta | TestFlight + APK in real parents' hands | 10A |
+| M10 | Beta | TestFlight + APK in real parents' hands | 10A 🟡 *(Android closed testing live; TestFlight pending Apple Dev)* |
 | M11 | Ship | App Store + Google Play submission | 10B |
 
 ---
