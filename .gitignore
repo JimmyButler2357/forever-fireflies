@@ -58,5 +58,8 @@ gallery/
 # Claude Code plans (session-specific)
 .claude/plans/
 
+# Local design playground / experimental UI mockups
+playground/
+
 # Competitor reference images (research only)
 references/

@@ -9,10 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  LayoutAnimation,
-  UIManager,
   Image,
 } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +32,7 @@ import { childrenService } from '@/services/children.service';
 import { storageService } from '@/services/storage.service';
 import { formatDate } from '@/lib/dateUtils';
 import { compressPhoto } from '@/lib/imageCompression';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 import PhotoCropper from '@/components/PhotoCropper';
 import PrimaryButton from '@/components/PrimaryButton';
 import BirthdayPicker from '@/components/BirthdayPicker';
@@ -65,15 +65,10 @@ type PendingPhotoAction =
 // anything locally — we never want local and server data to
 // get out of sync.
 
-// Enable LayoutAnimation on Android (iOS works out of the box).
-// This lets us animate the form expanding/collapsing smoothly.
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 export default function AddChildScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReduceMotion();
   const { children, addChildLocal, removeChildLocal, updateChildLocal } = useChildrenStore();
   const familyId = useAuthStore((s) => s.familyId);
 
@@ -253,9 +248,8 @@ export default function AddChildScreen() {
         }
       }
 
-      // Reset form fields and collapse it. LayoutAnimation makes
-      // the form smoothly shrink away instead of popping out.
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      // Reset form fields and collapse it. The Animated.View `layout`
+      // prop on the form card animates the shrink-away.
       setName('');
       setNickname('');
       setBirthday('');
@@ -307,7 +301,6 @@ export default function AddChildScreen() {
 
       // If that was the last child, show the form again
       if (children.length <= 1) {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setShowForm(true);
       }
     } catch (error) {
@@ -318,7 +311,6 @@ export default function AddChildScreen() {
 
   // Expand the form with a smooth animation
   const handleShowForm = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setShowForm(true);
   };
 
@@ -327,7 +319,6 @@ export default function AddChildScreen() {
     const child = children.find((c) => c.id === childId);
     if (!child) return;
 
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setName(child.name);
     setNickname(child.nickname ?? '');
     setBirthday(child.birthday ?? '');
@@ -360,7 +351,6 @@ export default function AddChildScreen() {
 
   // Collapse the form without saving
   const handleCancelForm = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setName('');
     setNickname('');
     setBirthday('');
@@ -438,7 +428,10 @@ export default function AddChildScreen() {
 
         {/* Form card — only visible when adding a child */}
         {showForm && (
-          <View style={styles.card}>
+          <Animated.View
+            style={styles.card}
+            layout={reduceMotion ? undefined : LinearTransition.duration(250)}
+          >
             {/* Name field */}
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>Name</Text>
@@ -519,11 +512,14 @@ export default function AddChildScreen() {
                 )}
               </View>
             </View>
-          </View>
+          </Animated.View>
         )}
 
         {/* Buttons */}
-        <View style={styles.buttonArea}>
+        <Animated.View
+          style={styles.buttonArea}
+          layout={reduceMotion ? undefined : LinearTransition.duration(250)}
+        >
           <PrimaryButton
             label={getButtonLabel()}
             onPress={handleButtonPress}
@@ -548,7 +544,7 @@ export default function AddChildScreen() {
               <Text style={styles.cancelLink}>Cancel</Text>
             </Pressable>
           )}
-        </View>
+        </Animated.View>
       </ScrollView>
 
       {/* In-app circular cropper — appears after the user picks a photo.

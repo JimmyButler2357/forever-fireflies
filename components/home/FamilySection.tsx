@@ -14,7 +14,7 @@ import type { PhotoState } from '@/lib/photoUrlCache';
  * detailed stats for that child.
  */
 
-const AVATAR_SIZE = 52;
+const AVATAR_SIZE = 72;
 const RING_WIDTH = 3;
 
 interface FamilySectionProps {
@@ -98,7 +98,10 @@ export default function FamilySection({
 
 const styles = StyleSheet.create({
   container: {
-    // No horizontal padding — ScrollView handles its own padding
+    // No horizontal padding — ScrollView handles its own padding.
+    // Pulls the next section up 8px so the gap below the age label
+    // reads as 16px instead of the global 24px section break.
+    marginBottom: -spacing(2),
   },
   avatarRow: {
     flexGrow: 1,

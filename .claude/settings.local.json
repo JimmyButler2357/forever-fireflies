@@ -26,7 +26,11 @@
       "Bash(find /c/Projects/forever-fireflies -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec grep -l \"photo\\\\|image.*picker\\\\|ImagePicker\" {} \\\\;)",
       "Bash(grep -i \".js$\")",
       "mcp__supabase__execute_sql",
-      "mcp__supabase__get_logs"
+      "mcp__supabase__get_logs",
+      "Bash(gh api *)",
+      "Read(//c/Projects/Twitter Bookmarks/data/deep-dives/**)",
+      "Read(//c/Projects/Twitter Bookmarks/data/summaries/**)",
+      "Bash(xargs grep *)"
     ]
   }
 }

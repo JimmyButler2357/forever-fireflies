@@ -5,10 +5,8 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  LayoutAnimation,
-  Platform,
-  UIManager,
 } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import {
   colors,
@@ -17,10 +15,6 @@ import {
   minTouchTarget,
 } from '@/constants/theme';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 interface FilterRowProps {
   label: string;
@@ -61,17 +55,17 @@ export default function FilterRow({
 
   const handleToggle = useCallback(() => {
     if (!collapsible) return;
-    if (!reduceMotion) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    }
     onToggle();
-  }, [onToggle, reduceMotion, collapsible]);
+  }, [onToggle, collapsible]);
 
   const showSummary = !expanded && summary != null;
   const hasContent = emptyHint == null;
 
   return (
-    <View style={styles.row}>
+    <Animated.View
+      style={styles.row}
+      layout={reduceMotion ? undefined : LinearTransition.duration(250)}
+    >
       <Pressable
         onPress={handleToggle}
         style={({ pressed }) => [
@@ -119,7 +113,7 @@ export default function FilterRow({
       {expanded && !hasContent && (
         <Text style={styles.emptyHint}>{emptyHint}</Text>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
