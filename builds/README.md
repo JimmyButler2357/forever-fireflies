@@ -11,7 +11,7 @@ AAB/APK files are not stored in git — they're large and can always be re-downl
 ## How to rebuild
 
 ```bash
-# Preview (internal testing / beta)
+# Preview (closed testing / beta)
 npx eas build --profile preview --platform android
 
 # Development (local dev with hot reload)
