@@ -189,6 +189,8 @@ Deno.serve(async (_req) => {
           body: messageBody,
           sound: 'default',
           categoryId: 'daily-reminder',
+          collapseId: 'daily-prompt',
+          tag: 'daily-prompt',
           data: {
             notificationLogId: logEntry.id,
           },
