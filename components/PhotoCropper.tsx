@@ -4,7 +4,6 @@ import {
   Text,
   Pressable,
   Modal,
-  Image,
   Animated,
   PanResponder,
   ActivityIndicator,
@@ -51,6 +50,16 @@ export default function PhotoCropper({ visible, sourceUri, onCancel, onConfirm }
   const circleDiameter = Math.min(280, screenWidth - spacing(8) * 2);
 
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
+  // Orientation-normalized copy of the source. Phone cameras (both
+  // iOS and Android) store portrait photos as landscape pixel grids
+  // with a "rotate 90° CW for display" EXIF flag. <Animated.Image>
+  // renders correctly with that flag, but manipulateAsync's crop
+  // coordinates apply to the underlying pixel grid — so portrait
+  // camera photos crop with a top-left bias while screenshots and
+  // already-edited photos work fine. Re-encoding through
+  // manipulateAsync once bakes orientation into the pixels and strips
+  // EXIF, putting display and crop into the same coordinate frame.
+  const [normalizedUri, setNormalizedUri] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   // Stage size — measured on layout so the SVG mask can render with
   // exact dimensions (the stage is `flex: 1` so we can't know up-front).
@@ -91,10 +100,15 @@ export default function PhotoCropper({ visible, sourceUri, onCancel, onConfirm }
     baseCoverScaleRef.current = baseCoverScale;
   }, [baseCoverScale]);
 
-  // Reset transforms whenever a new source image loads.
+  // Reset transforms whenever a new source image loads. We also
+  // re-encode the source through manipulateAsync to bake EXIF
+  // orientation into the pixels — see the normalizedUri comment above
+  // for the full reasoning. Doing it here means downstream code
+  // (display, live preview, final crop) all share one coord system.
   useEffect(() => {
     if (!visible) return;
     setImgSize(null);
+    setNormalizedUri(null);
     setIsProcessing(false);
     txRef.current = 0;
     tyRef.current = 0;
@@ -104,15 +118,28 @@ export default function PhotoCropper({ visible, sourceUri, onCancel, onConfirm }
     userScale.setValue(1);
 
     if (!sourceUri) return;
-    Image.getSize(
-      sourceUri,
-      (w, h) => setImgSize({ w, h }),
-      (err) => {
-        console.warn('PhotoCropper: failed to read image size', err);
+
+    // The cancelled flag guards against a stale promise resolving
+    // after the user has dismissed the modal or picked a different
+    // photo — without it, a late setNormalizedUri could leak the
+    // previous photo's URI into the next session.
+    let cancelled = false;
+    manipulateAsync(sourceUri, [], { compress: 1, format: SaveFormat.JPEG })
+      .then((normalized) => {
+        if (cancelled) return;
+        setNormalizedUri(normalized.uri);
+        setImgSize({ w: normalized.width, h: normalized.height });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.warn('PhotoCropper: failed to normalize image', err);
         Alert.alert('Could not read photo', 'Please try a different photo.');
         onCancel();
-      },
-    );
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [visible, sourceUri]);
 
   // Clamp translate so the image always fully covers the circle —
@@ -238,7 +265,7 @@ export default function PhotoCropper({ visible, sourceUri, onCancel, onConfirm }
   // Crop the source at full quality. compressPhoto runs after this at
   // the call site, applying the standard 1600 px / 0.8 quality pass.
   const handleConfirm = async () => {
-    if (!sourceUri || !imgSize) return;
+    if (!normalizedUri || !imgSize) return;
     setIsProcessing(true);
     try {
       const displayedScale = baseCoverScale * sRef.current;
@@ -260,7 +287,7 @@ export default function PhotoCropper({ visible, sourceUri, onCancel, onConfirm }
       cropSize = Math.min(cropSize, imgSize.w - originX, imgSize.h - originY);
 
       const result = await manipulateAsync(
-        sourceUri,
+        normalizedUri,
         [
           {
             crop: {
@@ -336,9 +363,9 @@ export default function PhotoCropper({ visible, sourceUri, onCancel, onConfirm }
             setStageSize({ w: width, h: height });
           }}
         >
-          {imgSize && sourceUri ? (
+          {imgSize && normalizedUri ? (
             <Animated.Image
-              source={{ uri: sourceUri }}
+              source={{ uri: normalizedUri }}
               style={[
                 {
                   position: 'absolute',
@@ -388,7 +415,7 @@ export default function PhotoCropper({ visible, sourceUri, onCancel, onConfirm }
                 size={size}
                 circleDiameter={circleDiameter}
                 imgSize={imgSize}
-                sourceUri={sourceUri}
+                sourceUri={normalizedUri}
                 translateX={translateX}
                 translateY={translateY}
                 userScale={userScale}

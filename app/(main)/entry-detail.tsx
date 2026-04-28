@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, Fragment } from 'react';
 import {
   View,
   Text,
@@ -12,8 +12,9 @@ import {
   ActivityIndicator,
   GestureResponderEvent,
   Alert,
-  Dimensions,
   Image,
+  Modal,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,7 +43,6 @@ import FavoriteAnimation from '@/components/FavoriteAnimation';
 import ChildSelectModal from '@/components/ChildSelectModal';
 import CityAutocomplete from '@/components/CityAutocomplete';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { useLocationPermission, useLocation } from '@/hooks/useLocation';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
@@ -102,12 +102,12 @@ const FREQUENT_TAGS = [
 
 // ─── Photo Grid Constants ──────────────────────────────
 //
-// The photo grid is a 2×2 layout below the transcript.
-// Screen width minus horizontal padding (20px each side = 40px)
-// minus the gap between columns (8px), divided by 2.
-const SCREEN_WIDTH = Dimensions.get('window').width;
+// The photo grid is a 2-up layout below the transcript.
+// The actual thumb size is computed inside the component
+// from useWindowDimensions() so it tracks viewport changes
+// (e.g. browser resize during web preview) and stays bounded
+// on wide viewports — see the photoThumbSize calculation.
 const PHOTO_GRID_GAP = 8;
-const PHOTO_THUMB_SIZE = (SCREEN_WIDTH - 40 - PHOTO_GRID_GAP) / 2;
 
 // ─── Audio Constants ────────────────────────────────────
 
@@ -180,6 +180,10 @@ function getBarColor(barIndex: number, childHexColors: string[]): string {
 // Think of it like a skeleton loader — it shows the shape of text
 // lines while the real content is being prepared behind the scenes.
 
+// Shimmer bars sit directly on cream now (no card). They mimic
+// a paragraph of Merriweather text — slightly taller than the
+// old bars (matches transcript line-height) so the loading state
+// has the same vertical mass as the real text that replaces it.
 const SHIMMER_BARS = [
   { width: '100%' },
   { width: '85%' },
@@ -187,18 +191,18 @@ const SHIMMER_BARS = [
 ] as const;
 
 function TranscriptShimmer() {
-  const opacity = useRef(new Animated.Value(0.3)).current;
+  const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(opacity, {
-          toValue: 0.7,
+          toValue: 0.8,
           duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
-          toValue: 0.3,
+          toValue: 0.4,
           duration: 600,
           useNativeDriver: true,
         }),
@@ -209,16 +213,16 @@ function TranscriptShimmer() {
   }, []);
 
   return (
-    <Animated.View style={{ opacity, paddingVertical: 8 }}>
+    <Animated.View style={{ opacity, paddingVertical: spacing(2) }}>
       {SHIMMER_BARS.map((bar, i) => (
         <View
           key={i}
           style={{
             width: bar.width,
-            height: 12,
-            backgroundColor: colors.card,
-            borderRadius: 6,
-            marginBottom: i < SHIMMER_BARS.length - 1 ? 10 : 0,
+            height: 14,
+            backgroundColor: colors.border,
+            borderRadius: 4,
+            marginBottom: i < SHIMMER_BARS.length - 1 ? 12 : 0,
           }}
         />
       ))}
@@ -240,20 +244,21 @@ function TranscriptShimmer() {
 // The skeleton uses the same pulse pattern as TranscriptShimmer, keyed
 // on the photo id so each thumb animates independently.
 
+// Paper border inside the tilted frame — like a Polaroid mat.
+const PHOTO_PAPER_BORDER = 6;
+
 function PhotoThumb({
   uri,
   hasUri,
   size,
-  borderRadius,
-  onRemove,
-  canRemove,
+  onLongPress,
+  tiltDeg,
 }: {
   uri: string | undefined;
   hasUri: boolean;
   size: number;
-  borderRadius: number;
-  onRemove?: () => void;
-  canRemove: boolean;
+  onLongPress?: () => void;
+  tiltDeg: number;
 }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -271,73 +276,75 @@ function PhotoThumb({
     return () => anim.stop();
   }, [isLoaded, pulse]);
 
-  // If the uri changes (e.g. a fresh signed URL after focus refresh),
-  // retry rendering: clear the error + reset the loaded flag so the
-  // skeleton shows during the re-decode.
   useEffect(() => {
     setHasError(false);
     setIsLoaded(false);
   }, [uri]);
 
   const showSkeleton = !hasUri || (!isLoaded && !hasError);
+  const innerSize = size - PHOTO_PAPER_BORDER * 2;
 
   return (
-    <View
+    <Pressable
+      onLongPress={onLongPress}
+      delayLongPress={400}
       style={{
         width: size,
         height: size,
-        borderRadius,
-        overflow: 'hidden',
-        backgroundColor: colors.bg,
+        padding: PHOTO_PAPER_BORDER,
+        backgroundColor: colors.card,
+        borderRadius: radii.sm,
+        transform: [{ rotate: `${tiltDeg}deg` }],
+        ...shadows.sm,
       }}
     >
-      {hasUri && uri && !hasError && (
-        <Image
-          source={{ uri }}
-          style={{ width: '100%', height: '100%' }}
-          onLoad={() => setIsLoaded(true)}
-          onError={() => setHasError(true)}
-        />
-      )}
-      {showSkeleton && (
-        <Animated.View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: colors.card,
-            opacity: pulse,
-          }}
-        />
-      )}
-      {hasError && (
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name="image-outline" size={28} color={colors.textMuted} />
-        </View>
-      )}
-      {canRemove && onRemove && (
-        <Pressable
-          onPress={onRemove}
-          style={{ position: 'absolute', top: spacing(2), right: spacing(2) }}
-          hitSlop={hitSlop.icon}
-        >
-          <Ionicons name="close-circle" size={20} color={colors.card} />
-        </Pressable>
-      )}
-    </View>
+      <View
+        style={{
+          width: innerSize,
+          height: innerSize,
+          overflow: 'hidden',
+          backgroundColor: colors.bg,
+        }}
+      >
+        {hasUri && uri && !hasError && (
+          <Image
+            source={{ uri }}
+            style={{ width: '100%', height: '100%' }}
+            onLoad={() => setIsLoaded(true)}
+            onError={() => setHasError(true)}
+          />
+        )}
+        {showSkeleton && (
+          <Animated.View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: colors.card,
+              opacity: pulse,
+            }}
+          />
+        )}
+        {hasError && (
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="image-outline" size={28} color={colors.textMuted} />
+          </View>
+        )}
+      </View>
+    </Pressable>
   );
 }
 
@@ -347,6 +354,21 @@ export default function EntryDetailScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+
+  // ─── Photo Grid Sizing ─────────────────────────────────
+  //
+  // useWindowDimensions() re-renders the component when the
+  // viewport changes (browser resize, foldable unfolding, etc.)
+  // so the photo size never gets "frozen" the way it did with
+  // the old module-scope Dimensions.get() call.
+  //
+  // The Math.min(..., 420) cap keeps photos phone-sized when
+  // previewing in a wide browser or on a tablet — without it,
+  // a 1200px desktop window would size each thumb to ~580px
+  // and break the layout.
+  const { width: viewportWidth } = useWindowDimensions();
+  const layoutWidth = Math.min(viewportWidth, 420);
+  const photoThumbSize = (layoutWidth - 40 - PHOTO_GRID_GAP) / 2;
 
   // ─── Route Params ──────────────────────────────────────
   //
@@ -433,6 +455,10 @@ export default function EntryDetailScreen() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showReRecordDialog, setShowReRecordDialog] = useState(false);
   const [showAppendDialog, setShowAppendDialog] = useState(false);
+  const [showAudioMenu, setShowAudioMenu] = useState(false);
+  // Long-press a photo opens a confirmation; we hold the pending
+  // photo id here so the existing ConfirmationDialog can act on it.
+  const [pendingDeletePhotoId, setPendingDeletePhotoId] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showSavedConfirmation, setShowSavedConfirmation] = useState(false);
@@ -465,10 +491,12 @@ export default function EntryDetailScreen() {
   // handleWaveformPress — it doesn't affect what renders.
   const waveformWidthRef = useRef(0);
 
-  // Ref to the transcript TextInput — used to reset scroll position on load.
-  const transcriptInputRef = useRef<TextInput>(null);
-  // One-shot guard so we only reset scroll once per entry load.
-  const hasResetScroll = useRef(false);
+  // Ref to the inner ScrollView wrapping the transcript TextInput.
+  // Wrapping the input in a ScrollView (rather than relying on the
+  // TextInput's internal scroll) gives us a reliable scrollTo() across
+  // platforms — the textarea-internal scroll on web ignores scrollTop
+  // resets when the input isn't focused, so we control it directly.
+  const transcriptScrollRef = useRef<ScrollView>(null);
 
   // Guard for auto-retry on signed URL expiry — only retry once per entry.
   // Reset when entry changes so a different entry's audio can get its own retry.
@@ -966,23 +994,19 @@ export default function EntryDetailScreen() {
   );
 
   // ── Scroll-to-top on entry load ──
-  // When a multiline TextInput receives its value, the cursor defaults to the
-  // end of the text, which auto-scrolls to the bottom. This one-shot effect
-  // resets the cursor to position 0 so the user sees the beginning first.
-  // Fires for both existing entries (Mode 1) and newly created entries (Mode 2)
-  // once the entry object is set. The setTimeout gives the TextInput a frame
-  // to render the new value before we move the cursor.
+  // The transcript lives inside an inner ScrollView (capped at maxHeight)
+  // so we can pin scroll to the top reliably on both native and web —
+  // ScrollView.scrollTo is well-tested and doesn't depend on the input's
+  // focus or cursor state. Re-runs when the transcript value changes
+  // (e.g. AI processing finishes and replaces the raw transcript) so
+  // long cleaned text also lands at the top, not scrolled to the end.
   useEffect(() => {
-    if (entry && !hasResetScroll.current) {
-      hasResetScroll.current = true;
-      const id = setTimeout(() => {
-        if (typeof transcriptInputRef.current?.setNativeProps === 'function') {
-          transcriptInputRef.current.setNativeProps({ selection: { start: 0, end: 0 } });
-        }
-      }, 100);
-      return () => clearTimeout(id);
-    }
-  }, [entry?.id]);
+    if (!entry) return;
+    const id = setTimeout(() => {
+      transcriptScrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, 50);
+    return () => clearTimeout(id);
+  }, [entry?.id, transcript]);
 
   // ─── Loading State ──────────────────────────────────────
 
@@ -1410,6 +1434,7 @@ export default function EntryDetailScreen() {
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + spacing(10) }]}
         keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
       >
         {/* Post-recording banner */}
         {showBanner && entry.hasAudio && (
@@ -1419,7 +1444,85 @@ export default function EntryDetailScreen() {
           </Animated.View>
         )}
 
-        {/* ── 1. Title — the hero element ── */}
+        {/* ── 1. Eyebrow row — child eyebrow (left) + italic dateline (right) ──
+            Replaces the old gold gradient rule. The eyebrow tells you who
+            and when in one quiet line above the title. */}
+        <View style={styles.eyebrowRow}>
+          <View style={styles.childEyebrow}>
+            {entryChildren.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.eyebrowScrollContent}
+                style={styles.eyebrowScroll}
+              >
+                <View
+                  style={[
+                    styles.eyebrowDot,
+                    {
+                      backgroundColor:
+                        childColors[entryChildren[0].colorIndex]?.hex ??
+                        childColors[0].hex,
+                    },
+                  ]}
+                />
+                <Text style={styles.eyebrowFor}>FOR </Text>
+                {entryChildren.map((child, i) => {
+                  const hex =
+                    childColors[child.colorIndex]?.hex ?? childColors[0].hex;
+                  const isLast = i === entryChildren.length - 1;
+                  // Single child: include age (e.g. "CHARLIE, 2Y 1M")
+                  // Multi child: ampersand-join names only (e.g. "CHARLIE & EMMA")
+                  const ageSuffix =
+                    entryChildren.length === 1
+                      ? `, ${getAge(child.birthday, entry.date).toUpperCase()}`
+                      : '';
+                  // Inner separator for 3+ kids: "CHARLIE, EMMA & SOPHIE"
+                  const sep = isLast
+                    ? ''
+                    : i === entryChildren.length - 2
+                      ? ' & '
+                      : ', ';
+                  return (
+                    <Fragment key={child.id}>
+                      <Text style={[styles.eyebrowName, { color: hex }]}>
+                        {child.name.toUpperCase()}
+                        {ageSuffix}
+                      </Text>
+                      {!!sep && (
+                        <Text style={styles.eyebrowJoin}>{sep}</Text>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </ScrollView>
+            )}
+            {hasAccess && !allChildrenTagged && (
+              <Pressable
+                onPress={() => setShowChildPicker(!showChildPicker)}
+                hitSlop={hitSlop.icon}
+                style={({ pressed }) => [
+                  styles.eyebrowAdd,
+                  entryChildren.length > 0 && { marginLeft: spacing(2) },
+                  pressed && { opacity: 0.6 },
+                ]}
+              >
+                <Ionicons name="add" size={14} color={colors.textMuted} />
+              </Pressable>
+            )}
+          </View>
+          <Pressable
+            onPress={() => hasAccess && setShowDatePicker(true)}
+            disabled={!hasAccess}
+            hitSlop={hitSlop.icon}
+          >
+            <Text style={styles.dateline}>
+              {formatDate(entry.date, 'long').toLowerCase()}
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* ── 2. Title — the hero element. Hierarchy lives here, not in a rule. ── */}
         <FadeInUp skip={reduceMotion || titleWasImmediate.current}>
           <TextInput
             style={styles.titleText}
@@ -1434,69 +1537,26 @@ export default function EntryDetailScreen() {
           />
         </FadeInUp>
 
-        {/* ── 2. Gradient divider — child colors ── */}
-        <LinearGradient
-          colors={
-            waveformChildColors.length >= 2
-              ? [waveformChildColors[0], waveformChildColors[waveformChildColors.length - 1]]
-              : waveformChildColors.length === 1
-                ? [waveformChildColors[0], waveformChildColors[0]]
-                : [colors.accent, colors.accent]
-          }
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.gradientDivider}
-        />
-
-        {/* ── 3. Mini child pills + add button ── */}
-        <View style={styles.childLine}>
-          {entryChildren.map((child) => {
-            const hex = childColors[child.colorIndex]?.hex ?? childColors[0].hex;
-            const age = getAge(child.birthday, entry.date);
-            return (
-              <View
-                key={child.id}
-                style={[styles.miniPill, { backgroundColor: childColorWithOpacity(hex, 0.12) }]}
-              >
-                <View style={[styles.miniPillDot, { backgroundColor: hex }]} />
-                <Text style={[styles.miniPillName, { color: hex }]}>{child.name}</Text>
-                <Text style={[styles.miniPillAge, { color: childColorWithOpacity(hex, 0.6) }]}>{age}</Text>
-                {hasAccess && (
-                  <Pressable
-                    onPress={() => handleRemoveChildFromEntry(child.id)}
-                    hitSlop={hitSlop.icon}
-                  >
-                    <Text style={[styles.miniPillRemove, { color: hex }]}>×</Text>
-                  </Pressable>
-                )}
-              </View>
-            );
-          })}
-          {hasAccess && !allChildrenTagged && (
-            <Pressable
-              onPress={() => setShowChildPicker(!showChildPicker)}
-              hitSlop={hitSlop.icon}
-              style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.6 }]}
-            >
-              <Ionicons name="add" size={14} color={colors.textMuted} />
-            </Pressable>
-          )}
-        </View>
-
-        {/* ── 4. Metadata line — date · time · location (inline) ── */}
-        <View style={styles.metaLine}>
-          <Pressable onPress={() => hasAccess && setShowDatePicker(true)} disabled={!hasAccess}>
-            <Text style={styles.metaText}>
-              {formatDate(entry.date, 'long')} · {formatTime(entry.createdAt ?? entry.date)}
+        {/* ── 3. Caption row — quiet time + location below the title ── */}
+        <View style={styles.captionRow}>
+          <Pressable
+            onPress={() => hasAccess && setShowDatePicker(true)}
+            disabled={!hasAccess}
+          >
+            <Text style={styles.captionText}>
+              {formatTime(entry.createdAt ?? entry.date)}
             </Text>
           </Pressable>
           {entry.locationText ? (
-            <Pressable onPress={() => hasAccess && setEditingLocation(true)} disabled={!hasAccess}>
-              <Text style={styles.metaText}> · {entry.locationText}</Text>
+            <Pressable
+              onPress={() => hasAccess && setEditingLocation(true)}
+              disabled={!hasAccess}
+            >
+              <Text style={styles.captionText}> · {entry.locationText}</Text>
             </Pressable>
           ) : hasAccess && permissionGranted && !editingLocation ? (
             <Pressable onPress={() => setEditingLocation(true)}>
-              <Text style={styles.metaLocationAdd}> · + Add location</Text>
+              <Text style={styles.captionLocationAdd}> · + add location</Text>
             </Pressable>
           ) : null}
         </View>
@@ -1602,19 +1662,12 @@ export default function EntryDetailScreen() {
           </FadeInUp>
         )}
 
-        {/* ── 5. Transcript — flows on page background, no card ── */}
-
+        {/* ── 4. Transcript — capped soft card with internal scroll so
+            photos below stay visible above the fold on long entries. */}
         {isAiProcessing ? (
-          /* Shimmer placeholder while AI cleans up the transcript.
-             Shows 3 pulsing bars that mimic lines of text — the user
-             can still interact with the rest of the page (title, child
-             pills, photos, audio) while this loads. */
-          <View style={styles.transcriptCard}>
-            <TranscriptShimmer />
-          </View>
+          <TranscriptShimmer />
         ) : (
           <>
-            {/* Transcript hint — when voice recording produced no text */}
             {isVoiceEntry && !transcript && (
               <View style={styles.transcriptHint}>
                 <Ionicons name="create-outline" size={14} color={colors.textMuted} />
@@ -1623,33 +1676,27 @@ export default function EntryDetailScreen() {
                 </Text>
               </View>
             )}
-
             <View style={styles.transcriptCard}>
-              <TextInput
-                ref={transcriptInputRef}
-                style={styles.transcriptInput}
-                value={transcript}
-                onChangeText={handleTranscriptChange}
-                placeholder="Start typing your memory..."
-                placeholderTextColor={colors.textMuted}
-                multiline
-                textAlignVertical="top"
-                scrollEnabled
-                editable={hasAccess}
-                autoCapitalize="sentences"
-              />
-            </View>
-            {hasUnsavedChanges && (
-              <Pressable
-                onPress={handleSave}
-                style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
-                disabled={isSaving}
+              <ScrollView
+                ref={transcriptScrollRef}
+                style={styles.transcriptScroll}
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
               >
-                <Text style={styles.saveButtonText}>
-                  {isSaving ? 'Saving...' : 'Save'}
-                </Text>
-              </Pressable>
-            )}
+                <TextInput
+                  style={styles.transcriptInput}
+                  value={transcript}
+                  onChangeText={handleTranscriptChange}
+                  placeholder="Start typing your memory..."
+                  placeholderTextColor={colors.textMuted}
+                  multiline
+                  textAlignVertical="top"
+                  scrollEnabled={false}
+                  editable={hasAccess}
+                  autoCapitalize="sentences"
+                />
+              </ScrollView>
+            </View>
             {showSavedConfirmation && (
               <View style={styles.savedConfirmation}>
                 <Ionicons name="checkmark-circle" size={14} color={colors.accent} />
@@ -1659,193 +1706,211 @@ export default function EntryDetailScreen() {
           </>
         )}
 
-        {/* ── 6. Audio Playback Bar — prominent, below transcript ── */}
-        {/* When the user doesn't have access (lapsed trial), show a locked
-            message instead of the audio player. They can still see the
-            transcript — we just lock audio playback behind the paywall. */}
+        {/* ── 5. Audio — voice entries only. Hidden entirely for text-only entries.
+            Locked state (non-subscriber) is a quiet inline row, not a card.
+            The play button is the one that matters; re-record / append
+            move into a small ellipsis menu so they don't compete visually. */}
         {isVoiceEntry && !hasAccess && (
-          <View style={styles.audioLocked}>
-            <Ionicons name="lock-closed-outline" size={16} color={colors.textMuted} />
-            <Text style={styles.audioLockedText}>Subscribe to play audio</Text>
-          </View>
+          <>
+            <Text style={styles.sectionEyebrow}>IN YOUR VOICE</Text>
+            <View style={styles.audioLocked}>
+              <Ionicons name="lock-closed-outline" size={14} color={colors.textMuted} />
+              <Text style={styles.audioLockedText}>subscribe to play audio</Text>
+            </View>
+          </>
         )}
         {isVoiceEntry && hasAccess && (
-          <View style={styles.audioBar}>
-            {/* Play button / Loading spinner / Error icon */}
-            <Pressable
-              onPress={() => {
-                if (audioHasError || audioMissing || audioIsLoading) return;
-                player.isPlaying ? player.pause() : player.play();
-              }}
-              style={styles.playBtn}
-              disabled={!player.isLoaded}
-            >
-              {audioIsLoading ? (
-                <ActivityIndicator size={14} color={colors.accent} />
-              ) : audioHasError ? (
-                <Ionicons name="alert-circle" size={16} color={colors.danger} />
-              ) : (
-                <Ionicons
-                  name={player.isPlaying ? 'pause' : 'play'}
-                  size={16}
-                  color={player.isLoaded ? colors.accent : colors.textMuted}
-                />
-              )}
-            </Pressable>
-
-            {/* Waveform area / Error text / No-audio text */}
-            {audioHasError ? (
-              <View style={styles.waveformMessageArea}>
-                <Text style={styles.audioErrorText}>Couldn't load audio</Text>
-                <Text style={styles.audioErrorDot}> · </Text>
-                <Pressable onPress={handleAudioRetry} hitSlop={hitSlop.icon}>
-                  <Text style={styles.audioRetryLink}>Retry</Text>
-                </Pressable>
-              </View>
-            ) : audioMissing ? (
-              <View style={styles.waveformMessageArea}>
-                <Text style={styles.audioMissingText}>Audio unavailable</Text>
-              </View>
-            ) : (
+          <>
+            <Text style={styles.sectionEyebrow}>IN YOUR VOICE</Text>
+            <View style={styles.audioBar}>
+              {/* Play button / Loading spinner / Error icon */}
               <Pressable
-                style={styles.waveformArea}
-                onPress={handleWaveformPress}
-                onLayout={(e) => { waveformWidthRef.current = e.nativeEvent.layout.width; }}
+                onPress={() => {
+                  if (audioHasError || audioMissing || audioIsLoading) return;
+                  player.isPlaying ? player.pause() : player.play();
+                }}
+                style={styles.playBtn}
                 disabled={!player.isLoaded}
               >
-                {BAR_REST_HEIGHTS.map((barHeight, i) => {
-                  const barRatio = i / (WAVEFORM_BAR_COUNT - 1);
-                  const playedRatio = player.duration > 0
-                    ? player.position / player.duration
-                    : 0;
-                  const isPlayed = barRatio <= playedRatio;
-                  const barHex = barColors[i];
-
-                  return (
-                    <View
-                      key={i}
-                      style={{
-                        width: WAVEFORM_BAR_WIDTH,
-                        height: barHeight,
-                        borderRadius: WAVEFORM_BAR_WIDTH / 2,
-                        backgroundColor: isPlayed
-                          ? barHex
-                          : childColorWithOpacity(barHex, 0.3),
-                      }}
-                    />
-                  );
-                })}
+                {audioIsLoading ? (
+                  <ActivityIndicator size={14} color={colors.accent} />
+                ) : audioHasError ? (
+                  <Ionicons name="alert-circle" size={16} color={colors.danger} />
+                ) : (
+                  <Ionicons
+                    name={player.isPlaying ? 'pause' : 'play'}
+                    size={16}
+                    color={player.isLoaded ? colors.accent : colors.textMuted}
+                  />
+                )}
               </Pressable>
-            )}
 
-            {/* Duration / Loading text */}
-            {!audioHasError && !audioMissing && (
-              <Text style={styles.audioDuration}>
-                {audioIsLoading
-                  ? 'Loading...'
-                  : player.duration > 0
-                    ? formatDuration(player.isPlaying ? player.position : player.duration, true)
-                    : '--:--'}
-              </Text>
-            )}
+              {audioHasError ? (
+                <View style={styles.waveformMessageArea}>
+                  <Text style={styles.audioErrorText}>Couldn't load audio</Text>
+                  <Text style={styles.audioErrorDot}> · </Text>
+                  <Pressable onPress={handleAudioRetry} hitSlop={hitSlop.icon}>
+                    <Text style={styles.audioRetryLink}>Retry</Text>
+                  </Pressable>
+                </View>
+              ) : audioMissing ? (
+                <View style={styles.waveformMessageArea}>
+                  <Text style={styles.audioMissingText}>Audio unavailable</Text>
+                </View>
+              ) : (
+                <Pressable
+                  style={styles.waveformArea}
+                  onPress={handleWaveformPress}
+                  onLayout={(e) => { waveformWidthRef.current = e.nativeEvent.layout.width; }}
+                  disabled={!player.isLoaded}
+                >
+                  {BAR_REST_HEIGHTS.map((barHeight, i) => {
+                    const barRatio = i / (WAVEFORM_BAR_COUNT - 1);
+                    const playedRatio = player.duration > 0
+                      ? player.position / player.duration
+                      : 0;
+                    const isPlayed = barRatio <= playedRatio;
+                    const barHex = barColors[i];
 
-            {/* Re-record & Add More buttons (hidden during loading) */}
-            {!audioIsLoading && (
-              <View style={styles.audioActions}>
-                <Pressable
-                  onPress={() => setShowReRecordDialog(true)}
-                  hitSlop={hitSlop.icon}
-                  style={({ pressed }) => [styles.reRecordBtn, pressed && { opacity: 0.6 }]}
-                >
-                  <Ionicons name="mic-outline" size={18} color={colors.accent} />
+                    return (
+                      <View
+                        key={i}
+                        style={{
+                          width: WAVEFORM_BAR_WIDTH,
+                          height: barHeight,
+                          borderRadius: WAVEFORM_BAR_WIDTH / 2,
+                          backgroundColor: isPlayed
+                            ? barHex
+                            : childColorWithOpacity(barHex, 0.3),
+                        }}
+                      />
+                    );
+                  })}
                 </Pressable>
+              )}
+
+              {!audioHasError && !audioMissing && (
+                <Text style={styles.audioDuration}>
+                  {audioIsLoading
+                    ? 'Loading...'
+                    : player.duration > 0
+                      ? formatDuration(player.isPlaying ? player.position : player.duration, true)
+                      : '--:--'}
+                </Text>
+              )}
+
+              {/* Overflow menu — re-record + append demoted from inline buttons.
+                  The play button is the one that matters; everything else
+                  hides behind a single dot menu. */}
+              {!audioIsLoading && (
                 <Pressable
-                  onPress={() => {
-                    if (player.duration >= MAX_RECORDING_DURATION_MS) {
-                      Alert.alert(
-                        'This memory is full',
-                        'Recordings can be up to three minutes. You can record again to start fresh.',
-                      );
-                    } else {
-                      setShowAppendDialog(true);
-                    }
-                  }}
+                  onPress={() => setShowAudioMenu(true)}
                   hitSlop={hitSlop.icon}
-                  style={({ pressed }) => [
-                    styles.reRecordBtn,
-                    pressed && { opacity: 0.6 },
-                    player.duration >= MAX_RECORDING_DURATION_MS && { opacity: 0.35 },
-                  ]}
+                  style={({ pressed }) => [styles.audioMenuBtn, pressed && { opacity: 0.6 }]}
                 >
-                  <Ionicons name="add-outline" size={18} color={colors.accent} />
+                  <Ionicons name="ellipsis-horizontal" size={18} color={colors.textSoft} />
                 </Pressable>
-              </View>
-            )}
-          </View>
+              )}
+            </View>
+          </>
         )}
 
-        {/* ── 7. Photos — up to 2 thumbnails below transcript ── */}
+        {/* ── 6. Photos — Polaroid-style scrapbook tiles. Up to 2 per entry.
+            Long-press to remove (no inline ×s); the photos read as kept,
+            not uploaded. The "SNAPSHOTS FROM THE DAY" eyebrow only shows
+            when there's at least one photo. */}
         {entry.photos && entry.photos.length > 0 && (
           <View style={styles.photoSection}>
+            <Text style={styles.sectionEyebrow}>SNAPSHOTS FROM THE DAY</Text>
             <View style={styles.photoGrid}>
               {entry.photos.slice(0, 2).map((photo, index) => {
                 // Only treat the uri as usable when it's a signed http URL.
                 // Local file uris from the picker are shown inline during
                 // upload but the actual storage-backed uri lands later.
                 const hasUri = !!photo.uri && photo.uri.startsWith('http');
+                // Deterministic alternating tilt: photo 0 leans left,
+                // photo 1 leans right. Same value across renders so the
+                // tilt feels intentional, not jittery.
+                const tiltDeg = index === 0 ? -1.5 : 1.5;
                 return (
                   <PhotoThumb
                     key={photo.id ?? index}
                     uri={hasUri ? photo.uri : undefined}
                     hasUri={hasUri}
-                    size={PHOTO_THUMB_SIZE}
-                    borderRadius={radii.card}
-                    canRemove={hasAccess && !isPhotoSaving}
-                    onRemove={() => handleRemovePhoto(photo.id)}
+                    size={photoThumbSize}
+                    tiltDeg={tiltDeg}
+                    onLongPress={
+                      hasAccess && !isPhotoSaving
+                        ? () => setPendingDeletePhotoId(photo.id)
+                        : undefined
+                    }
                   />
                 );
               })}
             </View>
             {hasAccess && entry.photos.length < 2 && (
-              <Pressable style={styles.addPhotosLink} onPress={handleAddPhoto} disabled={isPhotoSaving}>
-                <Text style={styles.addPhotosText}>
-                  {isPhotoSaving ? 'Saving photo...' : '+ Add photos'}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.addPhotoBtn,
+                  pressed && { opacity: 0.6 },
+                ]}
+                onPress={handleAddPhoto}
+                disabled={isPhotoSaving}
+              >
+                <Text style={styles.addPhotoBtnText}>
+                  {isPhotoSaving ? 'Saving photo…' : 'Add a photo'}
                 </Text>
               </Pressable>
             )}
           </View>
         )}
 
-        {/* Empty-state add-photos link — shows when no photos yet */}
+        {/* Empty-state add-photo button — shows when no photos yet.
+            No eyebrow above an empty section: the page stays quiet
+            until you've actually kept something. */}
         {hasAccess && (!entry.photos || entry.photos.length === 0) && (
-          <Pressable style={styles.addPhotosLink} onPress={handleAddPhoto} disabled={isPhotoSaving}>
-            <Text style={styles.addPhotosText}>
-              {isPhotoSaving ? 'Saving photo...' : '+ Add photos'}
+          <Pressable
+            style={({ pressed }) => [
+              styles.addPhotoBtn,
+              styles.addPhotoBtnEmpty,
+              pressed && { opacity: 0.6 },
+            ]}
+            onPress={handleAddPhoto}
+            disabled={isPhotoSaving}
+          >
+            <Text style={styles.addPhotoBtnText}>
+              {isPhotoSaving ? 'Saving photo…' : 'Add a photo'}
             </Text>
           </Pressable>
         )}
 
-        {/* ── 8. Tags — footnote styling at the very bottom ── */}
+        {/* ── 7. Tags — footnote styling at the very bottom.
+            On the page, pills are clean (no inline ×). To remove or
+            add tags, tap "+ add tag" — the editor card shows ×s
+            inside its own context. The TAGS eyebrow only appears
+            when there's at least one tag to label. */}
+        {entry.tags.length > 0 && (
+          <Text style={styles.sectionEyebrow}>TAGS</Text>
+        )}
         <View style={styles.tagsRow}>
           {entry.tags.map((tag) => (
-            <TagPill
-              key={tag}
-              label={tag}
-              variant="muted"
-              onRemove={hasAccess ? () => handleRemoveTag(tag) : undefined}
-            />
+            <TagPill key={tag} label={tag} variant="muted" />
           ))}
           {hasAccess && (
             <Pressable
               onPress={() => setShowTagEditor(!showTagEditor)}
               style={styles.addTagPill}
             >
-              <Text style={styles.addTagPillText}>+ add tag</Text>
+              <Text style={styles.addTagPillText}>
+                {entry.tags.length > 0 ? '+ add tag' : '+ add tags'}
+              </Text>
             </Pressable>
           )}
         </View>
 
-        {/* Tag Editor */}
+        {/* Tag Editor — the single place where × on tags lives.
+            Showing the current tags here with × keeps removal one
+            tap away without cluttering the main page. */}
         {showTagEditor && (
           <FadeInUp skip={reduceMotion}>
             <View style={styles.tagEditorCard}>
@@ -1858,6 +1923,21 @@ export default function EntryDetailScreen() {
                 onSubmitEditing={() => handleAddTag(tagInput)}
                 returnKeyType="done"
               />
+              {entry.tags.length > 0 && (
+                <>
+                  <Text style={styles.frequentLabel}>On This Memory</Text>
+                  <View style={[styles.frequentRow, { marginBottom: spacing(3) }]}>
+                    {entry.tags.map((tag) => (
+                      <TagPill
+                        key={tag}
+                        label={tag}
+                        variant="muted"
+                        onRemove={() => handleRemoveTag(tag)}
+                      />
+                    ))}
+                  </View>
+                </>
+              )}
               <Text style={styles.frequentLabel}>Your Frequent Tags</Text>
               <View style={styles.frequentRow}>
                 {FREQUENT_TAGS.map((tag) => {
@@ -1888,7 +1968,34 @@ export default function EntryDetailScreen() {
             </View>
           </FadeInUp>
         )}
+
+        {/* ── 8. Footer — quiet brand benediction. Closes every saved
+            memory the same way: a soft restatement of the promise. ── */}
+        {entry.id && entry.createdAt && (
+          <Text style={styles.footerLine}>
+            kept forever · saved {formatDate(entry.createdAt, 'long').toLowerCase()}
+          </Text>
+        )}
       </ScrollView>
+
+      {/* ── Floating Save pill — appears only when there are unsaved
+          edits. Doesn't disrupt the page's typography flow. ── */}
+      {hasUnsavedChanges && (
+        <Pressable
+          onPress={handleSave}
+          disabled={isSaving}
+          style={({ pressed }) => [
+            styles.saveFloating,
+            { bottom: insets.bottom + spacing(4) },
+            pressed && { opacity: 0.85 },
+            isSaving && { opacity: 0.6 },
+          ]}
+        >
+          <Text style={styles.saveFloatingText}>
+            {isSaving ? 'Saving…' : 'Save'}
+          </Text>
+        </Pressable>
+      )}
 
       {/* Delete confirmation */}
       <ConfirmationDialog
@@ -1919,6 +2026,73 @@ export default function EntryDetailScreen() {
         onConfirm={handleAppendAudio}
         onCancel={() => setShowAppendDialog(false)}
       />
+
+      {/* Photo delete confirmation — fires after a long-press on a thumb */}
+      <ConfirmationDialog
+        visible={pendingDeletePhotoId !== null}
+        title="Remove this photo?"
+        body="The photo is removed from this memory."
+        confirmLabel="Remove"
+        onConfirm={() => {
+          if (pendingDeletePhotoId) {
+            handleRemovePhoto(pendingDeletePhotoId);
+          }
+          setPendingDeletePhotoId(null);
+        }}
+        onCancel={() => setPendingDeletePhotoId(null)}
+      />
+
+      {/* Audio overflow menu — re-record + append, hidden behind a dot menu
+          so they don't compete with the play button visually. */}
+      <Modal
+        visible={showAudioMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAudioMenu(false)}
+      >
+        <Pressable
+          style={styles.audioMenuOverlay}
+          onPress={() => setShowAudioMenu(false)}
+        >
+          <Pressable onPress={() => {}} style={styles.audioMenuCard}>
+            <Pressable
+              onPress={() => {
+                setShowAudioMenu(false);
+                setShowReRecordDialog(true);
+              }}
+              style={({ pressed }) => [
+                styles.audioMenuRow,
+                pressed && { backgroundColor: colors.tag },
+              ]}
+            >
+              <Ionicons name="mic-outline" size={18} color={colors.accent} />
+              <Text style={styles.audioMenuRowText}>Re-record</Text>
+            </Pressable>
+            <View style={styles.audioMenuDivider} />
+            <Pressable
+              onPress={() => {
+                setShowAudioMenu(false);
+                if (player.duration >= MAX_RECORDING_DURATION_MS) {
+                  Alert.alert(
+                    'This memory is full',
+                    'Recordings can be up to three minutes. You can record again to start fresh.',
+                  );
+                } else {
+                  setShowAppendDialog(true);
+                }
+              }}
+              style={({ pressed }) => [
+                styles.audioMenuRow,
+                pressed && { backgroundColor: colors.tag },
+                player.duration >= MAX_RECORDING_DURATION_MS && { opacity: 0.4 },
+              ]}
+            >
+              <Ionicons name="add-outline" size={18} color={colors.accent} />
+              <Text style={styles.audioMenuRowText}>Append</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Child selection modal — shown when no child names were detected */}
       <ChildSelectModal
@@ -1982,7 +2156,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing(5),
-    paddingBottom: spacing(3),
+    paddingBottom: spacing(1),
   },
   topBarRight: {
     flexDirection: 'row',
@@ -2020,61 +2194,91 @@ const styles = StyleSheet.create({
   // ─── Title (hero element) ────────────
   titleText: {
     fontFamily: fonts.serifBold,
-    fontSize: 22,
+    fontSize: 26,
     color: colors.text,
-    lineHeight: 29,
+    lineHeight: 33,
     textAlign: 'left',
+    letterSpacing: -0.3,
     marginBottom: spacing(2),
   },
-  // ─── Gradient Divider ────────────────
-  gradientDivider: {
-    height: 2,
-    borderRadius: 2,
-    marginTop: 4,
-    marginBottom: spacing(3),
-  },
-  // ─── Mini Child Pills ────────────────
-  miniPill: {
+  // ─── Eyebrow row (above title) ──────
+  // Quiet pre-title row: child eyebrow on the left, italic
+  // dateline on the right. Replaces the old gold gradient rule.
+  eyebrowRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    borderRadius: radii.md,
-    gap: 4,
+    justifyContent: 'space-between',
+    marginTop: spacing(1),
+    marginBottom: spacing(2),
+    minHeight: 18,
   },
-  miniPillDot: {
+  childEyebrow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
+  },
+  eyebrowScroll: {
+    flexShrink: 1,
+  },
+  eyebrowScrollContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  eyebrowDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
+    marginRight: spacing(2),
   },
-  miniPillName: {
-    fontSize: 12,
+  eyebrowFor: {
+    fontSize: 11,
     fontWeight: '600',
+    letterSpacing: 1,
+    color: colors.textMuted,
   },
-  miniPillAge: {
+  eyebrowName: {
     fontSize: 11,
-    fontWeight: '400',
-  },
-  miniPillRemove: {
-    fontSize: 11,
-    opacity: 0.6,
     fontWeight: '700',
-    marginLeft: 2,
+    letterSpacing: 1,
   },
-  // ─── Metadata Line ───────────────────
-  metaLine: {
+  eyebrowJoin: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    color: colors.textMuted,
+  },
+  eyebrowAdd: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: colors.textMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateline: {
+    fontSize: 13,
+    // System italic — Merriweather Italic isn't loaded, and
+    // synthesized italic clips glyphs on Android.
+    fontStyle: 'italic',
+    color: colors.textMuted,
+  },
+  // ─── Caption row (below title) ───────
+  // Time + optional location, sized small enough to read as
+  // metadata, large enough to tap for editing.
+  captionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginBottom: 4,
-    minHeight: minTouchTarget,
+    marginBottom: spacing(3),
+    minHeight: 20,
   },
-  metaText: {
+  captionText: {
     fontSize: 12,
     color: colors.textMuted,
     lineHeight: 16,
   },
-  metaLocationAdd: {
+  captionLocationAdd: {
     fontSize: 12,
     color: colors.textMuted,
     lineHeight: 16,
@@ -2145,23 +2349,18 @@ const styles = StyleSheet.create({
     ...typography.formLabel,
     color: colors.accent,
   },
-  childLine: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: spacing(2),
-    marginBottom: 4,
-  },
-  addBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.textMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: minTouchTarget,
-    minHeight: minTouchTarget,
+  // ─── Section Eyebrows ────────────────
+  // Uppercase labels that interlock the four sections of the
+  // entry into one continuous page. Quiet by design — present
+  // enough to organize, soft enough to stay out of the way.
+  sectionEyebrow: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    marginTop: spacing(5),
+    marginBottom: spacing(2),
   },
   // ─── Child Picker ───────────────────
   pickerCard: {
@@ -2264,7 +2463,7 @@ const styles = StyleSheet.create({
   frequentPillTextActive: {
     color: colors.accent,
   },
-  // ─── Transcript (flows on page bg) ──
+  // ─── Transcript (flows directly on cream — no card) ──
   transcriptHint: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2277,44 +2476,23 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   transcriptCard: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
     backgroundColor: colors.card,
-    padding: spacing(4),
-    marginTop: spacing(3),
-    marginBottom: spacing(2),
-    borderRadius: radii.card,
-    // Warm shadow — defines the card edge without a hard border line.
-    // Think of it like a soft spotlight behind a piece of paper on a desk.
-    shadowColor: 'rgb(44,36,32)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    paddingHorizontal: spacing(3),
+    paddingVertical: spacing(2),
+    marginTop: spacing(1),
+  },
+  transcriptScroll: {
+    maxHeight: 208,
   },
   transcriptInput: {
     ...typography.transcript,
-    lineHeight: 25,
+    lineHeight: 26,
     color: colors.text,
-    minHeight: 180,
-    maxHeight: 400,
-  },
-  saveButton: {
-    alignSelf: 'flex-end',
-    backgroundColor: colors.accent,
-    paddingVertical: spacing(2),
-    paddingHorizontal: spacing(4),
-    borderRadius: radii.full,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing(2),
-    marginBottom: spacing(2),
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    ...typography.buttonLabel,
-    color: colors.card,
+    minHeight: 120,
+    paddingVertical: 0,
   },
   savedConfirmation: {
     flexDirection: 'row',
@@ -2328,6 +2506,23 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.accent,
   },
+  // ─── Floating Save pill (only when unsaved edits) ──
+  saveFloating: {
+    position: 'absolute',
+    right: spacing(5),
+    backgroundColor: colors.accent,
+    paddingVertical: spacing(2),
+    paddingHorizontal: spacing(5),
+    borderRadius: radii.full,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.md,
+  },
+  saveFloatingText: {
+    ...typography.buttonLabel,
+    color: colors.card,
+  },
   // ─── Photo Grid ──────────────────────
   photoSection: {
     marginBottom: spacing(2),
@@ -2336,14 +2531,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: PHOTO_GRID_GAP,
+    // Tilted thumbs extend slightly past their bounding box at
+    // the corners — a few pixels of vertical breathing room
+    // keeps the corners from clipping into neighboring sections.
+    paddingVertical: spacing(2),
   },
-  addPhotosLink: {
-    marginTop: spacing(2),
+  // Full-width "Add a photo" button — bordered, italic, scrapbook-y.
+  // Hides when the entry already has 2 photos.
+  addPhotoBtn: {
+    marginTop: spacing(3),
+    paddingVertical: spacing(3),
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
   },
-  addPhotosText: {
-    fontSize: 11,
+  addPhotoBtnEmpty: {
+    marginTop: spacing(5),
+  },
+  addPhotoBtnText: {
+    fontSize: 13,
     fontWeight: '500',
-    color: colors.textMuted,
+    letterSpacing: 0.2,
+    color: colors.textSoft,
   },
   // ─── Audio Bar ──────────────────────
   // Shown when user's trial has expired — locked audio indicator
@@ -2408,18 +2620,59 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
   },
-  audioActions: {
-    flexDirection: 'row',
-    gap: spacing(2),
-  },
-  reRecordBtn: {
+  // ─── Audio overflow menu ─────────────
+  // Single dot menu that hides re-record + append. The play
+  // button is the one that matters; everything else gets out
+  // of its way.
+  audioMenuBtn: {
     width: 36,
     height: 36,
     borderRadius: radii.full,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
     minWidth: minTouchTarget,
     minHeight: minTouchTarget,
+  },
+  audioMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(44,36,32,0.45)',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing(5),
+    paddingBottom: spacing(8),
+  },
+  audioMenuCard: {
+    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    ...shadows.lg,
+  },
+  audioMenuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(3),
+    paddingVertical: spacing(4),
+    paddingHorizontal: spacing(5),
+    minHeight: minTouchTarget,
+  },
+  audioMenuRowText: {
+    ...typography.formLabel,
+    color: colors.text,
+  },
+  audioMenuDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+  },
+  // ─── Footer benediction ──────────────
+  // Quiet italic line that closes every saved memory the same
+  // way: a soft restatement of the brand promise.
+  footerLine: {
+    fontSize: 13,
+    // No Merriweather Italic loaded — see addPhotoBtnText.
+    // Use system italic to avoid Android glyph clipping.
+    fontStyle: 'italic',
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing(8),
+    marginBottom: spacing(4),
   },
 });

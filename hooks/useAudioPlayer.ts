@@ -97,6 +97,17 @@ export function useAudioPlayer(): UseAudioPlayerResult {
     setDuration(0);
 
     try {
+      // Configure the audio session before creating any Sound.
+      // Without this, Android refuses audio focus and play()
+      // fails with AudioFocusNotAcquiredException; iOS falls
+      // silent in silent mode. Safe to call on every load —
+      // expo-av dedupes identical configs.
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+      });
+
       const { sound } = await Audio.Sound.createAsync(
         { uri },
         { shouldPlay: false }, // Don't auto-play on load
