@@ -29,7 +29,11 @@ export const childrenService = {
     const { data, error } = await supabase.rpc('create_child', {
       p_name: child.name,
       p_birthday: child.birthday,
-      p_nickname: child.nickname ?? '',
+      // Send null for "no nickname" — matches the DB column's nullable
+      // semantics and matches the test contract. The RPC param is
+      // declared `text` in the migration (which is nullable in Postgres),
+      // but auto-generated TS types mark it non-null, so we cast.
+      p_nickname: (child.nickname ?? null) as string,
       p_color_index: child.color_index ?? 0,
       p_display_order: child.display_order ?? 0,
     });
@@ -38,8 +42,14 @@ export const childrenService = {
     return data as Child;
   },
 
-  /** Update an existing child */
+  /** Update an existing child.
+   *  Auth check first so logged-out callers see "please sign in" instead
+   *  of a confusing "0 rows returned" from .single() (which is what RLS
+   *  produces when it hides every row from an unauthenticated caller). */
   async updateChild(childId: string, updates: ChildUpdate) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated — please sign in again');
+
     const { data, error } = await supabase
       .from('children')
       .update(updates)

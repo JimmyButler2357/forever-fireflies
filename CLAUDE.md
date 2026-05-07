@@ -117,7 +117,9 @@ pg_cron runs as a separate background worker in PostgreSQL — it does NOT have 
 
 - **Vault secrets are inserted manually** via the SQL Editor (never committed to git)
 - **The cron schedule migration** only contains the `cron.schedule()` call with vault lookups
-- The Edge Function has `verify_jwt = false` so pg_cron can call it without a JWT
+- The Edge Function has `verify_jwt = false` so pg_cron can call it without a user JWT, AND it manually verifies `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` so the URL can't be abused (security audit 2-B / 2-C)
+
+**⚠️ Service-role key rotation runbook.** Rotating the service role key in Supabase Dashboard → Settings → API auto-updates the `SUPABASE_SERVICE_ROLE_KEY` env var inside edge functions, but does **NOT** auto-update the vault entry. Mismatched values mean pg_cron sends the old key, the function compares against the new key, and **both crons silently return 401** — no notifications, no purges, zero user-visible errors. After any rotation: immediately re-run the vault upsert SQL from migration `20260428000002` with the new value, then `curl` `/functions/v1/send-notifications` with the new key and confirm a 200 (or wait one minute and check the next cron tick succeeded in the function logs).
 
 ### Safeguards
 

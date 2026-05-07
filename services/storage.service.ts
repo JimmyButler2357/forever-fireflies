@@ -11,16 +11,47 @@ const AUDIO_BUCKET = 'audio-recordings';
 const PROFILE_PHOTO_BUCKET = 'profile-photos';
 const ENTRY_MEDIA_BUCKET = 'entry-media';
 
+/** Canonical audio storage path. The DB CHECK constraint
+ *  `entries_audio_path_user_scoped` enforces this exact format —
+ *  if you change the format here, also update the migration. */
+export const buildAudioPath = (userId: string, entryId: string): string =>
+  `${userId}/${entryId}.wav`;
+
 async function getCurrentUserId(): Promise<string> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) throw new Error('Not authenticated');
   return session.user.id;
 }
 
+// Module-level cache for the current user's family IDs. The RPC call costs
+// a network round-trip; the result is stable for the entire user session
+// (an MVP user belongs to exactly one family, and family membership rarely
+// changes). Keying on userId means the cache auto-invalidates when the
+// signed-in user changes — no manual reset needed on sign-out.
+//
+// Why this matters (review fix #12): EntryCard renders up to 3 photos per
+// entry, and getEntryMediaUrl previously called this RPC on every photo.
+// A 20-card timeline = 60 round-trips just to ask "which families am I in?"
+// — and the answer never changed.
+let cachedFamilyIds: { userId: string; value: string[]; expiresAt: number } | null = null;
+const FAMILY_IDS_TTL_MS = 5 * 60 * 1000; // 5 min — short enough to pick up rare membership changes
+
 async function getUserFamilyIds(): Promise<string[]> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const currentUserId = session?.user?.id ?? '';
+  const now = Date.now();
+  if (
+    cachedFamilyIds &&
+    cachedFamilyIds.userId === currentUserId &&
+    now < cachedFamilyIds.expiresAt
+  ) {
+    return cachedFamilyIds.value;
+  }
   const { data, error } = await supabase.rpc('user_family_ids');
   if (error) throw new Error(`Failed to resolve family membership: ${error.message}`, { cause: error });
-  return data ?? [];
+  const value = data ?? [];
+  cachedFamilyIds = { userId: currentUserId, value, expiresAt: now + FAMILY_IDS_TTL_MS };
+  return value;
 }
 
 async function ensureFamilyAccess(familyId: string) {
@@ -45,7 +76,7 @@ export const storageService = {
     // which always hits the network. RLS is the real security check.
     const userId = await getCurrentUserId();
 
-    const path = `${userId}/${entryId}.wav`;
+    const path = buildAudioPath(userId, entryId);
 
     const start = Date.now();
     // Read the local file as an ArrayBuffer via expo-file-system.
@@ -162,9 +193,28 @@ export const storageService = {
     if (error) throw new Error(`Failed to delete child photo: ${error.message}`, { cause: error });
   },
 
-  /** Upload/replace an entry photo in the current user's folder. */
+  /** Upload/replace an entry photo in the current user's folder.
+   *
+   *  Defense-in-depth: verify the entry belongs to the current user
+   *  BEFORE building the path or uploading. Storage RLS would also
+   *  reject cross-user uploads via its `e.user_id = auth.uid()` check,
+   *  but a service-layer error gives the caller a clear "access denied"
+   *  message instead of a generic Supabase 403 (review fix #16). */
   async uploadEntryPhoto(entryId: string, fileUri: string, displayOrder: number) {
     const userId = await getCurrentUserId();
+
+    const { data: entry, error: ownerError } = await supabase
+      .from('entries')
+      .select('user_id')
+      .eq('id', entryId)
+      .single();
+    if (ownerError) {
+      throw new Error(`Failed to verify entry ownership: ${ownerError.message}`, { cause: ownerError });
+    }
+    if (!entry || entry.user_id !== userId) {
+      throw new Error('Access denied — cannot upload to another user\'s entry');
+    }
+
     const path = `${userId}/${entryId}/photo_${displayOrder}.jpg`;
     const file = new ExpoFile(fileUri);
     const arrayBuffer = await file.arrayBuffer();
@@ -180,22 +230,43 @@ export const storageService = {
     return data.path;
   },
 
-  /** Get a signed URL for an entry media object. */
-  async getEntryMediaUrl(storagePath: string): Promise<string> {
+  /** Get a signed URL for an entry media object.
+   *
+   *  Pass `knownFamilyId` (e.g. from `useAuthStore.getState().familyId`)
+   *  when the caller already knows which family the entry belongs to.
+   *  That skips the per-photo `entries` lookup that would otherwise run
+   *  for every single photo in a timeline render (review fix #12).
+   *
+   *  If `knownFamilyId` is omitted, falls back to looking up the entry's
+   *  family_id from the DB — same behavior as before. */
+  async getEntryMediaUrl(storagePath: string, knownFamilyId?: string): Promise<string> {
     const parts = storagePath.split('/');
     if (parts.length < 3) throw new Error('Invalid entry media path');
-    const entryId = parts[1];
+    // Cheap after the first call in a session — getUserFamilyIds is cached.
     const familyIds = await getUserFamilyIds();
-    const { data, error } = await supabase
-      .from('entries')
-      .select('family_id')
-      .eq('id', entryId)
-      .single();
 
-    if (error || !data) {
-      throw new Error(`Failed to validate entry media access: ${error?.message ?? 'Entry not found'}`, { cause: error ?? undefined });
+    let resolvedFamilyId: string;
+    if (knownFamilyId !== undefined) {
+      // Fast path: trust the caller's family_id, skip the entries lookup.
+      // We still verify the user belongs to that family (defense-in-depth);
+      // storage RLS would catch a violation anyway, but a clear app-layer
+      // error message is better than a generic 403 from Supabase.
+      resolvedFamilyId = knownFamilyId;
+    } else {
+      // Slow path: original behavior, in case the caller doesn't know.
+      const entryId = parts[1];
+      const { data, error } = await supabase
+        .from('entries')
+        .select('family_id')
+        .eq('id', entryId)
+        .single();
+      if (error || !data) {
+        throw new Error(`Failed to validate entry media access: ${error?.message ?? 'Entry not found'}`, { cause: error ?? undefined });
+      }
+      resolvedFamilyId = data.family_id;
     }
-    if (!familyIds.includes(data.family_id)) {
+
+    if (!familyIds.includes(resolvedFamilyId)) {
       throw new Error('Access denied — cannot access another family\'s media');
     }
 

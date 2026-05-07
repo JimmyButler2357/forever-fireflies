@@ -367,9 +367,17 @@ allow_dynamic_registration = false
 verify_jwt = false
 
 [functions.send-notifications]
-# Called by pg_cron which can't send a JWT. The function uses
-# SUPABASE_SERVICE_ROLE_KEY internally for DB access and doesn't
-# accept any user input — safe to call without auth.
+# Called by pg_cron which can't send a user JWT. The function manually
+# verifies that the Authorization header is `Bearer <service_role_key>`
+# — pg_cron supplies this from vault.decrypted_secrets per migration
+# 20260428000002. Without that manual check anyone with the URL could
+# trigger notification spam (security audit 2-B).
+verify_jwt = false
+
+[functions.purge-deleted]
+# Called by pg_cron. Same auth model as send-notifications — function
+# manually verifies the bearer token equals SUPABASE_SERVICE_ROLE_KEY
+# (security audit 2-C).
 verify_jwt = false
 
 [functions.delete-account]

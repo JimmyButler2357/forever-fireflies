@@ -5,6 +5,7 @@
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/database.types';
 import { capture } from '@/lib/posthog';
+import { buildAudioPath } from '@/services/storage.service';
 
 type Entry = Database['public']['Tables']['entries']['Row'];
 type EntryInsert = Database['public']['Tables']['entries']['Insert'];
@@ -26,8 +27,14 @@ export const entriesService = {
     return data;
   },
 
-  /** Get a single entry by ID (excludes soft-deleted entries) */
+  /** Get a single entry by ID (excludes soft-deleted entries).
+   *  Checks auth first so an expired session gives a clear "not signed in"
+   *  error instead of the confusing PGRST116 ".single() returned 0 rows"
+   *  that RLS produces when it hides everything from a logged-out caller. */
   async getEntry(entryId: string) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated — please sign in again');
+
     const { data, error } = await supabase
       .from('entries')
       .select('*, entry_children(child_id, auto_detected), entry_tags(tag_id, tags(name, slug)), entry_media(id, storage_path, display_order, media_type)')
@@ -41,10 +48,12 @@ export const entriesService = {
 
   /** Create a new entry.
    *  Derives user_id from the authenticated session instead of trusting
-   *  the caller. The caller provides family_id and content fields only. */
-  async create(entry: Omit<EntryInsert, 'user_id'>) {
+   *  the caller. The caller provides family_id and content fields only.
+   *  audio_storage_path is set via update() after storageService.uploadAudio()
+   *  returns, so it's blocked here at the type level. */
+  async create(entry: Omit<EntryInsert, 'user_id' | 'audio_storage_path'>) {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Not authenticated — cannot create entry');
+    if (!session) throw new Error('Not authenticated — please sign in again');
 
     const { data, error } = await supabase
       .from('entries')
@@ -57,8 +66,27 @@ export const entriesService = {
     return data;
   },
 
-  /** Update an entry (transcript, date, location, etc.) */
+  /** Update an entry (transcript, date, location, etc.).
+   *  Auth check first so logged-out callers see "please sign in" instead
+   *  of a generic update failure (RLS rejects the update with no rows
+   *  returned, which .single() then turns into PGRST116).
+   *
+   *  If the payload includes audio_storage_path, it must equal exactly
+   *  `${userId}/${entryId}.wav`. Without this guard, a user could rewrite
+   *  their entry's path to point at another user's file; purge-deleted
+   *  later runs as service role and would delete it. */
   async update(entryId: string, updates: EntryUpdate) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated — please sign in again');
+
+    // != null (not !== undefined) is intentional: passing null clears the
+    // path, which doesn't point at anyone's file and is safe to allow.
+    if (updates.audio_storage_path != null) {
+      if (updates.audio_storage_path !== buildAudioPath(session.user.id, entryId)) {
+        throw new Error('Access denied — audio_storage_path must match the current user and entry');
+      }
+    }
+
     const { data, error } = await supabase
       .from('entries')
       .update(updates)
@@ -220,7 +248,7 @@ export const entriesService = {
    *  a nice title, tidies up the "um"s, and sticks the right labels on it. */
   async processWithAI(entryId: string): Promise<{ title?: string; cleaned_transcript?: string; tags_applied?: number } | null> {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Not authenticated — cannot process entry');
+    if (!session) throw new Error('Not authenticated — please sign in again');
 
     const start = Date.now();
     const { data, error } = await supabase.functions.invoke('process-entry', {
@@ -250,7 +278,9 @@ export const entriesService = {
     return data;
   },
 
-  /** Add one photo attachment row for an entry. */
+  /** Add one photo attachment row for an entry.
+   *  Auth check is at the top so the .single() lookup below produces a
+   *  clear error if the user isn't signed in (rather than PGRST116). */
   async addEntryPhoto(
     entryId: string,
     photo: {
@@ -261,6 +291,9 @@ export const entriesService = {
       file_size_bytes?: number | null;
     },
   ) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated — please sign in again');
+
     const entryQuery = await supabase
       .from('entries')
       .select('family_id, user_id')

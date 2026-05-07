@@ -187,20 +187,53 @@ Deno.serve(async (req) => {
 
 Return ONLY valid JSON. No markdown, no explanation, no code fences.`;
 
-    const response = await fetch(ANTHROPIC_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: entry.transcript }],
-      }),
-    });
+    // ─── Timeout the Anthropic call ──
+    // Without an explicit timeout, fetch() will wait indefinitely if the
+    // upstream API hangs — and Supabase will eventually kill the whole
+    // function at its 50-second platform limit. That ties up workers and
+    // gives the user no useful retry signal.
+    //
+    // ELI5: We're setting a kitchen timer. If the pizza place hasn't
+    // called back by 12 seconds, we hang up and tell the customer "try
+    // again in a minute" instead of waiting on the line forever.
+    const ANTHROPIC_TIMEOUT_MS = 12_000;
+    const abortCtrl = new AbortController();
+    const abortTimer = setTimeout(() => abortCtrl.abort(), ANTHROPIC_TIMEOUT_MS);
+
+    let response: Response;
+    try {
+      response = await fetch(ANTHROPIC_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: entry.transcript }],
+        }),
+        signal: abortCtrl.signal,
+      });
+    } catch (err) {
+      // AbortError means we hit the timeout. Anything else is a network
+      // failure (DNS, TLS, etc.). Both surface to the client as a
+      // success:false so it can decide whether to retry.
+      const isTimeout = (err as Error)?.name === 'AbortError';
+      console.error(isTimeout ? 'Anthropic timeout after 12s' : 'Anthropic fetch failed:', err);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: isTimeout ? 'AI request timed out — please try again' : 'AI request failed',
+          retriable: true,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    } finally {
+      clearTimeout(abortTimer);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();

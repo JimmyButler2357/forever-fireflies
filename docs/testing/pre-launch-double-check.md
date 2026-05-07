@@ -55,17 +55,25 @@ Mark items as you complete them. When all of Section 1 + Section 2 are checked, 
 ### 1.4 — Audit our code with a rival model
 
 - [ ] Run a security-focused review of `supabase/migrations/`, `supabase/functions/`, and `services/` using a non-Claude model (Gemini 3 or GPT-5)
-- [ ] Use the prompt: *"Audit this code for OWASP top-10 vulnerabilities and Supabase RLS misconfigurations. Be specific — file, line, exploit, fix."*
+- [ ] Use the prompt and bundle prepared at `docs/testing/security-audit-2026-04-28-rival-bundle/` (PROMPT.md + MANIFEST.md + findings-template.md)
+- [ ] Append findings to `docs/testing/security-audit-2026-04-28.md` under "Rival-model cross-check"
 - [ ] Triage findings into "ship blocker" / "fix soon" / "noted"
 
 **Why:** Different model architectures find different bugs. Claude built it; Claude reviewing it has blind spots.
 
-**How to apply:** Single one-shot session with Gemini in AI Studio. Paste the relevant files (or zip and upload). Save the report to `docs/testing/security-audit-YYYY-MM-DD.md`.
+**How to apply:** Single one-shot session with Gemini in AI Studio. Paste the contents of `PROMPT.md` and the files listed in `MANIFEST.md`. Save the report under the audit doc as a new section.
 
 ### 1.5 — Run Claude Code's built-in `/security-review`
 
-- [ ] `/security-review` has been run on the current branch with no critical findings open
+- [x] `/security-review` has been run on the current branch with no critical findings open
+  - **Done 2026-04-28, revised 2026-05-03** — full deep audit at `docs/testing/security-audit-2026-04-28.md`. 0 Critical, 6 High, 13 Medium, 12 Low, 8 Note. **4 ship-blockers** for public launch (revised down from 5 after threat-model correction on AsyncStorage finding 3-A). See the audit doc's "Executive summary" section.
 - [ ] Re-run on `master` immediately before each `eas build --profile production`
+
+### 1.6 — Live two-account RLS test (added during 2026-04-28 audit)
+
+- [ ] Spin up local Supabase (or branch), apply migrations, create two test users, run all 24 tests in `docs/testing/security-audit-2026-04-28-rls-test.sql`
+- [ ] All 24 tests return their expected outcome (0 rows / errors as documented)
+- **Status:** scripted but not run in 2026-04-28 audit — Docker was not installed locally.
 
 **Why:** This is the cheapest layer of the audit and catches obvious issues (logged secrets, eval, unsafe HTML).
 
