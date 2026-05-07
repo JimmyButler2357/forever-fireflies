@@ -5,6 +5,8 @@ import {
   Pressable,
   Animated,
   StyleSheet,
+  AppState,
+  type AppStateStatus,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -77,6 +79,12 @@ export default function RecordingScreen() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Tracks when we've called stop() but speech hasn't finalized yet.
   const [isStopping, setIsStopping] = useState(false);
+  // True when the recording was paused automatically because the app
+  // backgrounded (lock, app switch, phone call). Lets us swap the
+  // "Paused" hint for one that explains why. Stored in a ref because
+  // the hint only renders during isPaused, and isPaused already
+  // triggers a re-render when set — no extra state needed.
+  const wasInterruptedRef = useRef(false);
 
   // Shows a brief "too short" message when user stops immediately
   const [tooShortMessage, setTooShortMessage] = useState(false);
@@ -268,6 +276,39 @@ export default function RecordingScreen() {
     }
   }, [speech.isPaused]);
 
+  // ─── Auto-Pause on Background ──────────────────────────
+  //
+  // Without this, locking the phone (or switching apps, or taking
+  // a call) silently kills the mic mid-recording — the iOS/Android
+  // OS yanks audio access because we don't declare background-audio
+  // capability. The JS state would still say "isRecording=true",
+  // but no sound would actually be captured.
+  //
+  // Instead, we listen for AppState changes and pause the engine
+  // ourselves. The existing pause infrastructure saves whatever
+  // segment was being recorded; on resume, a new segment starts
+  // and gets concatenated on final stop. The user keeps their
+  // words and chooses whether to continue.
+  //
+  // Why pause on 'inactive' too: iOS fires 'inactive' BEFORE
+  // 'background' on lock — pausing there gets the engine stopped
+  // before the OS suspends the JS thread, which is safer for the
+  // audio segment to flush cleanly. 'inactive' also covers the
+  // notification-shade pull / multitask preview / incoming-call
+  // ring. On Android only 'background' fires, so this is a no-op.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
+      if (next !== 'background' && next !== 'inactive') return;
+      // Read latest values from the ref — this listener registers
+      // once and would otherwise capture stale closure values.
+      const s = speechRef.current;
+      if (!s.isRecording || s.isPaused) return;
+      wasInterruptedRef.current = true;
+      s.pause();
+    });
+    return () => sub.remove();
+  }, []);
+
   // Timer — only ticks when actively recording (not paused).
   // When paused, the interval is cleared so the user keeps
   // their full 60 seconds of speaking time.
@@ -282,7 +323,13 @@ export default function RecordingScreen() {
     };
   }, [speech.isRecording, speech.isPaused]);
 
-  // Auto-stop at 60 seconds
+  // Auto-stop at 60 seconds.
+  // handleStop is intentionally omitted from deps — it's declared later
+  // in this component (it depends on speech state set up further down).
+  // Adding it here would be a use-before-declaration TS error, and the
+  // closure capture works fine at runtime since this effect only fires
+  // when `seconds` changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (seconds >= 60) {
       handleStop();
@@ -452,6 +499,11 @@ export default function RecordingScreen() {
     capture('recording_completed', { durationSeconds: seconds });
   }, [speech, seconds]);
 
+  const handleResume = useCallback(() => {
+    wasInterruptedRef.current = false;
+    speech.resume();
+  }, [speech]);
+
   // Clean up if the user navigates away mid-recording
   useEffect(() => {
     return () => {
@@ -516,7 +568,9 @@ export default function RecordingScreen() {
             <Text style={styles.timer}>{formatDuration(seconds)}</Text>
             <Text style={styles.timerHint}>
               {speech.isPaused
-                ? 'Paused'
+                ? wasInterruptedRef.current
+                  ? 'Paused — your phone locked. Tap to resume.'
+                  : 'Paused'
                 : seconds < 5
                   ? 'Recording...'
                   : `${60 - seconds}s remaining`}
@@ -575,7 +629,7 @@ export default function RecordingScreen() {
 
               {/* Big center button — Stop (when recording) or Resume (when paused) */}
               <Pressable
-                onPress={speech.isPaused ? speech.resume : handleStop}
+                onPress={speech.isPaused ? handleResume : handleStop}
                 style={({ pressed }) => [
                   styles.stopButton,
                   speech.isPaused && styles.resumeButton,
