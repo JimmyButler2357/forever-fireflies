@@ -125,6 +125,7 @@ The wireframe uses additional sizes for specific contexts. At implementation, ma
 | 15px | 400–700 | Transcript body text (Merriweather serif, 1.65 line-height), Firefly Jar card previews (Merriweather, 1.6 line-height), onboarding tagline |
 | 13px | 600–700 | Child pills, tab labels, button labels, banner text |
 | 10px | 600–700 | Date/time on cards, audio duration, flow map labels |
+| 14px | 400 | Home header greeting (Merriweather serif, color `textSoft`). Auto-shrinks via `adjustsFontSizeToFit` + `minimumFontScale 0.7` so long greetings scale down rather than wrap or truncate. |
 
 ### Weight Scale
 
@@ -153,6 +154,7 @@ The wireframe uses additional sizes for specific contexts. At implementation, ma
 - Never invent sizes outside the named scale without documenting them in the extended table.
 - Weight 500–600 is acceptable for labels; weight 700 is reserved for section headers and tiny-label uppercase treatments.
 - Uppercase + letter-spacing 0.8px is only used for tiny section headers at 12px.
+- Home greetings: keep new copy under ~30 characters. Above that, the text auto-shrinks on small phones (375px wide) to fit alongside the search and settings buttons.
 
 ---
 

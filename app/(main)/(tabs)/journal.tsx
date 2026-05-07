@@ -16,7 +16,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -69,6 +69,8 @@ export default function JournalScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
+  const params = useLocalSearchParams<{ openSearch?: string }>();
+  const autoOpenedRef = useRef(false);
   const children = useChildrenStore((s) => s.children);
   const setChildren = useChildrenStore((s) => s.setChildren);
   const entries = useEntriesStore((s) => s.entries);
@@ -133,6 +135,15 @@ export default function JournalScreen() {
       setTimeout(() => searchBarRef.current?.focus(), reduceMotion ? 50 : 280);
     }
   }, [isSearchActive, reduceMotion]);
+
+  // Auto-open search when arriving from Home's search button.
+  // The ref guard ensures this fires once per navigation, not on every re-render.
+  useEffect(() => {
+    if (params.openSearch === '1' && !autoOpenedRef.current && !isSearchActive) {
+      autoOpenedRef.current = true;
+      toggleSearchMode();
+    }
+  }, [params.openSearch, isSearchActive, toggleSearchMode]);
 
   // ─── Fetch real data from Supabase on mount ──────────────
 

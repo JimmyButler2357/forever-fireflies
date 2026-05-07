@@ -38,6 +38,11 @@ export const colors = {
   glowSoft: '#FDF6E3',
   glowGlow: 'rgba(242,201,76,0.12)',
   glowShadow: 'rgba(242,201,76,0.35)',
+  // Pure white — for text on colored surfaces (child pills, primary
+  // buttons, error banners). Distinct from `card` (#FEFCF9, a warm
+  // off-white surface) because contrast against a saturated background
+  // wants the brightest possible white, not a tinted one.
+  textOnAccent: '#FFFFFF',
 } as const;
 
 // Screen-specific colors

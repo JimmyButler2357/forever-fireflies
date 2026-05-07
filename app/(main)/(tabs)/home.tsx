@@ -338,6 +338,14 @@ export default function HomeTab() {
         <TopBar
           rightIcons={[
             { icon: 'settings-outline', onPress: () => router.push('/(main)/settings') },
+            {
+              icon: 'search-outline',
+              onPress: () =>
+                router.push({
+                  pathname: '/(main)/(tabs)/journal',
+                  params: { openSearch: '1' },
+                }),
+            },
           ]}
         />
         <View style={styles.centered}>
@@ -354,6 +362,14 @@ export default function HomeTab() {
         <TopBar
           rightIcons={[
             { icon: 'settings-outline', onPress: () => router.push('/(main)/settings') },
+            {
+              icon: 'search-outline',
+              onPress: () =>
+                router.push({
+                  pathname: '/(main)/(tabs)/journal',
+                  params: { openSearch: '1' },
+                }),
+            },
           ]}
         />
         <View style={styles.centered}>
@@ -379,6 +395,14 @@ export default function HomeTab() {
         titleStyle="greeting"
         rightIcons={[
           { icon: 'settings-outline', onPress: () => router.push('/(main)/settings') },
+          {
+            icon: 'search-outline',
+            onPress: () =>
+              router.push({
+                pathname: '/(main)/(tabs)/journal',
+                params: { openSearch: '1' },
+              }),
+          },
         ]}
       />
 

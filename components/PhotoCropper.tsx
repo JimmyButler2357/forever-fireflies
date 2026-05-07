@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   headerBtnDisabled: { opacity: 0.4 },
   headerBtnText: {
     ...typography.buttonLabel,
-    color: '#FFFFFF',
+    color: colors.textOnAccent,
   },
   headerBtnAccent: {
     color: colors.accent,

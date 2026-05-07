@@ -65,6 +65,8 @@ export default function TopBar({
                 : styles.titleSans,
             ]}
             numberOfLines={1}
+            adjustsFontSizeToFit={titleStyle === 'greeting'}
+            minimumFontScale={titleStyle === 'greeting' ? 0.7 : undefined}
           >
             {title}
           </Text>
@@ -99,6 +101,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing(5),
     paddingBottom: spacing(2),
+    gap: spacing(3),
   },
   left: {
     flexDirection: 'row',

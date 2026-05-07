@@ -921,7 +921,12 @@ export default function EntryDetailScreen() {
             const path = photo.storagePath;
             if (!path) return photo;
             try {
-              const signedUri = await getCachedPhotoUrl(path, storageService.getEntryMediaUrl);
+              // Pass familyId so getEntryMediaUrl skips its per-photo
+              // entries.lookup (review fix #12 — the N+1 across cards).
+              const signedUri = await getCachedPhotoUrl(
+                path,
+                (p) => storageService.getEntryMediaUrl(p, familyId ?? undefined),
+              );
               return { ...photo, uri: signedUri, storagePath: path };
             } catch {
               return photo;
@@ -1225,7 +1230,7 @@ export default function EntryDetailScreen() {
       });
       // DB insert succeeded — the file is now referenced, clear the rollback marker.
       uploadedStoragePath = null;
-      const signedUri = await storageService.getEntryMediaUrl(storagePath);
+      const signedUri = await storageService.getEntryMediaUrl(storagePath, familyId ?? undefined);
       const updatedPhotos = [
         ...currentPhotos,
         { id: mediaRow.id, uri: signedUri, storagePath, displayOrder },

@@ -16,6 +16,7 @@ import { useReduceMotion } from '@/hooks/useReduceMotion';
 import DraftBadge from '@/components/DraftBadge';
 import type { DraftStatus } from '@/stores/draftStore';
 import { storageService } from '@/services/storage.service';
+import { useAuthStore } from '@/stores/authStore';
 
 // ─── Highlight Helper ────────────────────────────────────
 
@@ -197,6 +198,10 @@ export default function EntryCard({
     (showTags && entry.tags.length > 0) ||
     (isCoreMemory && entry.hasAudio);
   const [resolvedPhotos, setResolvedPhotos] = useState<string[]>([]);
+  // Pulled once for the whole card so getEntryMediaUrl can skip its
+  // per-photo entries.lookup (review fix #12). MVP users always belong
+  // to one family, so this is stable for the screen lifetime.
+  const familyId = useAuthStore((s) => s.familyId);
 
   useEffect(() => {
     let cancelled = false;
@@ -211,7 +216,7 @@ export default function EntryCard({
         entry.photos.slice(0, 3).map(async (uriOrPath) => {
           if (uriOrPath.startsWith('http')) return uriOrPath;
           try {
-            return await storageService.getEntryMediaUrl(uriOrPath);
+            return await storageService.getEntryMediaUrl(uriOrPath, familyId ?? undefined);
           } catch {
             return '';
           }
@@ -224,7 +229,7 @@ export default function EntryCard({
 
     resolvePhotoUrls();
     return () => { cancelled = true; };
-  }, [entry.photos]);
+  }, [entry.photos, familyId]);
 
   return (
     <Animated.View

@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
   initialText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.textOnAccent,
   },
   childCardInfo: {
     flex: 1,
