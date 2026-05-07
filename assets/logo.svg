@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!--
+    Forever Fireflies — primary logo.
+
+    Design notes:
+    - Jar silhouette path preserved verbatim from the QuiverAI Arrow
+      generation that we picked as the strongest concept (4 fireflies:
+      3 inside, 1 escaping upper-right).
+    - Jar fill swapped from dark brown (#2E1C10) → brand orange (#E8724A).
+    - Solid gold dots replaced with proper "light" fireflies:
+      a small bright cream core surrounded by a soft warm-gold halo
+      that fades to transparent. Reads as emitted light, not flat
+      circles.
+    - Use this as the master SVG; export to required PNG sizes
+      (1024, 512, 192, 180, 144, 96, 48, 32) for app stores + favicon.
+  -->
+  <defs>
+    <!-- Soft warm glow: bright at center, fades to transparent. -->
+    <radialGradient id="ff-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F2C94C" stop-opacity="0.95"/>
+      <stop offset="55%" stop-color="#F2C94C" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#F2C94C" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Cream background (brand cream from design-style.md). -->
+  <rect width="100" height="100" fill="#FAF8F5"/>
+
+  <!-- Jar silhouette in brand orange. -->
+  <path fill="#E8724A" d="m73.8 21.7-2.8-0.6c-1-0.4-1-1.7-1-2.4v-1.9h2.6c1.5 0.2 2.8-1.4 2.8-3v-9c0-1.3-1.1-2.7-2.7-2.7h-59.9c-1.3 0-2.6 1.2-2.6 2.6v9.5c0.1 1.4 1.4 2.7 2.8 2.7h2.6v2.3c0 2.5-1.9 2-4.5 2.9-4.2 1.2-8.1 4.4-8.2 9.5v59.5c0.1 3.5 2.7 7.2 6.9 7.2h66.1c3.7 0 7.1-2.9 7.1-7.2v-59.5c-0.1-4.5-3.9-8.9-9.2-9.9zm1.4 68.7h-65v-57.5c0-2.6 2.2-3.6 3.7-3.9 2.2-0.4 9.6-1.6 9.6-10.5h38.3c-0.1 8.9 6.1 10.1 10.3 10.8 2 0.4 3.1 1.6 3.1 3.2v57.9z"/>
+
+  <!-- Firefly 1: escaping, upper-right corner (on cream). -->
+  <circle cx="90" cy="9.5" r="7.5" fill="url(#ff-glow)"/>
+  <circle cx="90" cy="9.5" r="2.2" fill="#FFFEF0"/>
+
+  <!-- Firefly 2: inside jar, upper-middle. -->
+  <circle cx="53.3" cy="46.8" r="6.5" fill="url(#ff-glow)"/>
+  <circle cx="53.3" cy="46.8" r="1.8" fill="#FFFEF0"/>
+
+  <!-- Firefly 3: inside jar, lower-left. -->
+  <circle cx="31.4" cy="63.7" r="6.5" fill="url(#ff-glow)"/>
+  <circle cx="31.4" cy="63.7" r="1.8" fill="#FFFEF0"/>
+
+  <!-- Firefly 4: inside jar, lower-middle. -->
+  <circle cx="53.3" cy="74" r="6.5" fill="url(#ff-glow)"/>
+  <circle cx="53.3" cy="74" r="1.8" fill="#FFFEF0"/>
+</svg>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Banner Variants — Forever Fireflies</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #1a1715;
+      --panel: #2a2520;
+      --panel-2: #34302b;
+      --border: #4a4540;
+      --text: #e8dfd5;
+      --text-soft: #999088;
+      --accent: #c4623a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+    }
+    .container { max-width: 880px; margin: 0 auto; }
+    .header { margin-bottom: 24px; }
+    h1 {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-weight: normal;
+      font-size: 28px;
+      margin: 0 0 6px;
+    }
+    .subtitle { color: var(--text-soft); font-size: 14px; }
+
+    .controls {
+      background: var(--panel);
+      padding: 16px 20px;
+      border-radius: 10px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    .controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      user-select: none;
+    }
+    .controls input[type="checkbox"] { accent-color: var(--accent); }
+
+    .banners { display: flex; flex-direction: column; gap: 20px; }
+    .card {
+      background: var(--panel);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      transition: border-color 0.15s;
+    }
+    .card.selected { border-color: var(--accent); }
+    .card-head { margin-bottom: 14px; }
+    .card-label {
+      font-family: Georgia, serif;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    .card-meta { color: var(--text-soft); font-size: 12px; line-height: 1.45; }
+
+    .frame-wrap { display: flex; justify-content: center; }
+    .frame {
+      position: relative;
+      width: 343px;
+      height: 140px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .frame.gradient {
+      background: linear-gradient(135deg, #F5EDE3 0%, #EDE0D2 50%, #F0E6DC 100%);
+    }
+    .frame.no-bg {
+      background: var(--bg);
+      border: 1px dashed var(--border);
+    }
+    .svg-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .text-overlay {
+      position: absolute;
+      top: 24px; left: 24px; right: 24px;
+      pointer-events: none;
+    }
+    .tagline {
+      font-family: Georgia, serif;
+      font-size: 16px;
+      color: #2C2420;
+      margin: 0;
+    }
+    .tagline em {
+      color: #C4623A;
+      font-style: italic;
+    }
+    .sub-text {
+      font-size: 12px;
+      color: #6B5D52;
+      margin-top: 2px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(212, 160, 123, 0.18);
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-top: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6B5D52;
+    }
+    .glow-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #F2C94C;
+      box-shadow: 0 0 6px #F2C94C;
+    }
+
+    .firefly {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: firefly-pulse 3s ease-in-out infinite;
+    }
+    .firefly.gold {
+      background: #F2C94C;
+      box-shadow: 0 0 6px rgba(242, 201, 76, 0.7);
+    }
+    .firefly.orange {
+      background: #E8724A;
+      box-shadow: 0 0 5px rgba(232, 114, 74, 0.6);
+    }
+    @keyframes firefly-pulse {
+      0%, 100% { opacity: 0.9; }
+      50% { opacity: 0.4; }
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      justify-content: center;
+    }
+    button {
+      padding: 8px 16px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+    button:hover { background: var(--panel-2); border-color: #6a6560; }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    button.primary:hover { background: #d56e44; border-color: #d56e44; }
+
+    .prompt-area {
+      margin-top: 32px;
+      background: var(--panel);
+      padding: 18px 20px;
+      border-radius: 10px;
+    }
+    .prompt-label {
+      font-size: 12px;
+      color: var(--text-soft);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .prompt-text {
+      background: var(--bg);
+      padding: 14px;
+      border-radius: 6px;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      min-height: 40px;
+      color: var(--text);
+    }
+    .prompt-text.empty { color: var(--text-soft); font-style: italic; }
+    .copy-btn {
+      margin-top: 10px;
+      padding: 6px 14px;
+      background: var(--panel-2);
+      font-size: 12px;
+    }
+    .note {
+      margin-top: 24px;
+      font-size: 12px;
+      color: var(--text-soft);
+      text-align: center;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Home banner variants</h1>
+      <div class="subtitle">Three options at actual size (343 × 140). The animated firefly dots are layered on top via <code>BannerFireflies</code> in the real app — toggle them on/off to see how each SVG reads with and without.</div>
+    </div>
+
+    <div class="controls">
+      <label><input type="checkbox" id="t-gradient" checked> Warm gradient background</label>
+      <label><input type="checkbox" id="t-text" checked> Tagline + memory pill</label>
+      <label><input type="checkbox" id="t-fireflies" checked> Animated fireflies (shared layer)</label>
+    </div>
+
+    <div class="banners" id="banners"></div>
+
+    <div class="prompt-area">
+      <div class="prompt-label">Generated direction for Claude</div>
+      <div class="prompt-text empty" id="prompt">Pick a variant above to generate a prompt you can paste back to Claude.</div>
+      <button class="copy-btn" id="copy-btn">Copy</button>
+    </div>
+
+    <div class="note">
+      Open this file in any browser. The SVGs render natively and resize cleanly because that's the point of vector graphics.
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // SVG variants — each is the *art layer only*. Fireflies are added separately.
+    // ============================================================
+
+    const SVG_CURRENT = `
+<svg viewBox="0 0 343 140" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <!-- Ground line -->
+  <path d="M0 128 C15 126,25 130,45 127 C65 124,85 129,105 126 C125 123,140 128,160 125 C180 122,200 127,220 124 C240 121,260 126,280 123 C300 120,320 125,343 122" stroke="#8C7E74" stroke-width="0.8" stroke-opacity="0.18" stroke-linecap="round" fill="none" />
+  <!-- Grass tufts -->
+  <path d="M30 127 C32 120,34 118,33 127" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.12" stroke-linecap="round" fill="none" />
+  <path d="M35 128 C38 121,40 119,38 128" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.10" stroke-linecap="round" fill="none" />
+  <path d="M80 126 C82 119,85 117,83 126" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.11" stroke-linecap="round" fill="none" />
+  <path d="M85 127 C88 122,90 120,87 127" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.09" stroke-linecap="round" fill="none" />
+  <path d="M135 125 C136 119,139 116,137 125" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.10" stroke-linecap="round" fill="none" />
+  <path d="M290 123 C292 116,295 114,293 123" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.11" stroke-linecap="round" fill="none" />
+  <path d="M295 124 C298 119,300 117,297 124" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.09" stroke-linecap="round" fill="none" />
+  <!-- Jar lid -->
+  <path d="M255 58 C257 55,262 54,270 53 C278 52,288 53,293 55 C296 56,297 58,295 60 L253 60 C251 59,253 57,255 58Z" stroke="#8C7E74" stroke-width="1.2" stroke-opacity="0.3" fill="#D4A07B" fill-opacity="0.08" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Jar handle -->
+  <path d="M268 53 C269 49,272 47,276 47 C280 47,282 49,283 53" stroke="#8C7E74" stroke-width="1" stroke-opacity="0.25" fill="none" stroke-linecap="round" />
+  <!-- Jar body -->
+  <path d="M253 60 C250 62,247 68,245 76 C243 84,242 94,243 102 C244 110,248 118,254 122 C260 126,268 127,275 127 C282 127,290 126,296 122 C302 118,306 110,307 102 C308 94,307 84,305 76 C303 68,300 62,297 60" stroke="#8C7E74" stroke-width="1.2" stroke-opacity="0.28" fill="#FAF8F5" fill-opacity="0.15" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Jar highlight -->
+  <path d="M252 72 C251 80,251 90,253 100" stroke="white" stroke-width="1.5" stroke-opacity="0.12" stroke-linecap="round" fill="none" />
+  <!-- Wing marks (jar) -->
+  <path d="M262 76 Q260 74 259 73" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.12" stroke-linecap="round" fill="none" />
+  <path d="M268 76 Q270 74 271 73" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.12" stroke-linecap="round" fill="none" />
+  <path d="M278 86 Q276 84 275 83" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round" fill="none" />
+  <path d="M283 86 Q285 84 286 83" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round" fill="none" />
+  <!-- Wing marks (free) -->
+  <path d="M47 28 Q45 26 44 25" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round" fill="none" />
+  <path d="M53 28 Q55 26 56 25" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round" fill="none" />
+  <path d="M207 43 Q205 41 204 40" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round" fill="none" />
+  <path d="M213 43 Q215 41 216 40" stroke="#8C7E74" stroke-width="0.4" stroke-opacity="0.10" stroke-linecap="round" fill="none" />
+  <!-- Firefly trails -->
+  <path d="M50 33 C48 38,45 42,47 48" stroke="#F2C94C" stroke-width="0.5" stroke-opacity="0.10" stroke-linecap="round" stroke-dasharray="2 3" fill="none" />
+  <path d="M25 73 Q23 78 26 83" stroke="#F2C94C" stroke-width="0.4" stroke-opacity="0.08" stroke-linecap="round" stroke-dasharray="2 3" fill="none" />
+  <path d="M140 21 Q142 25 139 29" stroke="#E8724A" stroke-width="0.4" stroke-opacity="0.07" stroke-linecap="round" stroke-dasharray="2 3" fill="none" />
+  <path d="M213 46 C218 48,225 50,232 52" stroke="#F2C94C" stroke-width="0.5" stroke-opacity="0.10" stroke-linecap="round" stroke-dasharray="2 3" fill="none" />
+  <!-- Stars -->
+  <path d="M180 12 L181 15 L184 15 L182 17 L183 20 L180 18 L177 20 L178 17 L176 15 L179 15Z" fill="#F2C94C" fill-opacity="0.12" />
+  <path d="M320 20 L321 22 L323 22 L321.5 23.5 L322 25.5 L320 24 L318 25.5 L318.5 23.5 L317 22 L319 22Z" fill="#F2C94C" fill-opacity="0.10" />
+  <circle cx="70" cy="15" r="0.8" fill="#F2C94C" fill-opacity="0.15" />
+  <circle cx="230" cy="25" r="0.6" fill="#F2C94C" fill-opacity="0.12" />
+  <!-- Crescent moon -->
+  <path d="M310 12 C314 8,320 8,322 14 C318 12,314 14,310 12Z" fill="#F2C94C" fill-opacity="0.10" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.10" />
+</svg>`;
+
+    const SVG_PATH_A = `
+<svg viewBox="0 0 343 140" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <!-- Faint ground hint just under and around the jar -->
+  <path d="M210 130 C235 129, 265 131, 295 129 C310 128, 325 130, 340 129" stroke="#8C7E74" stroke-width="0.7" stroke-opacity="0.18" stroke-linecap="round" fill="none" />
+
+  <!-- Crescent moon top-left, slightly fuller than current -->
+  <path d="M55 26 C60 19, 70 19, 73 28 C66 25, 60 28, 55 26 Z" fill="#F2C94C" fill-opacity="0.12" stroke="#8C7E74" stroke-width="0.7" stroke-opacity="0.22" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Clean jar (same paths as Current — refined, not wonky) -->
+  <!-- Lid -->
+  <path d="M255 58 C257 55,262 54,270 53 C278 52,288 53,293 55 C296 56,297 58,295 60 L253 60 C251 59,253 57,255 58Z" stroke="#8C7E74" stroke-width="1.2" stroke-opacity="0.32" fill="#D4A07B" fill-opacity="0.10" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Lid handle -->
+  <path d="M268 53 C269 49,272 47,276 47 C280 47,282 49,283 53" stroke="#8C7E74" stroke-width="1" stroke-opacity="0.27" fill="none" stroke-linecap="round" />
+  <!-- Body -->
+  <path d="M253 60 C250 62,247 68,245 76 C243 84,242 94,243 102 C244 110,248 118,254 122 C260 126,268 127,275 127 C282 127,290 126,296 122 C302 118,306 110,307 102 C308 94,307 84,305 76 C303 68,300 62,297 60" stroke="#8C7E74" stroke-width="1.2" stroke-opacity="0.30" fill="#FAF8F5" fill-opacity="0.18" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Subtle highlight -->
+  <path d="M252 72 C251 80,251 90,253 100" stroke="white" stroke-width="1.5" stroke-opacity="0.14" stroke-linecap="round" fill="none" />
+
+  <!-- A few wispy grass blades around the jar's base, gestural and varied -->
+  <path d="M232 130 C234 122, 236 117, 233 130" stroke="#8C7E74" stroke-width="0.7" stroke-opacity="0.22" fill="none" stroke-linecap="round" />
+  <path d="M240 130 C238 121, 242 117, 243 130" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.20" fill="none" stroke-linecap="round" />
+  <path d="M300 128 C302 120, 305 116, 302 128" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.20" fill="none" stroke-linecap="round" />
+  <path d="M308 128 C306 120, 310 116, 311 128" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.18" fill="none" stroke-linecap="round" />
+</svg>`;
+
+    const SVG_PATH_B = `
+<svg viewBox="0 0 343 140" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <!-- Soft ground line -->
+  <path d="M0 129 C30 128, 60 130, 90 128 C120 126, 150 130, 180 128 C210 126, 240 130, 270 128 C300 127, 320 129, 343 128" stroke="#8C7E74" stroke-width="0.7" stroke-opacity="0.18" stroke-linecap="round" fill="none" />
+
+  <!-- Distant grass tufts on the left, very subtle -->
+  <path d="M40 128 C42 121, 44 118, 43 128" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.13" fill="none" stroke-linecap="round" />
+  <path d="M48 129 C50 122, 52 119, 50 129" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.11" fill="none" stroke-linecap="round" />
+  <path d="M150 127 C152 120, 154 117, 152 127" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.10" fill="none" stroke-linecap="round" />
+
+  <!-- Crescent moon top-left (slightly larger, more present) -->
+  <path d="M50 22 C54 16, 64 16, 67 25 C60 22, 54 25, 50 22 Z" fill="#F2C94C" fill-opacity="0.14" stroke="#8C7E74" stroke-width="0.6" stroke-opacity="0.22" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Three small stars scattered across the night sky -->
+  <path d="M105 20 L106 23 L109 23 L107 25 L108 28 L105 26 L102 28 L103 25 L101 23 L104 23Z" fill="#F2C94C" fill-opacity="0.14" />
+  <circle cx="155" cy="32" r="0.9" fill="#F2C94C" fill-opacity="0.16" />
+  <circle cx="195" cy="18" r="0.7" fill="#F2C94C" fill-opacity="0.13" />
+  <path d="M85 45 L85.5 46.5 L87 46.5 L86 47.5 L86.5 49 L85 48 L83.5 49 L84 47.5 L83 46.5 L84.5 46.5Z" fill="#F2C94C" fill-opacity="0.10" />
+
+  <!-- Jar at right -->
+  <!-- Lid -->
+  <path d="M255 58 C257 55,262 54,270 53 C278 52,288 53,293 55 C296 56,297 58,295 60 L253 60 C251 59,253 57,255 58Z" stroke="#8C7E74" stroke-width="1.2" stroke-opacity="0.32" fill="#D4A07B" fill-opacity="0.10" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Lid handle -->
+  <path d="M268 53 C269 49,272 47,276 47 C280 47,282 49,283 53" stroke="#8C7E74" stroke-width="1" stroke-opacity="0.27" fill="none" stroke-linecap="round" />
+  <!-- Body -->
+  <path d="M253 60 C250 62,247 68,245 76 C243 84,242 94,243 102 C244 110,248 118,254 122 C260 126,268 127,275 127 C282 127,290 126,296 122 C302 118,306 110,307 102 C308 94,307 84,305 76 C303 68,300 62,297 60" stroke="#8C7E74" stroke-width="1.2" stroke-opacity="0.30" fill="#FAF8F5" fill-opacity="0.18" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Highlight -->
+  <path d="M252 72 C251 80,251 90,253 100" stroke="white" stroke-width="1.5" stroke-opacity="0.14" stroke-linecap="round" fill="none" />
+
+  <!-- Vine curling at jar's base (entering from left, wrapping toward the jar) -->
+  <path d="M210 128 C220 124, 232 121, 240 124 Q246 126, 252 124 C258 122, 265 122, 270 125" stroke="#8C7E74" stroke-width="0.7" stroke-opacity="0.26" fill="none" stroke-linecap="round" />
+  <!-- Tiny leaves on the vine -->
+  <path d="M218 124 C216 121, 218 119, 221 121 C220 123, 219 124, 218 124 Z" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.22" fill="none" stroke-linecap="round" />
+  <path d="M232 122 C230 119, 233 117, 235 119 C234 121, 233 122, 232 122 Z" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.20" fill="none" stroke-linecap="round" />
+  <path d="M260 123 C258 120, 261 118, 263 120 C262 122, 261 123, 260 123 Z" stroke="#8C7E74" stroke-width="0.5" stroke-opacity="0.20" fill="none" stroke-linecap="round" />
+</svg>`;
+
+    // ============================================================
+    // Firefly dot positions — same across all three banners
+    // ============================================================
+    const FIREFLIES = [
+      // 6 inside jar (clustered around x=250-300, y=70-115)
+      { x: 262, y: 78, size: 5, color: 'gold', delay: 0 },
+      { x: 278, y: 92, size: 4, color: 'gold', delay: 0.6 },
+      { x: 285, y: 105, size: 5, color: 'gold', delay: 1.2 },
+      { x: 263, y: 100, size: 4, color: 'orange', delay: 0.3 },
+      { x: 290, y: 80, size: 4, color: 'gold', delay: 0.9 },
+      { x: 270, y: 115, size: 4, color: 'gold', delay: 1.5 },
+      // 6 outside (scattered across left side)
+      { x: 50, y: 32, size: 5, color: 'gold', delay: 0.2 },
+      { x: 30, y: 75, size: 4, color: 'gold', delay: 0.8 },
+      { x: 145, y: 25, size: 4, color: 'orange', delay: 1.4 },
+      { x: 210, y: 48, size: 5, color: 'gold', delay: 0.5 },
+      { x: 175, y: 65, size: 4, color: 'gold', delay: 1.1 },
+      { x: 100, y: 90, size: 4, color: 'gold', delay: 1.7 },
+    ];
+
+    // ============================================================
+    // State + render
+    // ============================================================
+    const state = {
+      gradient: true,
+      text: true,
+      fireflies: true,
+      pick: null,
+    };
+
+    const variants = [
+      {
+        id: 'current',
+        label: 'Current',
+        meta: 'What ships today. Faint ground line, scattered grass tufts, jar with screw-top lid, wing-mark hints, dashed firefly trails, two stars, crescent moon. Detailed and atmospheric.',
+        svg: SVG_CURRENT,
+      },
+      {
+        id: 'pathA',
+        label: 'Path A — Minimal',
+        meta: 'Same clean jar shape as Current. Strip the rest to a crescent moon, a localized ground line under the jar, and four wispy grass blades around its base. No stars, no wing marks, no firefly trails — just the essentials. Quieter than Current, less detailed than Path B.',
+        svg: SVG_PATH_A,
+      },
+      {
+        id: 'pathB',
+        label: 'Path B — Storybook Scene',
+        meta: 'Same jar shape as Current, but ambient elements rebuilt: crescent moon, three small stars, a curling vine with tiny leaves wrapping the jar\'s base. No moth, no extra creatures. Storybook warmth without clutter.',
+        svg: SVG_PATH_B,
+      },
+    ];
+
+    function renderBanners() {
+      const root = document.getElementById('banners');
+      root.innerHTML = '';
+      variants.forEach((v) => {
+        const card = document.createElement('div');
+        card.className = 'card' + (state.pick === v.id ? ' selected' : '');
+        card.innerHTML = `
+          <div class="card-head">
+            <div class="card-label">${v.label}</div>
+            <div class="card-meta">${v.meta}</div>
+          </div>
+          <div class="frame-wrap">
+            <div class="frame ${state.gradient ? 'gradient' : 'no-bg'}">
+              <div class="svg-layer">${v.svg}</div>
+              ${state.fireflies ? renderFireflies() : ''}
+              ${state.text ? renderText() : ''}
+            </div>
+          </div>
+          <div class="actions">
+            <button class="${state.pick === v.id ? 'primary' : ''}" onclick="pickVariant('${v.id}')">${state.pick === v.id ? 'Selected' : 'Pick this'}</button>
+          </div>
+        `;
+        root.appendChild(card);
+      });
+    }
+
+    function renderFireflies() {
+      // Convert SVG coordinates (0-343, 0-140) to CSS percentages
+      return FIREFLIES.map(f => {
+        const left = (f.x / 343 * 100).toFixed(2);
+        const top = (f.y / 140 * 100).toFixed(2);
+        return `<div class="firefly ${f.color}" style="left:${left}%;top:${top}%;width:${f.size}px;height:${f.size}px;animation-delay:${f.delay}s;"></div>`;
+      }).join('');
+    }
+
+    function renderText() {
+      return `
+        <div class="text-overlay">
+          <div class="tagline">Your memories, kept <em>forever</em></div>
+          <div class="sub-text">A journal for the moments that matter</div>
+          <div class="pill"><span class="glow-dot"></span>12 memories</div>
+        </div>
+      `;
+    }
+
+    function updatePrompt() {
+      const el = document.getElementById('prompt');
+      if (!state.pick) {
+        el.textContent = 'Pick a variant above to generate a prompt you can paste back to Claude.';
+        el.classList.add('empty');
+        return;
+      }
+      const v = variants.find(x => x.id === state.pick);
+      const promptByVariant = {
+        current: 'Keep the current banner as-is. No changes needed.',
+        pathA: `Replace the JarScene component in components/home/BrandingBanner.tsx with the Path A "Minimal Wonky" design. Strip the existing scene down to just three elements: a slightly off-kilter mason jar at right (lid tilted ~3 degrees, asymmetric body), a small crescent moon at upper-left, and three gestural grass blades at the jar's base. Remove the wing-mark hints and dashed firefly trails — the animated firefly layer in BannerFireflies already carries that story. The whimsy should come from the deliberate imperfection of the linework, not from added detail.`,
+        pathB: `Replace the JarScene component in components/home/BrandingBanner.tsx with the Path B "Storybook Scene" design. Keep the same jar shape as the current one, but rebuild the ambient elements: a soft ground line with a few faint grass tufts on the far left, a crescent moon at upper-left, three small stars scattered across the upper area, and a delicate vine with three tiny leaves curling around the base of the jar. Remove the wing-mark hints and dashed firefly trails — the animated firefly layer carries the firefly story now.`,
+      };
+      el.textContent = promptByVariant[state.pick];
+      el.classList.remove('empty');
+    }
+
+    function pickVariant(id) {
+      state.pick = state.pick === id ? null : id;
+      renderBanners();
+      updatePrompt();
+    }
+    window.pickVariant = pickVariant;
+
+    // Wire toggles
+    document.getElementById('t-gradient').addEventListener('change', e => {
+      state.gradient = e.target.checked;
+      renderBanners();
+    });
+    document.getElementById('t-text').addEventListener('change', e => {
+      state.text = e.target.checked;
+      renderBanners();
+    });
+    document.getElementById('t-fireflies').addEventListener('change', e => {
+      state.fireflies = e.target.checked;
+      renderBanners();
+    });
+
+    document.getElementById('copy-btn').addEventListener('click', () => {
+      const text = document.getElementById('prompt').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copy-btn');
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = orig, 1500);
+      });
+    });
+
+    // Initial render
+    renderBanners();
+    updatePrompt();
+  </script>
+</body>
+</html>

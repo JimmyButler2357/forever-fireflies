@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!--
+    Forever Fireflies — monochrome logo.
+
+    For contexts where a single-color mark is required:
+    - iOS notification icons (system tints to white on dark, etc.)
+    - watchOS complications
+    - Dark mode UI chrome
+    - Email signatures, print
+    - Any place a flat silhouette reads better than gradients
+
+    Background is transparent so the mark inherits whatever surface
+    it's placed on. Fill color is brand text-brown (#2C2420); swap
+    to white via CSS or in a separate export for white-on-dark use.
+  -->
+
+  <!-- Jar silhouette in brand text-brown. -->
+  <path fill="#2C2420" d="m73.8 21.7-2.8-0.6c-1-0.4-1-1.7-1-2.4v-1.9h2.6c1.5 0.2 2.8-1.4 2.8-3v-9c0-1.3-1.1-2.7-2.7-2.7h-59.9c-1.3 0-2.6 1.2-2.6 2.6v9.5c0.1 1.4 1.4 2.7 2.8 2.7h2.6v2.3c0 2.5-1.9 2-4.5 2.9-4.2 1.2-8.1 4.4-8.2 9.5v59.5c0.1 3.5 2.7 7.2 6.9 7.2h66.1c3.7 0 7.1-2.9 7.1-7.2v-59.5c-0.1-4.5-3.9-8.9-9.2-9.9zm1.4 68.7h-65v-57.5c0-2.6 2.2-3.6 3.7-3.9 2.2-0.4 9.6-1.6 9.6-10.5h38.3c-0.1 8.9 6.1 10.1 10.3 10.8 2 0.4 3.1 1.6 3.1 3.2v57.9z"/>
+
+  <!-- Fireflies as solid dots (no halos at small sizes). -->
+  <circle cx="90" cy="9.5" r="3" fill="#2C2420"/>
+  <circle cx="53.3" cy="46.8" r="2.5" fill="#2C2420"/>
+  <circle cx="31.4" cy="63.7" r="2.5" fill="#2C2420"/>
+  <circle cx="53.3" cy="74" r="2.5" fill="#2C2420"/>
+</svg>
