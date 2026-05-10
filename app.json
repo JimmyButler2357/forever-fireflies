@@ -2,7 +2,7 @@
   "expo": {
     "name": "Forever Fireflies",
     "slug": "forever-fireflies",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "scheme": "forever-fireflies",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -71,6 +71,13 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Forever Fireflies tags where your memories happen so you can look back on them later."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Forever Fireflies uses your photos to attach images to your memories.",
+          "cameraPermission": "Forever Fireflies uses your camera to capture photos for your memories."
         }
       ],
       "@react-native-community/datetimepicker",
